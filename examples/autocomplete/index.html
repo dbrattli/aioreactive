@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <title>Aioreactive</title>
+  <link rel="stylesheet" href="//ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1>Autocomplete example using aioreactive</h1>
+      <p class="lead">Example to show combining input events such as keyup with Ajax requests</p>
+    </div>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="dropdown">
+            <form role="form">
+              <div class="form-group">
+                <label for="textInput">Enter Query for Wikipedia</label>
+                <input type="text" id="textInput" class="form-control" placeholder="Enter Query..." autocomplete="off" />
+              </div>
+              <ul id="results" class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu"></ul>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="//ajax.aspnetcdn.com/ajax/jQuery/jquery-3.1.1.min.js"></script>
+  <script src="static/autocomplete.js"></script>
+</body>
+</html>

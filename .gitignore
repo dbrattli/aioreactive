@@ -1,0 +1,61 @@
+*.py[cod]
+
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+*tmp_dir
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.cache
+.tox
+nosetests.xml
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Visual studio
+*.suo
+*.DotSettings.user
+TestResults/
+
+# Log files
+*.log
+Rx.pyperf
+*.coverage
+UpgradeLog.htm
+TestResults/Rx.TE.Tests.mdf
+TestResults/Rx.TE.Tests_log.ldf
+*.user
+
+# Cloud9
+.c9
+
+# PyCharm
+.idea
+.zedstate
+
+.ipynb_checkpoints
+.eggs/
