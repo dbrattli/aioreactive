@@ -1,7 +1,7 @@
 import asyncio
 from typing import TypeVar
 
-from aioreactive.abc import AsyncSink
+from aioreactive.core import AsyncSink
 from aioreactive.core.utils import anoop
 
 T = TypeVar('T')

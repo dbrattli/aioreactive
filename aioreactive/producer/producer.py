@@ -54,7 +54,7 @@ class Producer(AsyncSource, AsyncIterable):
 
         Return a sliced source stream."""
 
-        from aioreactive.ops.slice import slice as _slice
+        from aioreactive.core.operators.slice import slice as _slice
 
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step
@@ -73,7 +73,7 @@ class Producer(AsyncSource, AsyncIterable):
         zs = xs + ys
         Returns self.concat(other)"""
 
-        from aioreactive.ops.concat import concat
+        from aioreactive.core.operators.concat import concat
         return concat(other, self)
 
     def __iadd__(self, other):
@@ -84,7 +84,7 @@ class Producer(AsyncSource, AsyncIterable):
 
         Returns self.concat(self, other)"""
 
-        from aioreactive.ops.concat import concat
+        from aioreactive.core.operators.concat import concat
         return concat(other, self)
 
     async def __aiter__(self) -> AsyncIterator:
@@ -132,22 +132,22 @@ class Producer(AsyncSource, AsyncIterable):
 
     @classmethod
     def from_iterable(cls, iter) -> "Producer":
-        from aioreactive.ops.from_iterable import from_iterable
+        from aioreactive.core.operators.from_iterable import from_iterable
         return Producer(from_iterable(iter))
 
     @classmethod
     def unit(cls, value) -> "Producer":
-        from aioreactive.ops.unit import unit
+        from aioreactive.core.operators.unit import unit
         return Producer(unit(value))
 
     @classmethod
     def empty(cls) -> "Producer":
-        from aioreactive.ops.empty import empty
+        from aioreactive.core.operators.empty import empty
         return Producer(empty())
 
     @classmethod
     def never(cls) -> "Producer":
-        from aioreactive.ops.never import never
+        from aioreactive.core.operators.never import never
         return Producer(never())
 
 

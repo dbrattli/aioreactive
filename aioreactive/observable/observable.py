@@ -1,7 +1,6 @@
 from typing import Callable
 
-from aioreactive.abc import AsyncSource
-from aioreactive.core import listen
+from aioreactive.core import AsyncSource, listen
 from aioreactive.producer import Producer
 
 from .observer import Observer, SinkObserver
@@ -102,29 +101,29 @@ class Observable(Producer):
         Returns partially applied function that takes a source sequence.
         """
 
-        from aioreactive.ops.debounce import debounce
+        from aioreactive.core.operators.debounce import debounce
         return Observable(debounce(seconds, self))
 
     def delay(self, seconds: float) -> "Observable":
-        from aioreactive.ops.delay import delay
+        from aioreactive.core.operators.delay import delay
         return Observable(delay(seconds, self))
 
     def where(self, predicate: Callable) -> "Observable":
-        from aioreactive.ops.filter import filter
+        from aioreactive.core.operators.filter import filter
         return Observable(filter(predicate, self))
 
     def select_many(self, selector: Callable) -> "Observable":
-        from aioreactive.ops.flat_map import flat_map
+        from aioreactive.core.operators.flat_map import flat_map
         return Observable(flat_map(selector, self))
 
     def select(self, selector: Callable) -> "Observable":
-        from aioreactive.ops.map import map
+        from aioreactive.core.operators.map import map
         return Observable(map(selector, self))
 
     def merge(self, other: AsyncSource) -> "Observable":
-        from aioreactive.ops.merge import merge
+        from aioreactive.core.operators.merge import merge
         return Observable(merge(other, self))
 
     def with_latest_from(self, mapper, other) -> "Observable":
-        from aioreactive.ops.with_latest_from import with_latest_from
+        from aioreactive.core.operators.with_latest_from import with_latest_from
         return Observable(with_latest_from(mapper, other, self))

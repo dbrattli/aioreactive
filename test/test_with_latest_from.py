@@ -3,10 +3,10 @@ import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import listen, run, Listener, Stream
-from aioreactive.ops.from_iterable import from_iterable
-from aioreactive.ops.with_latest_from import with_latest_from
-from aioreactive.ops.never import never
-from aioreactive.ops.empty import empty
+from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.core.operators.with_latest_from import with_latest_from
+from aioreactive.core.operators.never import never
+from aioreactive.core.operators.empty import empty
 
 
 @pytest.yield_fixture()

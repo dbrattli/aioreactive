@@ -23,45 +23,45 @@ def debounce(seconds: float) -> Callable[[AsyncSource], Producer]:
 
     Returns a partially applied function that takes a source."""
 
-    from aioreactive.ops.debounce import debounce
+    from aioreactive.core.operators.debounce import debounce
     return partial(debounce, seconds)
 
 
 def delay(seconds: float) -> Callable[[AsyncSource], Producer]:
-    from aioreactive.ops.delay import delay
+    from aioreactive.core.operators.delay import delay
     return partial(delay, seconds)
 
 
 def filter(predicate: Callable[[T], bool]) -> Callable[[AsyncSource], Producer]:
-    from aioreactive.ops.filter import filter
+    from aioreactive.core.operators.filter import filter
     return partial(filter, predicate)
 
 
 def flat_map(fn: Callable[[T], AsyncSource]) -> Callable[[AsyncSource], Producer]:
-    from aioreactive.ops.flat_map import flat_map
+    from aioreactive.core.operators.flat_map import flat_map
     return partial(flat_map, fn)
 
 
 def map(fn: Callable) -> Callable[[AsyncSource], Producer]:
-    from aioreactive.ops.map import map
+    from aioreactive.core.operators.map import map
     return partial(map, fn)
 
 
 def merge(other: AsyncSource) -> Callable[[AsyncSource], Producer]:
-    from aioreactive.ops.merge import merge
+    from aioreactive.core.operators.merge import merge
     return partial(merge, other)
 
 
 def with_latest_from(mapper: Callable, other: AsyncSource) -> Callable[[AsyncSource], Producer]:
-    from aioreactive.ops.with_latest_from import with_latest_from
+    from aioreactive.core.operators.with_latest_from import with_latest_from
     return partial(with_latest_from, mapper, other)
 
 
 def distinct_until_changed() -> Callable[[AsyncSource], Producer]:
-    from aioreactive.ops.distinct_until_changed import distinct_until_changed
+    from aioreactive.core.operators.distinct_until_changed import distinct_until_changed
     return partial(distinct_until_changed)
 
 
 def switch_latest() -> Callable[[AsyncSource], Producer]:
-    from aioreactive.ops.switch_latest import switch_latest
+    from aioreactive.core.operators.switch_latest import switch_latest
     return partial(switch_latest)

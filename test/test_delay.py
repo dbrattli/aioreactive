@@ -2,7 +2,7 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.ops.delay import delay
+from aioreactive.core.operators.delay import delay
 from aioreactive.core import listen
 from aioreactive.testing import Stream, Listener
 

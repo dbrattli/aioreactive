@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from aioreactive.abc import AsyncSource
+from aioreactive.core import AsyncSource
 from aioreactive.core import Subscription, chain_future
 
 log = logging.getLogger(__name__)

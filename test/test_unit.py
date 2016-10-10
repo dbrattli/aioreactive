@@ -2,7 +2,7 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.ops.unit import unit
+from aioreactive.core.operators.unit import unit
 from aioreactive.core import run, listen
 from aioreactive.testing import Listener
 

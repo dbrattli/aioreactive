@@ -3,8 +3,8 @@ import asyncio
 from asyncio import Future
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.ops.from_iterable import from_iterable
-from aioreactive.ops.map import map
+from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.core.operators.map import map
 from aioreactive.core import run, listen, Listener, Stream
 
 

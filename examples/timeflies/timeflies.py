@@ -3,7 +3,7 @@ from tkinter import *
 
 from aioreactive.core import listen, Listener
 from aioreactive.producer import Stream
-from aioreactive.producer.ops import delay
+from aioreactive.producer import op
 
 
 async def main(loop):
@@ -30,7 +30,7 @@ async def main(loop):
         def send(ev):
             label.place(x=ev.x + i * 12 + 15, y=ev.y)
 
-        xs = mousemoves | delay(i / 10.0)
+        xs = mousemoves | op.delay(i / 10.0)
         await listen(xs, Listener(send))
 
     for i, label in enumerate(labels):

@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from aioreactive.abc import AsyncSink
+from aioreactive.core import AsyncSink
 from aioreactive.core.utils import noop
 
 

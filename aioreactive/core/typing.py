@@ -1,6 +1,6 @@
 from typing import Generic, TypeVar
 
-from aioreactive import abc
+from . import abc
 
 T_co = TypeVar('T_co', covariant=True)  # Any type covariant containers.
 T_contra = TypeVar('T_contra', contravariant=True)  # Ditto contravariant.

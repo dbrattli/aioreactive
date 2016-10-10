@@ -2,7 +2,7 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.producer import Producer, ops
+from aioreactive.producer import Producer, op
 from aioreactive.core import run, listen, Stream, Listener
 
 
@@ -22,7 +22,7 @@ async def test_producer_map():
         await asyncio.sleep(0.1)
         return value*10
 
-    ys = xs | ops.map(mapper)
+    ys = xs | op.map(mapper)
 
     async def send(value):
         result.append(value)
@@ -44,7 +44,7 @@ async def test_producer_simple_pipe():
         await asyncio.sleep(0.1)
         return value > 1
 
-    ys = xs | ops.filter(predicate) | ops.map(mapper)
+    ys = xs | op.filter(predicate) | op.map(mapper)
 
     async def send(value):
         result.append(value)
@@ -70,9 +70,9 @@ async def test_producer_complex_pipe():
         return Producer.from_iterable([value])
 
     ys = (xs
-          | ops.filter(predicate)
-          | ops.map(mapper)
-          | ops.flat_map(long_running)
+          | op.filter(predicate)
+          | op.map(mapper)
+          | op.flat_map(long_running)
           )
 
     async for value in ys:

@@ -20,7 +20,7 @@ from aiohttp import web
 
 from aioreactive.core import Listener, listen
 from aioreactive.producer import Producer, Stream
-from aioreactive.producer import ops as _
+from aioreactive.producer import op
 
 
 async def search_wikipedia(term):
@@ -45,12 +45,12 @@ async def websocket_handler(request):
 
     # Line break before binary operator is more readable. Disable W503
     xs = (stream
-          | _.map(lambda x: x["term"])
-          | _.filter(lambda text: len(text) > 2)
-          | _.debounce(0.75)
-          | _.distinct_until_changed()
-          | _.map(search_wikipedia)
-          | _.switch_latest()
+          | op.map(lambda x: x["term"])
+          | op.filter(lambda text: len(text) > 2)
+          | op.debounce(0.75)
+          | op.distinct_until_changed()
+          | op.map(search_wikipedia)
+          | op.switch_latest()
           )
 
     ws = web.WebSocketResponse()
