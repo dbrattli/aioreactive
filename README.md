@@ -145,10 +145,9 @@ async def main():
 
     ys = xs | filter(predicate) | map(mapper) | flat_map(long_running)
 
-    async def send(value):
+    async for value in ys:
         result.append(value)
 
-    await run(ys, Listener(send))
     assert result == [20, 30]
 
 if __name__ == '__main__':
@@ -160,25 +159,27 @@ if __name__ == '__main__':
 Longer pipelines should break lines as for binary operators. Here is a small example using underscore style import:
 
 ```python
-from aioreactive.producer import Stream, ops as _
+from aioreactive.producer import Stream, op_
 
 async def main():
     stream = Stream()
 
     xs = (stream
-          | _.map(lambda x: x["term"])
-          | _.filter(lambda text: len(text) > 2)
-          | _.debounce(0.75)
-          | _.distinct_until_changed()
-          | _.map(search_wikipedia)
-          | _.switch_latest()
+          | op.map(lambda x: x["term"])
+          | op.filter(lambda text: len(text) > 2)
+          | op.debounce(0.75)
+          | op.distinct_until_changed()
+          | op.map(search_wikipedia)
+          | op.switch_latest()
           )
-    ...
+
+    async for value in xs:
+        print(value)
 ```
 
-## Producers may be iterated asynchronously
+## Producers are async iterables
 
-Producers implements `AsyncIterable` and may also be iterated asynchronously. This effectively transform us from a async push model to an async pull model. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator` before continuing.
+We don't need to `listen()` to Producers as we do with async sources. Producers implements `AsyncIterable` so instead we iterate them asynchronously. They effectively transform us from a async push model to an async pull model. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator` before continuing. This enable us to use language features such as async-for.
 
 ```
 xs = Producer.from_iterable([1, 2, 3])
