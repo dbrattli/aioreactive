@@ -1,30 +1,30 @@
 import asyncio
 import logging
-from typing import TypeVar
+from typing import TypeVar, Generic
 
-from aioreactive.abc import AsyncSource, AsyncSink
-
-from .utils import anoop
+from .typing import AsyncSource, AsyncSink
 from .futures import Subscription, chain_future
+from .utils import anoop
 
-T = TypeVar('T')
 log = logging.getLogger(__name__)
 
+T = TypeVar("T")
 
 class Listener(AsyncSink):
     """An anonymous async sink.
 
     Used for listening to a source"""
 
-    def __init__(self, send=anoop, throw=anoop, close=anoop):
+    def __init__(self, send=anoop, throw=anoop, close=anoop) -> None:
+        super().__init__()
         self._send = send
         self._throw = throw
         self._close = close
 
-    async def send(self, value):
+    async def send(self, value: T):
         await self._send(value)
 
-    async def throw(self, ex):
+    async def throw(self, ex: Exception):
         await self._throw(ex)
 
     async def close(self):

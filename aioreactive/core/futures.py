@@ -1,15 +1,17 @@
 import logging
 from asyncio import Future
-from typing import TypeVar, Callable
+from typing import TypeVar, Callable, Generic
 
-from aioreactive.abc import AsyncSink, AsyncSource
+from .typing import AsyncSink, AsyncSource
 from .utils import noopsink
 
-T = TypeVar('T')
 log = logging.getLogger(__name__)
 
+T = TypeVar('T')
 
-class AsyncMultiFuture(Future, AsyncSink):
+
+class AsyncMultiFuture(Future, AsyncSink, Generic[T]):
+
     """An asynch multi-value future.
 
     Both a future and async sink. The future resolves with the last
@@ -17,15 +19,15 @@ class AsyncMultiFuture(Future, AsyncSink):
     the same as cancelling the future.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         Future.__init__(self)
 
         self._has_result = False
-        self._last_result = None
+        self._last_result = None  # type: T
 
-        self._sink = noopsink
+        self._sink = noopsink  # type: AsyncSink
 
-    async def send(self, value):
+    async def send(self, value: T):
         if self.done():
             return
 
@@ -34,14 +36,14 @@ class AsyncMultiFuture(Future, AsyncSink):
 
         await self._sink.send(value)
 
-    async def throw(self, ex):
+    async def throw(self, ex: Exception) -> None:
         if self.done():
             return
 
         self.set_exception(ex)
         await self._sink.throw(ex)
 
-    async def close(self):
+    async def close(self) -> None:
         if self.done():
             return
 
@@ -66,7 +68,7 @@ class Subscription(AsyncMultiFuture):
     Unsubscribe -- To unsubscribe you need to call the cancel() method.
     """
 
-    def __init__(self, cancel: Callable=None):
+    def __init__(self, cancel: Callable=None) -> None:
         super().__init__()
 
         if callable(cancel):
@@ -83,7 +85,7 @@ class Subscription(AsyncMultiFuture):
             self.cancel()
 
 
-async def chain(source: AsyncSource, sink: AsyncSink=None) -> AsyncMultiFuture:
+async def chain(source: AsyncSource, sink: AsyncSink=None):
     """Chains an async sink with an async source.
 
     Performs the chaining done internally by most operators."""
@@ -91,7 +93,7 @@ async def chain(source: AsyncSource, sink: AsyncSink=None) -> AsyncMultiFuture:
     return await source.__alisten__(sink)
 
 
-def chain_future(fut, other: Future) -> Future:
+def chain_future(fut, other):
     """Chains a future with other future.
 
     Returns the first future.

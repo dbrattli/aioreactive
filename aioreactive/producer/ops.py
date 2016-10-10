@@ -1,11 +1,15 @@
-from typing import Callable
+from typing import Callable, TypeVar
 from functools import partial
 
-from aioreactive.abc import AsyncSource
+from aioreactive.core import AsyncSource
 from .producer import Producer
 
+T = TypeVar('T')
+T1 = TypeVar('T1')
+T2 = TypeVar('T2')
 
-def debounce(seconds) -> Callable[[AsyncSource], Producer]:
+
+def debounce(seconds: float) -> Callable[[AsyncSource], Producer]:
     """Debounce source stream.
 
     Ignores values from a source stream which are followed by
@@ -28,12 +32,12 @@ def delay(seconds: float) -> Callable[[AsyncSource], Producer]:
     return partial(delay, seconds)
 
 
-def filter(predicate) -> Callable[[AsyncSource], Producer]:
+def filter(predicate: Callable[[T], bool]) -> Callable[[AsyncSource], Producer]:
     from aioreactive.ops.filter import filter
     return partial(filter, predicate)
 
 
-def flat_map(fn: Callable) -> Callable[[AsyncSource], Producer]:
+def flat_map(fn: Callable[[T], AsyncSource]) -> Callable[[AsyncSource], Producer]:
     from aioreactive.ops.flat_map import flat_map
     return partial(flat_map, fn)
 

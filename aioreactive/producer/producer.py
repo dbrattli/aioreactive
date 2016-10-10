@@ -1,11 +1,12 @@
-from asyncio import Future, ensure_future
+from asyncio import Future
 from collections.abc import AsyncIterator, AsyncIterable
-from typing import Callable
-from functools import partial
+from typing import Callable, TypeVar
 
-from aioreactive.abc import AsyncSource, AsyncSink
+from aioreactive.core import AsyncSource, AsyncSink, Subscription
 from aioreactive.core import listen
 from aioreactive import core
+
+T = TypeVar('T')
 
 
 class Producer(AsyncSource, AsyncIterable):
@@ -19,14 +20,14 @@ class Producer(AsyncSource, AsyncIterable):
     def __init__(self, source: AsyncSource = None):
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
         return await self._source.__alisten__(sink)
 
     def __or__(self, other: Callable[[AsyncSource], "Producer"]) -> "Producer":
         """Forward pipe."""
         return Producer(other(self))
 
-    def __getitem__(self, key) -> AsyncSource:
+    def __getitem__(self, key) -> "Producer":
         """Slices the given source stream using Python slice notation.
         The arguments to slice is start, stop and step given within
         brackets [] and separated with the ':' character. It is
@@ -65,7 +66,7 @@ class Producer(AsyncSource, AsyncIterable):
         xs = _slice(start, stop, step, self)
         return Producer(xs)
 
-    def __add__(self, other):
+    def __add__(self, other: AsyncSource) -> "Producer":
         """Pythonic version of concat
 
         Example:
@@ -86,7 +87,7 @@ class Producer(AsyncSource, AsyncIterable):
         from aioreactive.ops.concat import concat
         return concat(other, self)
 
-    async def __aiter__(self):
+    async def __aiter__(self) -> AsyncIterator:
         """Iterate source stream asynchronously.
 
         Transforms the async source to an async iterable. The source
@@ -130,22 +131,22 @@ class Producer(AsyncSource, AsyncIterable):
         return sink
 
     @classmethod
-    def from_iterable(cls, iter):
+    def from_iterable(cls, iter) -> "Producer":
         from aioreactive.ops.from_iterable import from_iterable
         return Producer(from_iterable(iter))
 
     @classmethod
-    def unit(cls, value):
+    def unit(cls, value) -> "Producer":
         from aioreactive.ops.unit import unit
         return Producer(unit(value))
 
     @classmethod
-    def empty(cls):
+    def empty(cls) -> "Producer":
         from aioreactive.ops.empty import empty
         return Producer(empty())
 
     @classmethod
-    def never(cls):
+    def never(cls) -> "Producer":
         from aioreactive.ops.never import never
         return Producer(never())
 

@@ -4,6 +4,9 @@ from .source import Source, AsyncSource
 
 class Sink(Source):
     """A synchronous sink."""
+
+    __slots__ = ()
+
     @abstractmethod
     def send(self, value):
         return NotImplemented
@@ -22,6 +25,9 @@ class Sink(Source):
 
 class AsyncSink(AsyncSource):
     """An asynchronous sink."""
+
+    __slots__ = ()
+
     @abstractmethod
     async def send(self, value):
         return NotImplemented

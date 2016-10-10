@@ -1,4 +1,4 @@
-from aioreactive.abc import AsyncSource
+from aioreactive.core import AsyncSource
 
 from .filteri import filteri
 

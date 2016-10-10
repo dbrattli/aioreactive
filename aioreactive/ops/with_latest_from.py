@@ -1,7 +1,7 @@
 from asyncio import iscoroutinefunction, Future
 from typing import Callable, Awaitable, TypeVar
 
-from aioreactive.abc import AsyncSink, AsyncSource
+from aioreactive.core import AsyncSink, AsyncSource
 from aioreactive.core import Subscription, chain, chain_future
 from aioreactive.core.futures import AsyncMultiFuture
 
@@ -9,12 +9,13 @@ T = TypeVar('T')
 
 
 class WithLatestFrom(AsyncSource):
-    def __init__(self, mapper, other: AsyncSource, source: AsyncSource):
+
+    def __init__(self, mapper, other: AsyncSource, source: AsyncSource) -> None:
         self._mapper = mapper
         self._other = other
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
         _sink = await chain(WithLatestFrom.SourceSink(self), sink)
         sub = await chain(self._source, _sink)
 
@@ -23,13 +24,14 @@ class WithLatestFrom(AsyncSource):
         return chain_future(sub, sub_other)
 
     class SourceSink(AsyncMultiFuture):
-        def __init__(self, source: "WithLatestFrom"):
+
+        def __init__(self, source: "WithLatestFrom") -> None:
             super().__init__()
             self._source = source
-            self._latest = None
+            self._latest = None  # type: T
             self._has_latest = False
 
-        async def send(self, value: T):
+        async def send(self, value: T) -> None:
             if not self._has_latest:
                 return
 
@@ -41,7 +43,7 @@ class WithLatestFrom(AsyncSource):
                 await self._sink.send(result)
 
         @property
-        def latest(self):
+        def latest(self) -> T:
             return self._latest
 
         @latest.setter
@@ -50,12 +52,12 @@ class WithLatestFrom(AsyncSource):
             self._has_latest = True
 
     class OtherSink(AsyncMultiFuture):
-        def __init__(self, source: "WithLatestFrom", sink: "AsyncSink"):
+        def __init__(self, source: "WithLatestFrom", sink: "AsyncSink") -> None:
             super().__init__()
             self._source = source
             self._sink = sink
 
-        async def send(self, value: T):
+        async def send(self, value: T) -> None:
             self._sink.latest = value
 
         async def close(self):

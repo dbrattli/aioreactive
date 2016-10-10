@@ -1,15 +1,15 @@
 from asyncio import iscoroutinefunction
 from typing import Awaitable, Union, Callable, TypeVar
 
-from aioreactive.abc import AsyncSource, AsyncSink
+from aioreactive.core import AsyncSource, AsyncSink, chain
 from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.core import chain
 
 T = TypeVar('T')
 
 
 class Filter(AsyncSource):
-    def __init__(self, predicate: Union[Callable[[T], bool], Awaitable], source: AsyncSource):
+
+    def __init__(self, predicate: Union[Callable[[T], bool], Awaitable[bool]], source: AsyncSource[T]) -> None:
         """Filters the elements of the source sequence based on a
         predicate function."""
 
@@ -23,12 +23,12 @@ class Filter(AsyncSource):
 
     class Sink(AsyncMultiFuture):
 
-        def __init__(self, source: "Filter"):
+        def __init__(self, source: "Filter") -> None:
             super().__init__()
             self._predicate = source._predicate
             self._is_awaitable = source._is_awaitable
 
-        async def send(self, value: T):
+        async def send(self, value: T) -> None:
             try:
                 should_run = await self._predicate(value) if self._is_awaitable else self._predicate(value)
             except Exception as ex:
@@ -38,9 +38,10 @@ class Filter(AsyncSource):
                     await self._sink.send(value)
 
 
-def filter(predicate: Awaitable[bool], source: AsyncSource) -> AsyncSource:
+def filter(predicate: Union[Callable[[T], bool], Awaitable[bool]], source: AsyncSource) -> AsyncSource:
     """Filters the source stream.
 
     Filters the items of the source stream based on a predicate
-    function."""
+    function.
+    """
     return Filter(predicate, source)

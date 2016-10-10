@@ -75,10 +75,9 @@ async def test_producer_complex_pipe():
           | ops.flat_map(long_running)
           )
 
-    async def send(value):
+    async for value in ys:
         result.append(value)
 
-    await run(ys, Listener(send))
     assert result == [20, 30]
 
 

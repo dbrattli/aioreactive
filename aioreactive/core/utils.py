@@ -1,4 +1,4 @@
-from aioreactive import abc
+from . import typing
 
 
 def noop(*args, **kw):
@@ -11,7 +11,7 @@ async def anoop(*args, **kw):
     pass
 
 
-class NoopSink(abc.AsyncSink):
+class NoopSink(typing.AsyncSink):
     async def send(self, value):
         pass
 

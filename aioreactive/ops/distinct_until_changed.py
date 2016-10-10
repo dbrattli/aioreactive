@@ -1,8 +1,7 @@
 from typing import Awaitable, Union, Callable, TypeVar
 
-from aioreactive.abc import AsyncSource, AsyncSink
+from aioreactive.core import AsyncSource, AsyncSink, chain
 from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.core import chain
 
 T = TypeVar('T')
 
@@ -13,7 +12,8 @@ class Different:
 
 
 class DistinctUntilChanged(AsyncSource):
-    def __init__(self, source: AsyncSource):
+
+    def __init__(self, source: AsyncSource) -> None:
         self.source = source
 
     async def __alisten__(self, sink: AsyncSink):
@@ -21,11 +21,12 @@ class DistinctUntilChanged(AsyncSource):
         return await chain(self.source, _sink)
 
     class Sink(AsyncMultiFuture):
-        def __init__(self, source: "DistinctUntilChanged"):
+
+        def __init__(self, source: "DistinctUntilChanged") -> None:
             super().__init__()
             self._latest = Different()
 
-        async def send(self, value: T):
+        async def send(self, value: T) -> None:
             if self._latest == value:
                 return
 

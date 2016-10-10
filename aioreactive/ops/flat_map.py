@@ -1,15 +1,16 @@
 from typing import Union, Awaitable, Callable, TypeVar
 
-from aioreactive.abc import AsyncSource, AsyncSink
+from aioreactive.core import AsyncSource
 
 from .switch_latest import switch_latest
 from .merge import merge
 from .map import map
 
-T = TypeVar('T')
+T1 = TypeVar('T1')
+T2 = TypeVar('T2')
 
 
-def flat_map(fn: Union[Callable[[T], AsyncSource], Awaitable], source: AsyncSource) -> AsyncSource:
+def flat_map(fn: Union[Callable[[T1], AsyncSource[T2]], Awaitable[T1]], source: AsyncSource[T2]) -> AsyncSource[T2]:
     """Project each element of a source stream into a new source stream
     and merges the resulting source streams back into a single source
     stream.
@@ -28,5 +29,5 @@ def flat_map(fn: Union[Callable[[T], AsyncSource], Awaitable], source: AsyncSour
     return merge(map(fn, source))
 
 
-def flat_map_latest(fn: Union[Callable[[T], AsyncSource], Awaitable], source: AsyncSource) -> AsyncSource:
+def flat_map_latest(fn: Union[Callable[[T1], AsyncSource[T2]], Awaitable[T1]], source: AsyncSource[T2]) -> AsyncSource[T2]:
     return switch_latest(map(fn, source))

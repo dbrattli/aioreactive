@@ -1,14 +1,14 @@
 from typing import TypeVar
 
 from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.abc import AsyncSink, AsyncSource
-from aioreactive.core import chain
+from aioreactive.core import AsyncSink, AsyncSource, chain
 
 T = TypeVar('T')
 
 
 class Skip(AsyncSource):
-    def __init__(self, count: int, source: AsyncSource):
+
+    def __init__(self, count: int, source: AsyncSource) -> None:
         self._source = source
         self._count = count
 
@@ -17,7 +17,8 @@ class Skip(AsyncSource):
         return await chain(self._source, _sink)
 
     class Sink(AsyncMultiFuture):
-        def __init__(self, source: "Skip"):
+
+        def __init__(self, source: "Skip") -> None:
             super().__init__()
             self._count = source._count
 

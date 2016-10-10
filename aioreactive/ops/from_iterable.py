@@ -1,17 +1,18 @@
 import asyncio
 import logging
 
-from aioreactive.abc import AsyncSink, AsyncSource
+from aioreactive.core import AsyncSink, AsyncSource
 from aioreactive.core import Subscription
 
 log = logging.getLogger(__name__)
 
 
 class FromIterable(AsyncSource):
-    def __init__(self, iterable):
+
+    def __init__(self, iterable) -> None:
         self.iterable = iterable
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
         task = None
 
         def cancel(sub):
@@ -20,7 +21,7 @@ class FromIterable(AsyncSource):
         sub = Subscription()
         sub.add_done_callback(cancel)
 
-        async def async_worker():
+        async def async_worker() -> None:
             async for value in self.iterable:
                 try:
                     await sink.send(value)
@@ -30,7 +31,7 @@ class FromIterable(AsyncSource):
 
             await sink.close()
 
-        async def sync_worker():
+        async def sync_worker() -> None:
             for value in self.iterable:
                 try:
                     await sink.send(value)

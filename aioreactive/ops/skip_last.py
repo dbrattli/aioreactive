@@ -1,29 +1,30 @@
-from typing import TypeVar
+from typing import TypeVar, List
 
 from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.abc import AsyncSink, AsyncSource
-from aioreactive.core import chain
+from aioreactive.core import AsyncSink, AsyncSource, Subscription, chain
 
 T = TypeVar('T')
 
 
 class SkipLast(AsyncSource):
-    def __init__(self, count: int, source: AsyncSource):
+
+    def __init__(self, count: int, source: AsyncSource) -> None:
         self._source = source
         self._count = count
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
         _sink = await chain(SkipLast.Sink(self), sink)
         return await chain(self._source, _sink)
 
     class Sink(AsyncMultiFuture):
-        def __init__(self, source: "SkipLast"):
+
+        def __init__(self, source: "SkipLast") -> None:
             super().__init__()
             self._count = source._count
-            self._q = []
+            self._q = []  # type: List[T]
 
-        async def send(self, value: T):
-            front = None
+        async def send(self, value: T) -> None:
+            front = None  # type: T
             self._q.append(value)
             if len(self._q) > self._count:
                 front = self._q.pop(0)

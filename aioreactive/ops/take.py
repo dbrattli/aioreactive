@@ -1,7 +1,7 @@
 from typing import TypeVar
 
 from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.abc import AsyncSink, AsyncSource
+from aioreactive.core import AsyncSink, AsyncSource, Subscription
 from aioreactive.core import chain
 
 from .empty import empty
@@ -10,20 +10,22 @@ T = TypeVar('T')
 
 
 class Take(AsyncSource):
-    def __init__(self, count: int, source: AsyncSource):
+
+    def __init__(self, count: int, source: AsyncSource) -> None:
         self._source = source
         self._count = count
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
         _sink = await chain(Take.Sink(self), sink)
         return await chain(self._source, _sink)
 
     class Sink(AsyncMultiFuture):
-        def __init__(self, source: "Take"):
+
+        def __init__(self, source: "Take") -> None:
             super().__init__()
             self._count = source._count
 
-        async def send(self, value: T):
+        async def send(self, value: T) -> None:
             if self._count > 0:
                 self._count -= 1
                 await self._sink.send(value)

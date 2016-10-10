@@ -8,11 +8,11 @@ log = logging.getLogger(__name__)
 
 
 class Unit(AsyncSource):
-    def __init__(self, value):
+    def __init__(self, value) -> None:
         self._value = value
 
-    async def __alisten__(self, sink):
-        async def worker(value):
+    async def __alisten__(self, sink) -> Subscription:
+        async def worker(value) -> None:
             try:
                 await sink.send(value)
             except Exception as ex:
@@ -24,7 +24,7 @@ class Unit(AsyncSource):
 
             await sink.close()
 
-        async def done():
+        async def done() -> None:
             try:
                 value = self._value.result()
             except asyncio.CancelledError:

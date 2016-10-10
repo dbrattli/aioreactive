@@ -2,14 +2,15 @@ from asyncio import iscoroutinefunction
 from typing import Awaitable, Union, Callable, TypeVar
 
 from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.abc import AsyncSource, AsyncSink
+from aioreactive.core import AsyncSource, AsyncSink, Subscription
 from aioreactive.core import chain
 
 T = TypeVar('T')
 
 
 class FilterIndexed(AsyncSource):
-    def __init__(self, predicate: Union[Callable[[T, int], bool], Awaitable], source: AsyncSource):
+
+    def __init__(self, predicate: Union[Callable[[T, int], bool], Awaitable], source: AsyncSource) -> None:
         """Filters the elements of the source stream based on a
         predicate function.
         """
@@ -18,18 +19,19 @@ class FilterIndexed(AsyncSource):
         self._predicate = predicate
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
         _sink = await chain(FilterIndexed.Sink(self), sink)
         return await chain(self._source, _sink)
 
     class Sink(AsyncMultiFuture):
-        def __init__(self, source: "FilterIndexed"):
+
+        def __init__(self, source: "FilterIndexed") -> None:
             super().__init__()
             self._is_awaitable = source._is_awaitable
             self._predicate = source._predicate
             self._index = 0
 
-        async def send(self, value: T):
+        async def send(self, value: T) -> None:
             try:
                 should_run = await self._predicate(value, self._index) if self._is_awaitable else self._predicate(value, self._index)
             except Exception as ex:

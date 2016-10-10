@@ -1,18 +1,18 @@
 import asyncio
-
+from typing import List
 
 from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.abc import AsyncSink, AsyncSource
-from aioreactive.core import chain
+from aioreactive.core import Subscription, AsyncSink, AsyncSource, chain
 
 
 class Delay(AsyncSource):
-    def __init__(self, source: AsyncSource, seconds: float):
+
+    def __init__(self, source: AsyncSource, seconds: float) -> None:
         self._seconds = seconds
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink):
-        tasks = []
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
+        tasks = []  # type: List[asyncio.Task]
 
         _sink = await chain(Delay.Sink(self, tasks), sink)
         sub = await chain(self._source, _sink)
@@ -24,12 +24,13 @@ class Delay(AsyncSource):
         return sub
 
     class Sink(AsyncMultiFuture):
-        def __init__(self, source, tasks):
+
+        def __init__(self, source, tasks) -> None:
             super().__init__()
             self._source = source
             self._tasks = tasks
 
-        async def send(self, value):
+        async def send(self, value) -> None:
             async def _delay(value):
                 await asyncio.sleep(self._source._seconds)
                 await self._sink.send(value)
@@ -38,7 +39,7 @@ class Delay(AsyncSource):
             task = asyncio.ensure_future(_delay(value))
             self._tasks.append(task)
 
-        async def close(self):
+        async def close(self) -> None:
             async def _delay():
                 await asyncio.sleep(self._source._seconds)
                 await self._sink.close()
@@ -48,7 +49,7 @@ class Delay(AsyncSource):
             self._tasks.append(task)
 
 
-def delay(seconds, source) -> AsyncSource:
+def delay(seconds: float, source: AsyncSource) -> AsyncSource:
     """Time shifts the source stream by seconds. The relative time
     intervals between the values are preserved.
 

@@ -1,22 +1,22 @@
 import asyncio
-from asyncio import Future
 import logging
 
 from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.abc import AsyncSource, AsyncSink
+from aioreactive.core import AsyncSource, AsyncSink
 from aioreactive.core import chain, Subscription
 
 log = logging.getLogger(__name__)
 
 
 class Concat(AsyncSource):
-    def __init__(self, *sources):
-        self._sources = iter(sources)
-        self._subscription = None
-        self._task = None
 
-    async def worker(self, sink: AsyncSink):
-        def recurse(fut):
+    def __init__(self, *sources) -> None:
+        self._sources = iter(sources)
+        self._subscription = None  # type: Subscription
+        self._task = None  # type: asyncio.Task
+
+    async def worker(self, sink: AsyncSink) -> None:
+        def recurse(fut) -> None:
             self._task = asyncio.ensure_future(self.worker(sink))
 
         try:
@@ -31,7 +31,7 @@ class Concat(AsyncSource):
 
             self._subscription = await chain(source, _sink)
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
         def cancel(sub):
             if self._subscription is not None:
                 self._subscription.cancel()
@@ -43,7 +43,8 @@ class Concat(AsyncSource):
         return Subscription(cancel)
 
     class Sink(AsyncMultiFuture):
-        async def close(self):
+
+        async def close(self) -> None:
             log.debug("Concat._:close()")
             self.cancel()
 

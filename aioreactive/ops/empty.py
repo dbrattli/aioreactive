@@ -1,6 +1,6 @@
 import asyncio
 
-from aioreactive.abc import AsyncSink, AsyncSource
+from aioreactive.core import AsyncSink, AsyncSource
 
 
 class Empty(AsyncSource):
