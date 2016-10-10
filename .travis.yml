@@ -2,6 +2,7 @@ language: python
 python:
     - "3.5"
 before_install:
+    - python setup.py install
     - pip install pytest pytest-cov
 script:
     - py.test

@@ -178,7 +178,7 @@ async def main():
 
 ## Producers may be iterated asynchronously
 
-Producers are also `AsyncIterable` and also be iterated asynchronously:
+Producers implements `AsyncIterable` and may also be iterated asynchronously. This effectively transform us from a async push model to an async pull model. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator` before continuing.
 
 ```
 xs = Producer.from_iterable([1, 2, 3])
@@ -191,6 +191,23 @@ assert result == [1, 2, 3]
 ```
 
 Producers also supports slicing using the Python slice notation.
+
+```python
+@pytest.mark.asyncio
+async def test_slice_special():
+    xs = Producer.from_iterable([1, 2, 3, 4, 5])
+    values = []
+
+    async def send(value):
+        values.append(value)
+
+    ys = xs[1:-1]
+
+    result = await run(ys, Listener(send))
+
+    assert result == 4
+    assert values == [2, 3, 4]
+```
 
 ## Async Observables and async Observers
 
