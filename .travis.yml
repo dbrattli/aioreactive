@@ -3,6 +3,6 @@ python:
     - "3.5"
 before_install:
     - python setup.py install
-    - pip install pytest pytest-asyncio pytest-cov
+    - pip install pytest>=3.0.2 pytest-asyncio pytest-cov --upgrade
 script:
     - python setup.py test
