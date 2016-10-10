@@ -5,4 +5,4 @@ before_install:
     - python setup.py install
     - pip install pytest pytest-asyncio pytest-cov
 script:
-    - py.test
+    - python setup.py test
