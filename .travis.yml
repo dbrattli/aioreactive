@@ -4,5 +4,9 @@ python:
 before_install:
     - python setup.py install
     - pip install pytest>=3.0.2 pytest-asyncio pytest-cov --upgrade
+    - pip install coveralls
+    - pip install coverage
 script:
-    - python setup.py test
+    - coverage run --source=aioreactive setup.py test
+after_success:
+  - coveralls
