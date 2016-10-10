@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/dbrattli/aioreactive.svg?branch=master)](https://travis-ci.org/dbrattli/aioreactive)
+[![Coverage Status](https://coveralls.io/repos/github/dbrattli/aioreactive/badge.svg?branch=master)](https://coveralls.io/github/dbrattli/aioreactive?branch=master)
+
 # aioreactive - reactive tools for asyncio
 
 Aioreactive is an asynchronous and reactive Python library for asyncio using async and await. Aioreactive is based on concepts from [RxPY](https://github.com/ReactiveX/RxPY), but is more low-level, and integrates more naturally with the Python language.
