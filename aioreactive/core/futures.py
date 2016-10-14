@@ -1,9 +1,11 @@
 import logging
 from asyncio import Future
 from typing import TypeVar, Callable, Generic
+from typing import AsyncIterable, AsyncIterator
 
 from .typing import AsyncSink, AsyncSource
 from .utils import noopsink
+from .sinks import AsyncIteratorSink
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class AsyncMultiFuture(Future, AsyncSink, Generic[T]):
         return self
 
 
-class Subscription(AsyncMultiFuture):
+class Subscription(AsyncMultiFuture, AsyncIterator):
     """Subscription class.
 
     A subscription is an async multi value future with a context
@@ -80,12 +82,23 @@ class Subscription(AsyncMultiFuture):
 
     def __exit__(self, type, value, traceback):
         """Context management protocol."""
-
         if not self.done():
             self.cancel()
 
+    async def __aiter__(self) -> AsyncIterator:
+        """Iterate source stream asynchronously.
 
-async def chain(source: AsyncSource, sink: AsyncSink=None):
+        Transforms the async source to an async iterable. The source
+        will await for the iterator to pick up the value before
+        continuing to avoid queuing values.
+        """
+
+        _sink = AsyncIteratorSink()
+        await chain(self, _sink)
+        return _sink
+
+
+async def chain(source, sink):
     """Chains an async sink with an async source.
 
     Performs the chaining done internally by most operators."""
@@ -93,7 +106,7 @@ async def chain(source: AsyncSource, sink: AsyncSink=None):
     return await source.__alisten__(sink)
 
 
-def chain_future(fut, other):
+def chain_future(fut: Future, other: Future) -> Future:
     """Chains a future with other future.
 
     Returns the first future.

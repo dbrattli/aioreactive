@@ -30,7 +30,7 @@ class Skip(AsyncSource):
 
 
 def skip(count: int, source: AsyncSource) -> AsyncSource:
-    """Skip the specified number of values.source
+    """Skip the specified number of values.
 
     Keyword arguments:
     count -- The number of elements to skip before returning the

@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator, AsyncIterable
 from typing import Callable, TypeVar
 
 from aioreactive.core import AsyncSource, AsyncSink, Subscription
-from aioreactive.core import listen
+from aioreactive.core import AsyncIteratorSink, listen
 from aioreactive import core
 
 T = TypeVar('T')
@@ -24,7 +24,12 @@ class Producer(AsyncSource, AsyncIterable):
         return await self._source.__alisten__(sink)
 
     def __or__(self, other: Callable[[AsyncSource], "Producer"]) -> "Producer":
-        """Forward pipe."""
+        """Forward pipe.
+
+        Composes a producer with a partally applied operator.
+
+        Returns a composed Producer.
+        """
         return Producer(other(self))
 
     def __getitem__(self, key) -> "Producer":
@@ -54,7 +59,7 @@ class Producer(AsyncSource, AsyncIterable):
 
         Return a sliced source stream."""
 
-        from aioreactive.core.operators.slice import slice as _slice
+        from aioreactive.core.sources.slice import slice as _slice
 
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step
@@ -73,7 +78,7 @@ class Producer(AsyncSource, AsyncIterable):
         zs = xs + ys
         Returns self.concat(other)"""
 
-        from aioreactive.core.operators.concat import concat
+        from aioreactive.core.sources.concat import concat
         return concat(other, self)
 
     def __iadd__(self, other):
@@ -84,7 +89,7 @@ class Producer(AsyncSource, AsyncIterable):
 
         Returns self.concat(self, other)"""
 
-        from aioreactive.core.operators.concat import concat
+        from aioreactive.core.sources.concat import concat
         return concat(other, self)
 
     async def __aiter__(self) -> AsyncIterator:
@@ -95,59 +100,28 @@ class Producer(AsyncSource, AsyncIterable):
         continuing to avoid queuing values.
         """
 
-        class Sink(AsyncSink, AsyncIterator):
-            def __init__(self):
-                super().__init__()
-                self._future = Future()
-                self._wait = Future()
-
-            async def send(self, value):
-                self._future.set_result(value)
-                await self._pong()
-
-            async def throw(self, err):
-                self._future.set_exception(err)
-                await self._pong()
-
-            async def close(self):
-                self._future.set_exception(StopAsyncIteration)
-                await self._pong()
-
-            async def __anext__(self):
-                return await self._ping()
-
-            async def _ping(self):
-                value = await self._future
-                self._future = Future()
-                self._wait.set_result(True)
-                return value
-
-            async def _pong(self):
-                await self._wait
-                self._wait = Future()
-
-        sink = Sink()
+        sink = AsyncIteratorSink()
         await listen(self, sink)
         return sink
 
     @classmethod
     def from_iterable(cls, iter) -> "Producer":
-        from aioreactive.core.operators.from_iterable import from_iterable
+        from aioreactive.core.sources.from_iterable import from_iterable
         return Producer(from_iterable(iter))
 
     @classmethod
     def unit(cls, value) -> "Producer":
-        from aioreactive.core.operators.unit import unit
+        from aioreactive.core.sources.unit import unit
         return Producer(unit(value))
 
     @classmethod
     def empty(cls) -> "Producer":
-        from aioreactive.core.operators.empty import empty
+        from aioreactive.core.sources.empty import empty
         return Producer(empty())
 
     @classmethod
     def never(cls) -> "Producer":
-        from aioreactive.core.operators.never import never
+        from aioreactive.core.sources.never import never
         return Producer(never())
 
 

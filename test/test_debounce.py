@@ -2,7 +2,7 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.operators.debounce import debounce
+from aioreactive.core.sources.debounce import debounce
 from aioreactive.core import listen, Listener, Stream
 
 

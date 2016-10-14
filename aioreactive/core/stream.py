@@ -34,7 +34,7 @@ class Stream(AsyncSink, Generic[T]):
         for sink, sub in list(self._sinks.items()):
             await sink.close()
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __alisten__(self, sink: AsyncSink) -> Subscription:
         sub = Subscription()
         self._sinks[sink] = sub
 

@@ -2,8 +2,8 @@ import pytest
 import asyncio
 
 from aioreactive.core import listen
-from aioreactive.core.operators.from_iterable import from_iterable
-from aioreactive.core.operators.merge import merge
+from aioreactive.core.sources.from_iterable import from_iterable
+from aioreactive.core.sources.merge import merge
 from aioreactive.testing import Stream, VirtualTimeEventLoop, Listener
 
 

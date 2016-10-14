@@ -2,8 +2,8 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.operators.from_iterable import from_iterable
-from aioreactive.core.operators.distinct_until_changed import distinct_until_changed
+from aioreactive.core.sources.from_iterable import from_iterable
+from aioreactive.core.sources.distinct_until_changed import distinct_until_changed
 from aioreactive.core import run, listen, Listener, Stream
 
 

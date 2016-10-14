@@ -75,19 +75,33 @@ async def test_producer_complex_pipe():
           | op.flat_map(long_running)
           )
 
-    async for value in ys:
-        result.append(value)
+    async with listen(ys) as stream:
+        async for value in stream:
+            result.append(value)
 
     assert result == [20, 30]
-
 
 @pytest.mark.asyncio
 async def test_producer_async_iteration():
     xs = Producer.from_iterable([1, 2, 3])
     result = []
 
-    async for x in xs:
+    stream = await listen(xs)
+    async for x in stream:
         result.append(x)
+    stream.cancel()
+
+    assert result == [1, 2, 3]
+
+
+@pytest.mark.asyncio
+async def test_producer_async_iteration_aync_with():
+    xs = Producer.from_iterable([1, 2, 3])
+    result = []
+
+    async with listen(xs) as stream:
+        async for x in stream:
+            result.append(x)
 
     assert result == [1, 2, 3]
 
@@ -98,7 +112,14 @@ async def test_producer_async_iteration_inception():
     xs = Producer.from_iterable(Producer.from_iterable([1, 2, 3]))
     result = []
 
-    async for x in xs:
-        result.append(x)
+    async with listen(xs) as stream:
+        async for x in stream:
+            result.append(x)
 
     assert result == [1, 2, 3]
+
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(test_producer_async_iteration_inception())
+    loop.close()

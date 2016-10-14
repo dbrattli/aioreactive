@@ -1,7 +1,7 @@
 import pytest
 from asyncio import Future, CancelledError
 
-from aioreactive.core.operators.take import take
+from aioreactive.core.sources.take import take
 from aioreactive.core import run, listen, Listener, Stream
 from aioreactive.producer import Producer
 

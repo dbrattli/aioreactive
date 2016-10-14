@@ -4,8 +4,8 @@ import logging
 
 from aioreactive.core import run, Listener
 from aioreactive.producer import Producer
-from aioreactive.core.operators.from_iterable import from_iterable
-from aioreactive.core.operators.concat import concat
+from aioreactive.core.sources.from_iterable import from_iterable
+from aioreactive.core.sources.concat import concat
 
 logging.basicConfig(level=logging.DEBUG)
 

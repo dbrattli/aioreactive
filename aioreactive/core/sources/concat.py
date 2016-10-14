@@ -12,7 +12,7 @@ class Concat(AsyncSource):
 
     def __init__(self, *sources) -> None:
         self._sources = iter(sources)
-        self._subscription = None  # type: Subscription
+        self._subscription = None  # type: asyncio.Future
         self._task = None  # type: asyncio.Task
 
     async def worker(self, sink: AsyncSink) -> None:
@@ -26,7 +26,7 @@ class Concat(AsyncSource):
         except Exception as ex:
             await sink.throw(ex)
         else:
-            _sink = await chain(Concat.Sink(), sink)
+            _sink = await chain(Concat.Sink(), sink)  # type: AsyncMultiFuture
             _sink.add_done_callback(recurse)
 
             self._subscription = await chain(source, _sink)

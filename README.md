@@ -122,62 +122,18 @@ aioreactive contains many of the same operators as you know from Rx. Our goal is
 * **unit** -- Converts a value or future to a source stream.
 * **with_latest_from** -- Combines two streams.
 
-# Functional or object-oriented
+# Functional or object-oriented, reactive or interactive
 
-With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. There are currently two different implmentations layered on top of `AsyncSource` called `Producer`and `Observable`. `Producer` is a functional and reactive world, while `Observable` is an object-oriented and reactive world.
+With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. There are currently two different implmentations layered on top of `AsyncSource` called `Producer`and `Observable`. `Producer` is a functional reactive and interactive world, while `Observable` is an object-oriented and reactive world.
+
+# Producer
 
 ## Producers are composed with pipelining
 
-The `Producer` is a functional world built on top of `AsyncSource`. `Producer` is a sub-class of AsyncSource and supports forward pipelining using the `|` (or) operator. The operators will be partially applied with any arguments, so the source stream argument can be applied later.
+The `Producer` is a functional world built on top of `AsyncSource` and `AsyncIterable`. `Producer` can compose operators using forward pipelining using the `|` (or) operator. The operators are partially applied with arguments.
 
 ```python
-async def main():
-    xs = Producer.from_iterable([1, 2, 3])
-    result = []
-
-    async def mapper(value):
-        await asyncio.sleep(0.1)
-        return value * 10
-
-    async def predicate(value):
-        await asyncio.sleep(0.1)
-        return value > 1
-
-    async def long_running(value):
-        return Producer.from_iterable([value])
-
-    ys = xs | filter(predicate) | map(mapper) | flat_map(long_running)
-
-    async for value in ys:
-        result.append(value)
-
-    assert result == [20, 30]
-
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-    loop.close()
-```
-
-Longer pipelines should break lines as for binary operators. Here is a small example using underscore style import:
-
-```python
-from aioreactive.producer import Stream, op_
-
-async def main():
-    stream = Stream()
-
-    xs = (stream
-          | op.map(lambda x: x["term"])
-          | op.filter(lambda text: len(text) > 2)
-          | op.debounce(0.75)
-          | op.distinct_until_changed()
-          | op.map(search_wikipedia)
-          | op.switch_latest()
-          )
-
-    async for value in xs:
-        print(value)
+ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
 ```
 
 ## Producers are async iterables
@@ -192,6 +148,28 @@ async for x in xs:
     result.append(x)
 
 assert result == [1, 2, 3]
+```
+
+Longer pipelines may break lines as for binary operators. Async-with may also be used to control the lifetime of the subscription:
+
+```python
+from aioreactive.producer import Stream, op
+
+async def main():
+    stream = Stream()
+
+    xs = (stream
+          | op.map(lambda x: x["term"])
+          | op.filter(lambda text: len(text) > 2)
+          | op.debounce(0.75)
+          | op.distinct_until_changed()
+          | op.map(search_wikipedia)
+          | op.switch_latest()
+          )
+
+    async with listen(xs) as ys
+        async for value in ys:
+            print(value)
 ```
 
 Producers also supports slicing using the Python slice notation.
@@ -213,9 +191,11 @@ async def test_slice_special():
     assert values == [2, 3, 4]
 ```
 
-## Async Observables and async Observers
+# Observable
 
-An alternative to `Producer` and pipelining is to use async observables and method chaining. Async Observables are almost the same as the Observables we are used to from [RxPY](https://github.com/ReactiveX/RxPY). The difference is that all methods such as `.subscribe()` and observer methods such as `on_next(value)`, `on_error(err)` and `on_completed()` are all async and needs to be awaited.
+## Async observables and async observers
+
+An alternative to `Producer` and pipelining is to use async observables and method chaining as we know from [ReactiveX](http://reactivex.io). Async Observables are almost the same as the Observables we are used to from [RxPY](https://github.com/ReactiveX/RxPY). The difference is that all methods such as `.subscribe()` and observer methods such as `on_next(value)`, `on_error(err)` and `on_completed()` are all async and needs to be awaited.
 
 ```python
 @pytest.mark.asyncio
