@@ -22,9 +22,9 @@ async def test_merge_done():
 
     sink = Listener()
     sub = await listen(ys, sink)
-    await xs.send(from_iterable([10]))
-    await xs.send(from_iterable([20]))
-    await xs.close()
+    await xs.asend(from_iterable([10]))
+    await xs.asend(from_iterable([20]))
+    await xs.aclose()
     await sub
 
     assert sink.values == [
@@ -43,20 +43,20 @@ async def test_merge_streams():
 
     sink = Listener()
     sub = await listen(ys, sink)
-    await xs.send(s1)
-    await xs.send(s2)
+    await xs.asend(s1)
+    await xs.asend(s2)
 
-    await s1.send_at(1, 10)
-    await s1.send_at(2, 20)
-    await s1.send_at(4, 30)
-    await s1.close_at(6)
+    await s1.asend_at(1, 10)
+    await s1.asend_at(2, 20)
+    await s1.asend_at(4, 30)
+    await s1.aclose_at(6)
 
-    await s2.send_at(0, 40)
-    await s2.send_at(3, 50)
-    await s2.send_at(5, 60)
-    await s2.close_at(6)
+    await s2.asend_at(0, 40)
+    await s2.asend_at(3, 50)
+    await s2.asend_at(5, 60)
+    await s2.aclose_at(6)
 
-    await xs.close()
+    await xs.aclose()
     await sub
 
     assert sink.values == [

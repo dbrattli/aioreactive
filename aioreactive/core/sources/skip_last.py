@@ -23,14 +23,14 @@ class SkipLast(AsyncSource):
             self._count = source._count
             self._q = []  # type: List[T]
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             front = None  # type: T
             self._q.append(value)
             if len(self._q) > self._count:
                 front = self._q.pop(0)
 
             if front is not None:
-                await self._sink.send(front)
+                await self._sink.asend(front)
 
 
 def skip_last(count: int, source: AsyncSource) -> AsyncSource:

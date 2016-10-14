@@ -14,23 +14,23 @@ class Unit(AsyncSource):
     async def __alisten__(self, sink) -> Subscription:
         async def worker(value) -> None:
             try:
-                await sink.send(value)
+                await sink.asend(value)
             except Exception as ex:
                 try:
-                    await sink.throw(ex)
+                    await sink.athrow(ex)
                 except Exception as ex:
                     log.error("Unhandled exception: ", ex)
                     return
 
-            await sink.close()
+            await sink.aclose()
 
         async def done() -> None:
             try:
                 value = self._value.result()
             except asyncio.CancelledError:
-                await sink.close()
+                await sink.aclose()
             except Exception as ex:
-                await sink.throw(ex)
+                await sink.athrow(ex)
             else:
                 await worker(value)
 

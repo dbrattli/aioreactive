@@ -31,14 +31,14 @@ class FilterIndexed(AsyncSource):
             self._predicate = source._predicate
             self._index = 0
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             try:
                 should_run = await self._predicate(value, self._index) if self._is_awaitable else self._predicate(value, self._index)
             except Exception as ex:
-                await self._sink.throw(ex)
+                await self._sink.athrow(ex)
             else:
                 if should_run:
-                    await self._sink.send(value)
+                    await self._sink.asend(value)
                 self._index += 1
 
 

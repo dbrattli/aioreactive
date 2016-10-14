@@ -22,9 +22,9 @@ class Skip(AsyncSource):
             super().__init__()
             self._count = source._count
 
-        async def send(self, value: T):
+        async def asend(self, value: T):
             if self._count <= 0:
-                await self._sink.send(value)
+                await self._sink.asend(value)
             else:
                 self._count -= 1
 

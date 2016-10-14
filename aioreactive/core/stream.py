@@ -21,18 +21,18 @@ class Stream(AsyncSink, Generic[T]):
     def __init__(self) -> None:
         self._sinks = {}  # type: Dict[AsyncSink, Subscription]
 
-    async def send(self, value: T) -> None:
+    async def asend(self, value: T) -> None:
         for sink, sub in list(self._sinks.items()):
-            await sink.send(value)
+            await sink.asend(value)
 
-    async def throw(self, ex: Exception) -> None:
+    async def athrow(self, ex: Exception) -> None:
         for sink, sub in list(self._sinks.items()):
-            await sink.throw(ex)
+            await sink.athrow(ex)
             sub.set_exception(ex)
 
-    async def close(self) -> None:
+    async def aclose(self) -> None:
         for sink, sub in list(self._sinks.items()):
-            await sink.close()
+            await sink.aclose()
 
     async def __alisten__(self, sink: AsyncSink) -> Subscription:
         sub = Subscription()

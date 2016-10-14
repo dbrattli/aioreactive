@@ -23,12 +23,12 @@ async def test_distinct_until_changed_different():
     xs = from_iterable([1, 2, 3])
     result = []
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
 
     ys = distinct_until_changed(xs)
 
-    await run(ys, Listener(send))
+    await run(ys, Listener(asend))
     assert result == [1, 2, 3]
 
 
@@ -37,10 +37,10 @@ async def test_distinct_until_changed_changed():
     xs = from_iterable([1, 2, 2, 1, 3, 3, 1, 2, 2])
     result = []
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
 
     ys = distinct_until_changed(xs)
 
-    await run(ys, Listener(send))
+    await run(ys, Listener(asend))
     assert result == [1, 2, 1, 3, 1, 2]

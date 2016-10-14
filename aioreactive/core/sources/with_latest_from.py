@@ -31,16 +31,16 @@ class WithLatestFrom(AsyncSource):
             self._latest = None  # type: T
             self._has_latest = False
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             if not self._has_latest:
                 return
 
             try:
                 result = self._source._mapper(value, self._latest)
             except Exception as error:
-                await self._sink.throw(error)
+                await self._sink.athrow(error)
             else:
-                await self._sink.send(result)
+                await self._sink.asend(result)
 
         @property
         def latest(self) -> T:
@@ -57,10 +57,10 @@ class WithLatestFrom(AsyncSource):
             self._source = source
             self._sink = sink
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             self._sink.latest = value
 
-        async def close(self):
+        async def aclose(self):
             pass
 
 

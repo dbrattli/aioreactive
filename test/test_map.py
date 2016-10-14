@@ -20,7 +20,7 @@ async def test_map_happy():
     xs = from_iterable([1, 2, 3])
     values = []
 
-    async def send(value):
+    async def asend(value):
         values.append(value)
 
     async def mapper(value):
@@ -29,7 +29,7 @@ async def test_map_happy():
 
     ys = map(mapper, xs)
 
-    result = await run(ys, Listener(send))
+    result = await run(ys, Listener(asend))
 
     #assert result == 30
     assert values == [10, 20, 30]
@@ -40,7 +40,7 @@ async def test_map_mapper_sync():
     xs = from_iterable([1, 2, 3])
     values = []
 
-    async def send(value):
+    async def asend(value):
         values.append(value)
 
     def mapper(value):
@@ -48,7 +48,7 @@ async def test_map_mapper_sync():
 
     ys = map(mapper, xs)
 
-    result = await run(ys, Listener(send))
+    result = await run(ys, Listener(asend))
     #assert result == 30
     assert values == [10, 20, 30]
 
@@ -59,10 +59,10 @@ async def test_map_mapper_throws():
     exception = None
     error = Exception("ex")
 
-    async def send(value):
+    async def asend(value):
         pass
 
-    async def throw(ex):
+    async def athrow(ex):
         nonlocal exception
         exception = ex
 
@@ -72,7 +72,7 @@ async def test_map_mapper_throws():
     ys = map(mapper, xs)
 
     try:
-        await run(ys, Listener(send, throw))
+        await run(ys, Listener(asend, athrow))
     except Exception as ex:
         assert ex == error
 
@@ -85,7 +85,7 @@ async def test_map_subscription_cancel():
     result = []
     sub = None
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
         sub.cancel()
         await asyncio.sleep(0)
@@ -94,10 +94,10 @@ async def test_map_subscription_cancel():
         return value*10
 
     ys = map(mapper, xs)
-    with await listen(ys, Listener(send)) as sub:
+    with await listen(ys, Listener(asend)) as sub:
 
-        await xs.send(10)
+        await xs.asend(10)
         await asyncio.sleep(0)
-        await xs.send(20)
+        await xs.asend(20)
 
     assert result == [100]

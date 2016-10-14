@@ -28,14 +28,14 @@ class Filter(AsyncSource):
             self._predicate = source._predicate
             self._is_awaitable = source._is_awaitable
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             try:
                 should_run = await self._predicate(value) if self._is_awaitable else self._predicate(value)
             except Exception as ex:
-                await self._sink.throw(ex)
+                await self._sink.athrow(ex)
             else:
                 if should_run:
-                    await self._sink.send(value)
+                    await self._sink.asend(value)
 
 
 def filter(predicate: Union[Callable[[T], bool], Awaitable[bool]], source: AsyncSource) -> AsyncSource:

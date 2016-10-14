@@ -26,12 +26,12 @@ class DistinctUntilChanged(AsyncSource):
             super().__init__()
             self._latest = Different()
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             if self._latest == value:
                 return
 
             self._latest = value
-            await self._sink.send(value)
+            await self._sink.asend(value)
 
 
 def distinct_until_changed(source: AsyncSource) -> AsyncSource:

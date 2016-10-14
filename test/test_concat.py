@@ -16,13 +16,13 @@ async def test_concat_happy():
     ys = from_iterable(range(5, 10))
     result = []
 
-    async def send(value):
+    async def asend(value):
         print("test_merge_done:send: ", value)
         result.append(value)
 
     zs = concat(ys, xs)
 
-    await run(zs, Listener(send))
+    await run(zs, Listener(asend))
     assert result == list(range(10))
 
 
@@ -32,13 +32,13 @@ async def test_concat_special_add():
     ys = Producer.from_iterable(range(5, 10))
     result = []
 
-    async def send(value):
+    async def asend(value):
         print("test_merge_done:send: ", value)
         result.append(value)
 
     zs = xs + ys
 
-    await run(zs, Listener(send))
+    await run(zs, Listener(asend))
     assert result == list(range(10))
 
 
@@ -48,13 +48,13 @@ async def test_concat_special_iadd():
     ys = Producer.from_iterable(range(5, 10))
     result = []
 
-    async def send(value):
+    async def asend(value):
         print("test_merge_done:send: ", value)
         result.append(value)
 
     xs += ys
 
-    await run(xs, Listener(send))
+    await run(xs, Listener(asend))
     assert result == list(range(10))
 
 if __name__ == '__main__':

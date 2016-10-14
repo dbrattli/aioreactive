@@ -26,9 +26,9 @@ async def test_stream_happy():
 
     sink = Listener()
     await listen(xs, sink)
-    await xs.send_later(1, 10)
-    await xs.send_later(1, 20)
-    await xs.send_later(1, 30)
+    await xs.asend_later(1, 10)
+    await xs.asend_later(1, 20)
+    await xs.asend_later(1, 30)
 
     assert sink.values == [
         (1, 10),
@@ -45,11 +45,11 @@ async def test_stream_throws():
     sink = Listener()
     with pytest.raises(MyException):
         sub = await listen(xs, sink)
-        await xs.send_later(1, 10)
-        await xs.send_later(1, 20)
-        await xs.send_later(1, 30)
-        await xs.throw_later(1, ex)
-        await xs.send_later(1, 40)
+        await xs.asend_later(1, 10)
+        await xs.asend_later(1, 20)
+        await xs.asend_later(1, 30)
+        await xs.athrow_later(1, ex)
+        await xs.asend_later(1, 40)
         await sub
 
     assert sink.values == [
@@ -66,11 +66,11 @@ async def test_stream_send_after_close():
 
     sink = Listener()
     await listen(xs, sink)
-    await xs.send_later(1, 10)
-    await xs.send_later(1, 20)
-    await xs.send_later(1, 30)
-    await xs.close_later(2)
-    await xs.send_later(1, 40)
+    await xs.asend_later(1, 10)
+    await xs.asend_later(1, 20)
+    await xs.asend_later(1, 30)
+    await xs.aclose_later(2)
+    await xs.asend_later(1, 40)
 
     assert sink.values == [
         (1, 10),
@@ -92,9 +92,9 @@ async def test_stream_subscription_cancel():
 
     sink = Listener()
     sub = await listen(ys, sink)
-    await xs.send_later(1, 10)
+    await xs.asend_later(1, 10)
     sub.cancel()
-    await xs.send_later(1, 20)
+    await xs.asend_later(1, 20)
 
     assert sink.values == [(1, 100)]
 
@@ -104,7 +104,7 @@ async def test_stream_subscription_cancel_mapper():
     xs = Stream()
     sub = None
 
-    async def send(value):
+    async def asend(value):
         sub.cancel()
         await asyncio.sleep(0)
 
@@ -113,10 +113,10 @@ async def test_stream_subscription_cancel_mapper():
 
     ys = map(mapper, xs)
 
-    sink = Listener(send)
+    sink = Listener(asend)
     with await listen(ys, sink) as sub:
 
-        await xs.send_later(1, 10)
-        await xs.send_later(1, 20)
+        await xs.asend_later(1, 10)
+        await xs.asend_later(1, 20)
 
     assert sink.values == [(1, 100)]

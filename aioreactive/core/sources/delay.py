@@ -30,19 +30,19 @@ class Delay(AsyncSource):
             self._source = source
             self._tasks = tasks
 
-        async def send(self, value) -> None:
+        async def asend(self, value) -> None:
             async def _delay(value):
                 await asyncio.sleep(self._source._seconds)
-                await self._sink.send(value)
+                await self._sink.asend(value)
                 self._tasks.pop(0)
 
             task = asyncio.ensure_future(_delay(value))
             self._tasks.append(task)
 
-        async def close(self) -> None:
+        async def aclose(self) -> None:
             async def _delay():
                 await asyncio.sleep(self._source._seconds)
-                await self._sink.close()
+                await self._sink.aclose()
                 self._tasks.pop(0)
 
             task = asyncio.ensure_future(_delay())

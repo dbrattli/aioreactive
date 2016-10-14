@@ -27,13 +27,13 @@ class Map(AsyncSource):
             self._is_awaitable = source._is_awaitable
             self._selector = source._mapper
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             try:
                 result = await self._selector(value) if self._is_awaitable else self._selector(value)
             except Exception as err:
-                await self._sink.throw(err)
+                await self._sink.athrow(err)
             else:
-                await self._sink.send(result)
+                await self._sink.asend(result)
 
 
 def map(selector: Awaitable, source: AsyncSource) -> AsyncSource:

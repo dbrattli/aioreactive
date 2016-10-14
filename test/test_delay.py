@@ -24,9 +24,9 @@ async def test_delay_done():
     ys = delay(0.5, xs)
     lis = Listener()
     sub = await listen(ys, lis)
-    await xs.send_later(0, 10)
-    await xs.send_later(1, 20)
-    await xs.close_later(1)
+    await xs.asend_later(0, 10)
+    await xs.asend_later(1, 20)
+    await xs.aclose_later(1)
     await sub
 
     assert lis.values == [
@@ -41,7 +41,7 @@ async def test_delay_cancel_before_done():
     xs = Stream()
     result = []
 
-    async def send(value):
+    async def asend(value):
         print("Send: %d" % value)
         nonlocal result
         result.append(value)
@@ -50,10 +50,10 @@ async def test_delay_cancel_before_done():
         return value * 10
 
     ys = delay(0.3, xs)
-    with await listen(ys, Listener(send)):
-        await xs.send(10)
+    with await listen(ys, Listener(asend)):
+        await xs.asend(10)
         await asyncio.sleep(1.5)
-        await xs.send(20)
+        await xs.asend(20)
 
     await asyncio.sleep(1)
     assert result == [10]
@@ -64,7 +64,7 @@ async def test_delay_throw():
     xs = Stream()
     result = []
 
-    async def send(value):
+    async def asend(value):
         print("Send: %d" % value)
         nonlocal result
         result.append(value)
@@ -73,11 +73,11 @@ async def test_delay_throw():
         return value * 10
 
     ys = delay(0.3, xs)
-    await listen(ys, Listener(send))
-    await xs.send(10)
+    await listen(ys, Listener(asend))
+    await xs.asend(10)
     await asyncio.sleep(1.5)
-    await xs.send(20)
-    await xs.throw(Exception('ex'))
+    await xs.asend(20)
+    await xs.athrow(Exception('ex'))
     await asyncio.sleep(1)
 
     assert result == [10]

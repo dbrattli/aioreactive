@@ -35,22 +35,22 @@ class AsyncSource(metaclass=ABCMeta):
         return NotImplemented
 ```
 
-AsyncSink is modelled after the so called [consumer interface](http://effbot.org/zone/consumer.htm) and the enhanced generator interface in [PEP-342](https://www.python.org/dev/peps/pep-0342/). It is the dual of the AsyncItertor `__anext__()` method, and provides three async methods `send()`, that is the opposite of `next()`, `throw()` that is the opposite of an `raise Exception()` and `close()` that is the opposite of `raise StopIteration`:
+AsyncSink is modelled after the so called [consumer interface](http://effbot.org/zone/consumer.htm), the enhanced generator interface in [PEP-342](https://www.python.org/dev/peps/pep-0342/) and async generators in [PEP-525](https://www.python.org/dev/peps/pep-0525/). It is the dual of the AsyncItertor `__anext__()` method, and provides three async methods `send()`, that is the opposite of `next()`, `throw()` that is the opposite of an `raise Exception()` and `close()` that is the opposite of `raise StopIteration`:
 
 ```python
 from abc import ABCMeta, abstractmethod
 
 class AsyncSink(AsyncSource):
     @abstractmethod
-    async def send(self, value):
+    async def asend(self, value):
         return NotImplemented
 
     @abstractmethod
-    async def throw(self, error):
+    async def athrow(self, error):
         return NotImplemented
 
     @abstractmethod
-    async def close(self):
+    async def aclose(self):
         return NotImplemented
 
     async def __alisten__(self, sink):
@@ -64,10 +64,10 @@ Sinks are also sources. This is similar to how Iterators are also Iterables in P
 A sink need to listen to sources in order to receive values sent by the source. The `listen()` function is used to attach a sink to a source. It returns a future when the subscription has been sucessfully set up. `Listener` is an anonymous sink that constructs an `AsyncSink` from plain functions, so you don't have to implement a new sink every time you need.
 
 ```python
-async def send(value):
+async def asend(value):
     print(value)
 
-fut = await listen(ys, Listener(send))
+fut = await listen(ys, Listener(asend))
 ```
 
 To unsubscribe you simply just `cancel()` the future:
@@ -79,13 +79,13 @@ fut.cancel()
 A subscription may also be awaited. It will resolve when the subscription closes either normally or with an error. The value returned will be the last value received through the subscription. If no value has been received when the subscription closes, then await will throw `CancelledError`.
 
 ```
-value = await (await listen(ys, Listener(send)))
+value = await (await listen(ys, Listener(asend)))
 ```
 
 The double await can be replaced by the better looking function `run()` which basically does the same thing:
 
 ```
-value = await run(ys, Listener(send))
+value = await run(ys, Listener(asend))
 ```
 
 ## Streams
@@ -97,7 +97,7 @@ xs = Stream()
 
 sink = Listener()
 await listen(xs, sink)
-await xs.send(42)
+await xs.asend(42)
 ```
 
 You can listen to streams the same was as with any other source.
@@ -181,12 +181,12 @@ async def test_slice_special():
     xs = Producer.from_iterable([1, 2, 3, 4, 5])
     values = []
 
-    async def send(value):
+    async def asend(value):
         values.append(value)
 
     ys = xs[1:-1]
 
-    result = await run(ys, Listener(send))
+    result = await run(ys, Listener(asend))
 
     assert result == 4
     assert values == [2, 3, 4]

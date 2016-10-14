@@ -20,7 +20,7 @@ async def test_flap_map_done():
     xs = Stream()
     result = []
 
-    async def send(value):
+    async def asend(value):
         nonlocal result
         result.append(value)
 
@@ -28,9 +28,9 @@ async def test_flap_map_done():
         return from_iterable([value])
 
     ys = flat_map(mapper, xs)
-    sub = await listen(ys, Listener(send))
-    await xs.send(10)
-    await xs.send(20)
+    sub = await listen(ys, Listener(asend))
+    await xs.asend(10)
+    await xs.asend(20)
 
     await asyncio.sleep(0.6)
 

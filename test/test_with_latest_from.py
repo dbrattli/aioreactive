@@ -22,7 +22,7 @@ async def test_withlatestfrom_never_never():
     ys = never()
     result = []
 
-    async def send(value):
+    async def asend(value):
         print("test_withlatestfrom_done:send: ", value)
         nonlocal result
         asyncio.sleep(0.1)
@@ -30,7 +30,7 @@ async def test_withlatestfrom_never_never():
 
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
-    await listen(zs, Listener(send))
+    await listen(zs, Listener(asend))
     await asyncio.sleep(1)
 
     assert result == []
@@ -42,7 +42,7 @@ async def test_withlatestfrom_never_empty():
     ys = never()
     result = []
 
-    async def send(value):
+    async def asend(value):
         print("test_withlatestfrom_done:send: ", value)
         nonlocal result
         asyncio.sleep(0.1)
@@ -51,7 +51,7 @@ async def test_withlatestfrom_never_empty():
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
     try:
-        await run(zs, Listener(send))
+        await run(zs, Listener(asend))
     except asyncio.CancelledError:
         pass
     assert result == []
@@ -63,7 +63,7 @@ async def test_withlatestfrom_done():
     ys = Stream()
     result = []
 
-    async def send(value):
+    async def asend(value):
         print("test_withlatestfrom_done:send: ", value)
         nonlocal result
         asyncio.sleep(0.1)
@@ -71,11 +71,11 @@ async def test_withlatestfrom_done():
 
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
-    sub = await listen(zs, Listener(send))
-    await xs.send(1)
-    await ys.send(2)
-    await xs.send(3)
-    await xs.close()
+    sub = await listen(zs, Listener(asend))
+    await xs.asend(1)
+    await ys.asend(2)
+    await xs.asend(3)
+    await xs.aclose()
     await sub
 
     assert result == [5]

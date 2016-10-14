@@ -25,13 +25,13 @@ class Take(AsyncSource):
             super().__init__()
             self._count = source._count
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             if self._count > 0:
                 self._count -= 1
-                await self._sink.send(value)
+                await self._sink.asend(value)
 
                 if not self._count:
-                    await self._sink.close()
+                    await self._sink.aclose()
 
 
 def take(count: int, source: AsyncSource) -> AsyncSource:

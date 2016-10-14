@@ -11,10 +11,10 @@ async def test_from_iterable_happy():
     xs = from_iterable([1, 2, 3])
     result = []
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
 
-    await run(xs, Listener(send))
+    await run(xs, Listener(asend))
     assert result == [1, 2, 3]
 
 
@@ -23,11 +23,11 @@ async def test_from_iterable_sink_throws():
     xs = from_iterable([1, 2, 3])
     result = []
 
-    def send(value):
+    def asend(value):
         result.append(value)
         raise Exception()
 
-    sub = await listen(xs, Listener(send))
+    sub = await listen(xs, Listener(asend))
 
     try:
         await sub
@@ -42,12 +42,12 @@ async def test_from_iterable_close():
     result = []
     sub = None
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
         sub.cancel()
         await asyncio.sleep(0)
 
-    sub = await listen(xs, Listener(send))
+    sub = await listen(xs, Listener(asend))
 
     try:
         await sub

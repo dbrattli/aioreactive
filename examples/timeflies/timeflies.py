@@ -15,7 +15,7 @@ async def main(loop):
     frame = Frame(root, width=600, height=600)
 
     async def move(event):
-        await mousemoves.send(event)
+        await mousemoves.asend(event)
 
     def call_move(event):
         asyncio.ensure_future(move(event))
@@ -27,11 +27,11 @@ async def main(loop):
     async def handle_label(i, label):
         label.config(dict(borderwidth=0, padx=0, pady=0))
 
-        def send(ev):
+        def asend(ev):
             label.place(x=ev.x + i * 12 + 15, y=ev.y)
 
         xs = mousemoves | op.delay(i / 10.0)
-        await listen(xs, Listener(send))
+        await listen(xs, Listener(asend))
 
     for i, label in enumerate(labels):
         await handle_label(i, label)

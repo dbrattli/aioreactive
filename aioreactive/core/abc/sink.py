@@ -29,15 +29,15 @@ class AsyncSink(AsyncSource):
     __slots__ = ()
 
     @abstractmethod
-    async def send(self, value):
+    async def asend(self, value):
         return NotImplemented
 
     @abstractmethod
-    async def throw(self, error):
+    async def athrow(self, error):
         return NotImplemented
 
     @abstractmethod
-    async def close(self):
+    async def aclose(self):
         return NotImplemented
 
     async def __alisten__(self, sink):

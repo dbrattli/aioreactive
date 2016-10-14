@@ -17,67 +17,67 @@ class Stream(core.Stream):
         super().__init__()
         self._loop = asyncio.get_event_loop()
 
-    async def send_at(self, when: float, value: T):
-        send = super().send
+    async def asend_at(self, when: float, value: T):
+        asend = super().asend
 
         async def task():
-            await send(value)
+            await asend(value)
 
         def callback():
             asyncio.ensure_future(task())
 
         self._loop.call_at(when, callback)
 
-    async def send_later(self, delay: float, value: T):
+    async def asend_later(self, delay: float, value: T):
         await asyncio.sleep(delay)
-        await self.send(value)
+        await self.asend(value)
 
-    async def send_later_scheduled(self, delay: float, value: T):
-        send = super().send
+    async def asend_later_scheduled(self, delay: float, value: T):
+        asend = super().asend
 
         async def task():
             await asyncio.sleep(delay)
-            await send(value)
+            await asend(value)
         asyncio.ensure_future(task())
 
-    async def throw_at(self, when: float, err: Exception):
+    async def athrow_at(self, when: float, err: Exception):
         async def task():
-            await self.throw(err)
+            await self.athrow(err)
 
         def callback():
             asyncio.ensure_future(task())
 
         self._loop.call_at(when, callback)
 
-    async def throw_later(self, delay: float, err: Exception):
+    async def athrow_later(self, delay: float, err: Exception):
         await asyncio.sleep(delay)
-        await self.throw(err)
+        await self.athrow(err)
 
-    async def throw_later_scheduled(self, delay: float, err: Exception):
-        throw = super().throw
+    async def athrow_later_scheduled(self, delay: float, err: Exception):
+        athrow = super().athrow
 
         async def task():
             await asyncio.sleep(delay)
-            await throw(err)
+            await athrow(err)
         asyncio.ensure_future(task())
 
-    async def close_at(self, when: float):
+    async def aclose_at(self, when: float):
         async def task():
-            await self.close()
+            await self.aclose()
 
         def callback():
             asyncio.ensure_future(task())
 
         self._loop.call_at(when, callback)
 
-    async def close_later(self, delay: float):
+    async def aclose_later(self, delay: float):
         await asyncio.sleep(delay)
-        await self.close()
+        await self.aclose()
 
     async def close_later_scheduled(self, delay: float):
-        close = super().close
+        aclose = super().aclose
 
         async def task():
             await asyncio.sleep(delay)
-            await close()
+            await aclose()
         asyncio.ensure_future(task())

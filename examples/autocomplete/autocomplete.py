@@ -56,19 +56,19 @@ async def websocket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    async def send(value):
+    async def asend(value):
         ws.send_str(value)
 
-    async def throw(ex):
+    async def athrow(ex):
         print("throw()")
         print(ex)
 
-    await listen(xs, Listener(send, throw))
+    await listen(xs, Listener(asend, athrow))
 
     async for msg in ws:
         if msg.type == aiohttp.WSMsgType.TEXT:
             obj = json.loads(msg.data)
-            await stream.send(obj)
+            await stream.asend(obj)
 
         elif msg.type == aiohttp.WSMsgType.ERROR:
             print('ws connection closed with exception %s' % ws.exception())

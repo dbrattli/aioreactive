@@ -24,10 +24,10 @@ async def test_producer_map():
 
     ys = xs | op.map(mapper)
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
 
-    await run(ys, Listener(send))
+    await run(ys, Listener(asend))
     assert result == [10, 20, 30]
 
 
@@ -46,10 +46,10 @@ async def test_producer_simple_pipe():
 
     ys = xs | op.filter(predicate) | op.map(mapper)
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
 
-    await run(ys, Listener(send))
+    await run(ys, Listener(asend))
     assert result == [20, 30]
 
 

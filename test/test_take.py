@@ -11,13 +11,13 @@ async def test_take_zero():
     xs = Producer.from_iterable([1, 2, 3, 4, 5])
     values = []
 
-    async def send(value):
+    async def asend(value):
         values.append(value)
 
     ys = take(0, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, Listener(send))
+        await run(ys, Listener(asend))
 
     assert values == []
 
@@ -27,13 +27,13 @@ async def test_take_empty():
     xs = Producer.empty()
     values = []
 
-    async def send(value):
+    async def asend(value):
         values.append(value)
 
     ys = take(42, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, Listener(send))
+        await run(ys, Listener(asend))
 
     assert values == []
 
@@ -43,7 +43,7 @@ async def test_take_negative():
     xs = Producer.from_iterable([1, 2, 3, 4, 5])
     values = []
 
-    async def send(value):
+    async def asend(value):
         values.append(value)
 
     with pytest.raises(ValueError):
@@ -55,12 +55,12 @@ async def test_take_normal():
     xs = Producer.from_iterable([1, 2, 3, 4, 5])
     values = []
 
-    async def send(value):
+    async def asend(value):
         values.append(value)
 
     ys = take(2, xs)
 
-    result = await run(ys, Listener(send))
+    result = await run(ys, Listener(asend))
 
     assert result == 2
     assert values == [1, 2]

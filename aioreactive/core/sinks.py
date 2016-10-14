@@ -20,15 +20,15 @@ class AsyncIteratorSink(AsyncIterator, AsyncSink):
         self._future = Future()
         self._wait = Future()
 
-    async def send(self, value) -> None:
+    async def asend(self, value) -> None:
         self._future.set_result(value)
         await self._pong()
 
-    async def throw(self, err) -> None:
+    async def athrow(self, err) -> None:
         self._future.set_exception(err)
         await self._pong()
 
-    async def close(self) -> None:
+    async def aclose(self) -> None:
         self._future.set_exception(StopAsyncIteration)
         await self._pong()
 
@@ -59,11 +59,11 @@ class Listener(AsyncSink):
         self._throw = throw
         self._close = close
 
-    async def send(self, value: T):
+    async def asend(self, value: T):
         await self._send(value)
 
-    async def throw(self, ex: Exception):
+    async def athrow(self, ex: Exception):
         await self._throw(ex)
 
-    async def close(self):
+    async def aclose(self):
         await self._close()

@@ -53,13 +53,13 @@ class SinkObserver(AsyncSink):
     def __init__(self):
         self._obv = NoopObserver()
 
-    async def send(self, value):
+    async def asend(self, value):
         await self._obv.on_next(value)
 
-    async def throw(self, ex: Exception):
+    async def athrow(self, ex: Exception):
         await self._obv.on_error(ex)
 
-    async def close(self):
+    async def aclose(self):
         await self._obv.on_completed()
 
     async def __alisten__(self, obv: Observer) -> AsyncSink:

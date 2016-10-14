@@ -33,19 +33,19 @@ class Merge(AsyncSource):
                 task.cancel()
             self._tasks = {}
 
-        async def send(self, stream: AsyncSource) -> None:
+        async def asend(self, stream: AsyncSource) -> None:
             log.debug("Merge._:send(%s)" % stream)
             inner_sink = await chain(Merge.Sink.Inner(self), self._sink)  # type: AsyncSink
             inner_sub = await chain(stream, inner_sink)
             self._tasks[inner_sink] = asyncio.ensure_future(inner_sub)
 
-        async def close(self) -> None:
+        async def aclose(self) -> None:
             log.debug("Merge._:close()")
             if len(self._tasks):
                 self._is_stopped = True
                 return
 
-            await self._sink.close()
+            await self._sink.aclose()
 
         class Inner(AsyncMultiFuture):
 
@@ -54,7 +54,7 @@ class Merge(AsyncSource):
                 self._parent = sink
                 self._tasks = sink._tasks
 
-            async def close(self) -> None:
+            async def aclose(self) -> None:
                 log.debug("Merge._.__:close()")
                 if self in self._tasks:
                     del self._tasks[self]
@@ -63,7 +63,7 @@ class Merge(AsyncSource):
                 if len(self._tasks) or not self._parent._is_stopped:
                     return
 
-                await self._sink.close()
+                await self._sink.aclose()
 
 
 def merge(source: AsyncSource) -> AsyncSource:

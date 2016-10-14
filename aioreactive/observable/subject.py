@@ -10,10 +10,10 @@ class Subject(Observable, Observer):
         super().__init__(self._stream)
 
     async def on_next(self, value):
-        await self._stream.send(value)
+        await self._stream.asend(value)
 
     async def on_error(self, err):
-        await self._stream.throw(err)
+        await self._stream.athrow(err)
 
     async def on_completed(self):
-        await self._stream.close()
+        await self._stream.aclose()

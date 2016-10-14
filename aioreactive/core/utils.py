@@ -12,13 +12,13 @@ async def anoop(*args, **kw):
 
 
 class NoopSink(typing.AsyncSink):
-    async def send(self, value):
+    async def asend(self, value):
         pass
 
-    async def throw(self, ex):
+    async def athrow(self, ex):
         pass
 
-    async def close(self):
+    async def aclose(self):
         pass
 
 

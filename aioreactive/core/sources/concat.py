@@ -22,9 +22,9 @@ class Concat(AsyncSource):
         try:
             source = next(self._sources)
         except StopIteration:
-            await sink.close()
+            await sink.aclose()
         except Exception as ex:
-            await sink.throw(ex)
+            await sink.athrow(ex)
         else:
             _sink = await chain(Concat.Sink(), sink)  # type: AsyncMultiFuture
             _sink.add_done_callback(recurse)
@@ -44,7 +44,7 @@ class Concat(AsyncSource):
 
     class Sink(AsyncMultiFuture):
 
-        async def close(self) -> None:
+        async def aclose(self) -> None:
             log.debug("Concat._:close()")
             self.cancel()
 

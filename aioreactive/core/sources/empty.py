@@ -6,7 +6,7 @@ from aioreactive.core import AsyncSink, AsyncSource
 class Empty(AsyncSource):
     async def __alisten__(self, sink: AsyncSink):
         async def worker():
-            await sink.close()
+            await sink.aclose()
 
         return asyncio.ensure_future(worker())
 

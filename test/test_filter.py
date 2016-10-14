@@ -22,7 +22,7 @@ async def test_filter_happy():
     xs = from_iterable([1, 2, 3])
     result = []
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
 
     async def predicate(value):
@@ -30,7 +30,7 @@ async def test_filter_happy():
         return value > 1
 
     ys = filter(predicate, xs)
-    await run(ys, Listener(send))
+    await run(ys, Listener(asend))
 
     assert result == [2, 3]
 
@@ -41,7 +41,7 @@ async def test_filter_predicate_throws():
     err = MyException("err")
     result = []
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
 
     async def predicate(value):
@@ -51,6 +51,6 @@ async def test_filter_predicate_throws():
     ys = filter(predicate, xs)
 
     with pytest.raises(MyException):
-        await run(ys, Listener(send))
+        await run(ys, Listener(asend))
 
     assert result == []

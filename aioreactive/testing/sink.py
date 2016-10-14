@@ -32,19 +32,19 @@ class Listener(AsyncSink):
         self._throw = throw
         self._close = close
 
-    async def send(self, value: T):
+    async def asend(self, value: T):
         time = self._loop.time()
         self._values.append((time, value))
 
         await self._send(value)
 
-    async def throw(self, err: Exception):
+    async def athrow(self, err: Exception):
         time = self._loop.time()
         self._values.append((time, err))
 
         await self._throw(err)
 
-    async def close(self):
+    async def aclose(self):
         time = self._loop.time()
         self._values.append((time,))
 

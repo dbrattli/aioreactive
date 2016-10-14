@@ -37,7 +37,7 @@ class Debounce(AsyncSource):
             self._has_value = False
             self._index = 0
 
-        async def send(self, value: T) -> None:
+        async def asend(self, value: T) -> None:
             self._has_value = True
             self._value = value
             self._index += 1
@@ -47,17 +47,17 @@ class Debounce(AsyncSource):
                 if self._has_value and current == self._index:
                     self._has_value = False
                     value = self._value
-                    await self._sink.send(value)
+                    await self._sink.asend(value)
                 self._tasks.pop(0)
 
             task = asyncio.ensure_future(_debouncer(value, self._index))
             self._tasks.append(task)
 
-        async def close(self) -> None:
+        async def aclose(self) -> None:
             if self._has_value:
                 self._has_value = False
-                await self._sink.send(self._value)
-            await self._sink.close()
+                await self._sink.asend(self._value)
+            await self._sink.aclose()
 
 
 def debounce(seconds: float, source: AsyncSource) -> AsyncSource:

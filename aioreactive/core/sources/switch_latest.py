@@ -32,7 +32,7 @@ class SwitchLatest(AsyncSource):
                 self._task = None
             self.latest = 0
 
-        async def send(self, stream) -> None:
+        async def asend(self, stream) -> None:
             log.debug("SwitchLatest._:send(%s)" % stream)
             inner_sink = await chain(SwitchLatest.Sink.Inner(self), self._sink)
 
@@ -40,30 +40,30 @@ class SwitchLatest(AsyncSource):
             inner_sub = chain(stream, inner_sink)
             self._task = asyncio.ensure_future(inner_sub)
 
-        async def close(self) -> None:
+        async def aclose(self) -> None:
             log.debug("SwitchLatest._:close()")
 
             if not self._latest:
                 self._is_stopped = True
-                await self._sink.close()
+                await self._sink.aclose()
 
         class Inner(AsyncMultiFuture):
 
             def __init__(self, sink) -> None:
                 self._parent = sink
 
-            async def send(self, value) -> None:
+            async def asend(self, value) -> None:
                 if self._parent._latest == id(self):
-                    await self._sink.send(value)
+                    await self._sink.asend(value)
 
-            async def throw(self, error: Exception):
+            async def athrow(self, error: Exception):
                 if self._parent._latest == id(self):
-                    await self._sink.throw(error)
+                    await self._sink.athrow(error)
 
-            async def close(self) -> None:
+            async def aclose(self) -> None:
                 if self._parent._latest == id(self):
                     if self._parent._is_stopped:
-                        await self._sink.close()
+                        await self._sink.aclose()
 
 
 def switch_latest(source: AsyncSource) -> AsyncSource:

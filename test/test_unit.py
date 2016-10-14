@@ -19,10 +19,10 @@ async def test_unit_happy():
     xs = unit(42)
     result = []
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
 
-    await run(xs, Listener(send))
+    await run(xs, Listener(asend))
     assert result == [42]
 
 
@@ -32,11 +32,11 @@ async def test_unit_sink_throws():
     xs = unit(42)
     result = []
 
-    def send(value):
+    def asend(value):
         result.append(value)
         raise error
 
-    sub = await listen(xs, Listener(send))
+    sub = await listen(xs, Listener(asend))
 
     try:
         await sub
@@ -52,12 +52,12 @@ async def test_unit_close():
     result = []
     sub = None
 
-    async def send(value):
+    async def asend(value):
         result.append(value)
         sub.cancel()
         await asyncio.sleep(0)
 
-    sub = await listen(xs, Listener(send))
+    sub = await listen(xs, Listener(asend))
 
     try:
         await sub

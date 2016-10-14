@@ -29,23 +29,23 @@ class AsyncMultiFuture(Future, AsyncSink, Generic[T]):
 
         self._sink = noopsink  # type: AsyncSink
 
-    async def send(self, value: T):
+    async def asend(self, value: T):
         if self.done():
             return
 
         self._last_result = value
         self._has_result = True
 
-        await self._sink.send(value)
+        await self._sink.asend(value)
 
-    async def throw(self, ex: Exception) -> None:
+    async def athrow(self, ex: Exception) -> None:
         if self.done():
             return
 
         self.set_exception(ex)
-        await self._sink.throw(ex)
+        await self._sink.athrow(ex)
 
-    async def close(self) -> None:
+    async def aclose(self) -> None:
         if self.done():
             return
 
@@ -54,7 +54,7 @@ class AsyncMultiFuture(Future, AsyncSink, Generic[T]):
         else:
             self.cancel()
 
-        await self._sink.close()
+        await self._sink.aclose()
 
     async def __alisten__(self, sink: AsyncSink) -> "AsyncMultiFuture":
         self._sink = sink

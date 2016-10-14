@@ -24,22 +24,22 @@ class FromIterable(AsyncSource):
         async def async_worker() -> None:
             async for value in self.iterable:
                 try:
-                    await sink.send(value)
+                    await sink.asend(value)
                 except Exception as ex:
-                    await sink.throw(ex)
+                    await sink.athrow(ex)
                     return
 
-            await sink.close()
+            await sink.aclose()
 
         async def sync_worker() -> None:
             for value in self.iterable:
                 try:
-                    await sink.send(value)
+                    await sink.asend(value)
                 except Exception as ex:
-                    await sink.throw(ex)
+                    await sink.athrow(ex)
                     return
 
-            await sink.close()
+            await sink.aclose()
 
         if hasattr(self.iterable, "__aiter__"):
             worker = async_worker
@@ -50,7 +50,7 @@ class FromIterable(AsyncSource):
             task = asyncio.ensure_future(worker())
         except Exception as ex:
             log.debug("FromIterable:worker(), Exception: %s" % ex)
-            await sink.throw(ex)
+            await sink.athrow(ex)
         return sub
 
 
