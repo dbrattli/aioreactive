@@ -57,7 +57,7 @@ class AsyncSink(AsyncSource):
         return self
 ```
 
-Sinks are also sources. This is similar to how Iterators are also Iterables in Python. This enables sinks to be chained together. While chaining sinks is not normally done when using aioreactive, it it extensively use by the various sources and operators when you listen to them.
+Sinks are also sources. This is similar to how Iterators are also Iterables in Python. This enables sinks to be chained together. While chaining sinks is not normally done when using aioreactive, it's used extensively by the various sources and operators when you listen to them.
 
 ## Listening to sources
 
@@ -70,7 +70,7 @@ async def send(value):
 fut = await listen(ys, Listener(send))
 ```
 
-To unsubscribe you simply just cancel the future:
+To unsubscribe you simply just `cancel()` the future:
 
 ```python
 fut.cancel()
@@ -124,7 +124,7 @@ aioreactive contains many of the same operators as you know from Rx. Our goal is
 
 # Functional or object-oriented, reactive or interactive
 
-With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. There are currently two different implmentations layered on top of `AsyncSource` called `Producer`and `Observable`. `Producer` is a functional reactive and interactive world, while `Observable` is an object-oriented and reactive world.
+With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. There are currently two different implementations layered on top of `AsyncSource` called `Producer`and `Observable`. `Producer` is a functional reactive and interactive world, while `Observable` is an object-oriented and reactive world.
 
 # Producer
 
@@ -136,21 +136,22 @@ The `Producer` is a functional world built on top of `AsyncSource` and `AsyncIte
 ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
 ```
 
-## Producers are async iterables
+## Subscriptions are async iterables
 
-We don't need to `listen()` to Producers as we do with async sources. Producers implements `AsyncIterable` so instead we iterate them asynchronously. They effectively transform us from a async push model to an async pull model. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator` before continuing. This enable us to use language features such as async-for.
+Subscriptions implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from a async push model to an async pull model. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator`. This enable us to use language features such as async-for. The for-loop may be wrapped with async-with may to control the lifetime of the subscription:
 
 ```
 xs = Producer.from_iterable([1, 2, 3])
 result = []
 
-async for x in xs:
-    result.append(x)
+async with listen(xs) as ys:
+    async for x in ys:
+        result.append(x)
 
 assert result == [1, 2, 3]
 ```
 
-Longer pipelines may break lines as for binary operators. Async-with may also be used to control the lifetime of the subscription:
+Longer pipelines may break lines as for binary operators:
 
 ```python
 from aioreactive.producer import Stream, op
@@ -282,7 +283,7 @@ async def test_delay_done():
 
 # Will aioreactive replace RxPY?
 
-No, aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive however lives within the `AsyncObservable` dimension.
+Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive however lives within the `AsyncObservable` dimension.
 
 Rx and RxPY has hundreds of different query operators, and we have no plans to implementing all of those for aioreactive.
 

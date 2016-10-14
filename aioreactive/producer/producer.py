@@ -95,9 +95,18 @@ class Producer(AsyncSource, AsyncIterable):
     async def __aiter__(self) -> AsyncIterator:
         """Iterate source stream asynchronously.
 
-        Transforms the async source to an async iterable. The source
-        will await for the iterator to pick up the value before
-        continuing to avoid queuing values.
+        Creates and async iterable that may be used to iterate the async
+        source. There's no way of controlling the lifetime of the
+        subscription so iterating this way should only be used for cold
+        sources. To control the lifetime of the underlying subscription
+        one should instead first use listen() and instead iterate the
+        subscription:
+
+        async with listen(xs) as stream:
+            async for x in stream:
+                result.append(x)
+
+        Returns async iterator.
         """
 
         sink = AsyncIteratorSink()

@@ -76,11 +76,11 @@ class Subscription(AsyncMultiFuture, AsyncIterator):
         if callable(cancel):
             self.add_done_callback(cancel)
 
-    def __enter__(self):
+    def __enter__(self) -> 'Subscription':
         """Context management protocol."""
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type, value, traceback) -> None:
         """Context management protocol."""
         if not self.done():
             self.cancel()
