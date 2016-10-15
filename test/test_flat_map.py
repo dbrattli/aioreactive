@@ -5,7 +5,7 @@ from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.flat_map import flat_map
 from aioreactive.core.sources.unit import unit
-from aioreactive.core import listen, Listener, Stream
+from aioreactive.core import listen, Listener, Stream, run
 
 
 @pytest.yield_fixture()
@@ -37,40 +37,55 @@ async def test_flap_map_done():
     assert result == [10, 20]
 
 
-# def test_flat_map_monad(self):
-#         m = unit(42)
-#         f = lambda x: unit(x*10)
+@pytest.mark.asyncio
+async def test_flat_map_monad():
+    m = unit(42)
 
-#         assert [async for m.bind(f) == unit(420)
+    a = await run(flat_map(lambda x: unit(x * 10), m))
+    b = await run(unit(420))
+    assert a == b
 
-#     def test_identity_monad_law_left_identity(self):
-#         # return x >>= f is the same thing as f x
 
-#         f = lambda x: unit(x+100000)
-#         x = 3
+@pytest.mark.asyncio
+async def test_flat_map_monad_law_left_identity():
+    # return x >>= f is the same thing as f x
 
-#         self.assertEqual(
-#             unit(x).bind(f),
-#             f(x)
-#         )
+    x = 3
 
-#     def test_identity_monad_law_right_identity(self):
-#         # m >>= return is no different than just m.
+    def f(x):
+        return unit(x + 100000)
 
-#         m = unit("move on up")
+    a = await run(flat_map(f, unit(x)))
+    b = await run(f(x))
 
-#         self.assertEqual(
-#             m.bind(unit),
-#             m
-#         )
+    assert a == b
 
-#     def test_identity_monad_law_associativity(self):
-#         # (m >>= f) >>= g is just like doing m >>= (\x -> f x >>= g)
-#         m = unit(42)
-#         f = lambda x: unit(x+1000)
-#         g = lambda y: unit(y*42)
 
-#         self.assertEqual(
-#             m.bind(f).bind(g),
-#             m.bind(lambda x: f(x).bind(g))
-#         )
+@pytest.mark.asyncio
+async def test_flat_map_monad_law_right_identity():
+    # m >>= return is no different than just m.
+
+    m = unit("move on up")
+
+    a = await run(flat_map(unit, m))
+    b = await run(m)
+
+    assert a == b
+
+
+@pytest.mark.asyncio
+async def test_flat_map_monad_law_associativity():
+    # (m >>= f) >>= g is just like doing m >>= (\x -> f x >>= g)
+
+    m = unit(42)
+
+    def f(x):
+        return unit(x + 1000)
+
+    def g(y):
+        return unit(y * 333)
+
+    a = await run(flat_map(g, flat_map(f, m)))
+    b = await run(flat_map(lambda x: flat_map(g, f(x)), m))
+
+    assert a == b
