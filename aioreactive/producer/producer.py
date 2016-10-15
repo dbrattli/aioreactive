@@ -76,7 +76,8 @@ class Producer(AsyncSource, AsyncIterable):
 
         Example:
         zs = xs + ys
-        Returns self.concat(other)"""
+
+        Returns concat(other, self)"""
 
         from aioreactive.core.sources.concat import concat
         return concat(other, self)
@@ -87,7 +88,7 @@ class Producer(AsyncSource, AsyncIterable):
         Example:
         xs += ys
 
-        Returns self.concat(self, other)"""
+        Returns self.concat(other, self)"""
 
         from aioreactive.core.sources.concat import concat
         return concat(other, self)

@@ -35,7 +35,7 @@ class AsyncSource(metaclass=ABCMeta):
         return NotImplemented
 ```
 
-AsyncSink is modelled after the so called [consumer interface](http://effbot.org/zone/consumer.htm), the enhanced generator interface in [PEP-342](https://www.python.org/dev/peps/pep-0342/) and async generators in [PEP-525](https://www.python.org/dev/peps/pep-0525/). It is the dual of the AsyncItertor `__anext__()` method, and provides three async methods `send()`, that is the opposite of `next()`, `throw()` that is the opposite of an `raise Exception()` and `close()` that is the opposite of `raise StopIteration`:
+AsyncSink is modelled after the so called [consumer interface](http://effbot.org/zone/consumer.htm), the enhanced generator interface in [PEP-342](https://www.python.org/dev/peps/pep-0342/) and async generators in [PEP-525](https://www.python.org/dev/peps/pep-0525/). It is the dual of the AsyncIterator `__anext__()` method, and provides three async methods `asend()`, that is the opposite of `__anext__()`, `athrow()` that is the opposite of an `raise Exception()` and `aclose()` that is the opposite of `raise StopAsyncIteration`:
 
 ```python
 from abc import ABCMeta, abstractmethod
@@ -138,7 +138,9 @@ ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
 
 ## Subscriptions are async iterables
 
-Subscriptions implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from a async push model to an async pull model. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator`. This enable us to use language features such as async-for. The for-loop may be wrapped with async-with may to control the lifetime of the subscription:
+Subscriptions implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from an async push model to an async pull model. This enable us to use language features such as async-for. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator`.  This effectively applies so-called "back-pressure" up the stream as the source will await the iterator to pick up the next item.
+
+The for-loop may be wrapped with async-with may to control the lifetime of the subscription:
 
 ```
 xs = Producer.from_iterable([1, 2, 3])
@@ -269,9 +271,9 @@ async def test_delay_done():
     ys = delay(0.5, xs)
     lis = Listener()  # Test listener
     sub = await listen(ys, lis)
-    await xs.send_later(0, 10)
-    await xs.send_later(1, 20)
-    await xs.close_later(1)
+    await xs.asend_later(0, 10)
+    await xs.asend_later(1, 20)
+    await xs.aclose_later(1)
     await sub
 
     assert lis.values == [
@@ -280,6 +282,10 @@ async def test_delay_done():
         (2.5,)
     ]
 ```
+
+# Why not just use AsyncIterable for everything?
+
+`AsyncIterable` and `AsyncSource` are closely related (in fact they are duals). `AsyncIterable` is an async iterable (pull) world, while `AsyncSource` is an async reactive (push) based world. There are many operations such as `map()` and `filter()` that may be simpler to implement using `AsyncIterable`, but once we start to include time, then `AsyncSource` really starts to shine. Operators such as `delay()` makes much more sense for `AsyncSource` than for `AsyncIterable`.
 
 # Will aioreactive replace RxPY?
 

@@ -21,7 +21,8 @@ def debounce(seconds: float) -> Callable[[AsyncSource], Producer]:
     Keyword arguments:
     seconds -- Duration of the throttle period for each value
 
-    Returns a partially applied function that takes a source."""
+    Returns a partially applied function that takes a source stream to
+    debounce."""
 
     from aioreactive.core.sources.debounce import debounce
     return partial(debounce, seconds)

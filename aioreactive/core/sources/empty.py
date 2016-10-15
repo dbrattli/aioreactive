@@ -12,10 +12,10 @@ class Empty(AsyncSource):
 
 
 def empty() -> AsyncSource:
-    """Returns an empty source sequence.using
+    """Returns an empty source sequence.
 
     1 - xs = empty()
 
-    Returns a source sequence with no elements."""
+    Returns a source sequence with no items."""
 
     return Empty()
