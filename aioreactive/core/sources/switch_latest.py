@@ -37,7 +37,7 @@ class SwitchLatest(AsyncSource):
             inner_sink = await chain(SwitchLatest.Sink.Inner(self), self._sink)
 
             self._latest = id(inner_sink)
-            inner_sub = chain(stream, inner_sink)
+            inner_sub = await chain(stream, inner_sink)
             self._task = asyncio.ensure_future(inner_sub)
 
         async def aclose(self) -> None:
