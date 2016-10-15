@@ -22,7 +22,7 @@ class AsyncMultiFuture(Future, AsyncSink, Generic[T]):
     """
 
     def __init__(self) -> None:
-        Future.__init__(self)
+        super().__init__()
 
         self._has_result = False
         self._last_result = None  # type: T
@@ -61,7 +61,7 @@ class AsyncMultiFuture(Future, AsyncSink, Generic[T]):
         return self
 
 
-class Subscription(AsyncMultiFuture, AsyncIterator):
+class Subscription(AsyncMultiFuture, AsyncIterable):
     """Subscription class.
 
     A subscription is an async multi value future with a context
