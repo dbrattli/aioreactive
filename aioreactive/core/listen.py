@@ -1,5 +1,5 @@
 import asyncio
-from typing import TypeVar
+from typing import TypeVar, Optional
 from collections.abc import Awaitable
 import logging
 
@@ -51,10 +51,10 @@ class SubscriptionFactory(Awaitable):
         return self.create().__await__()
 
 
-def listen(source: AsyncSource, sink: AsyncSink=None) -> SubscriptionFactory:
+def listen(source: AsyncSource, sink: Optional[AsyncSink]=None) -> SubscriptionFactory:
     return SubscriptionFactory(source, sink)
 
 
-async def run(source: AsyncSource, asink: AsyncSink, timeout: int=2) -> T:
+async def run(source: AsyncSource[T], asink: Optional[AsyncSink]=None, timeout: int=2) -> T:
     """Awaits until subscription closes and returns the final value"""
     return await asyncio.wait_for(await listen(source, asink), timeout)
