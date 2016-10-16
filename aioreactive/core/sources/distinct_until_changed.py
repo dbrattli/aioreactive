@@ -7,6 +7,7 @@ T = TypeVar('T')
 
 
 class Different:
+
     def __cmp__(self, other):
         return False
 

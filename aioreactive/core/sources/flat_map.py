@@ -1,6 +1,6 @@
 from typing import Union, Awaitable, Callable, TypeVar
 
-from aioreactive.core import AsyncSource
+from aioreactive.core.typing import AsyncSource
 
 from .switch_latest import switch_latest
 from .merge import merge

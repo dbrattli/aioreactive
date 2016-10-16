@@ -1,3 +1,4 @@
+from typing import Generic, TypeVar, Iterable
 import asyncio
 import logging
 
@@ -5,9 +6,10 @@ from aioreactive.core import AsyncSink, AsyncSource
 from aioreactive.core import Subscription
 
 log = logging.getLogger(__name__)
+T = TypeVar('T')
 
 
-class FromIterable(AsyncSource):
+class FromIterable(AsyncSource, Generic[T]):
 
     def __init__(self, iterable) -> None:
         self.iterable = iterable
@@ -54,7 +56,7 @@ class FromIterable(AsyncSource):
         return sub
 
 
-def from_iterable(iterable) -> AsyncSource:
+def from_iterable(iterable: Iterable[T]) -> AsyncSource[T]:
     """Convert an (async) iterable to a source stream.
 
     1 - xs = from_iterable([1,2,3])

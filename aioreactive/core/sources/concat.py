@@ -1,3 +1,4 @@
+from typing import Tuple
 import asyncio
 import logging
 
@@ -10,7 +11,7 @@ log = logging.getLogger(__name__)
 
 class Concat(AsyncSource):
 
-    def __init__(self, *sources) -> None:
+    def __init__(self, *sources: Tuple[AsyncSource]) -> None:
         self._sources = iter(sources)
         self._subscription = None  # type: asyncio.Future
         self._task = None  # type: asyncio.Task

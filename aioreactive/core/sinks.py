@@ -17,8 +17,8 @@ class AsyncIteratorSink(AsyncIterator, AsyncSink):
 
     def __init__(self) -> None:
         super().__init__()
-        self._future = Future()
-        self._wait = Future()
+        self._future = Future()  # type: Future
+        self._wait = Future()  # type: Future
 
     async def asend(self, value) -> None:
         self._future.set_result(value)
@@ -53,11 +53,11 @@ class Listener(AsyncSink):
     optional and anonymous functions, send, throw and close. Used for
     listening to asource."""
 
-    def __init__(self, send=anoop, throw=anoop, close=anoop) -> None:
+    def __init__(self, asend=anoop, athrow=anoop, aclose=anoop) -> None:
         super().__init__()
-        self._send = send
-        self._throw = throw
-        self._close = close
+        self._send = asend
+        self._throw = athrow
+        self._close = aclose
 
     async def asend(self, value: T):
         await self._send(value)
