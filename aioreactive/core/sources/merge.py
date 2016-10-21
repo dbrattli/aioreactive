@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Dict, TypeVar
 
-from aioreactive.core.futures import AsyncMultiFuture, Subscription
+from aioreactive.core import AsyncSingleStream
 from aioreactive.core import AsyncSource, AsyncSink, chain
 
 T = TypeVar('T')
@@ -14,13 +14,14 @@ class Merge(AsyncSource):
     def __init__(self, source: AsyncSource) -> None:
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
-        _sink = await chain(Merge.Sink(self), sink)
-        sub = await chain(self._source, _sink)
-        sub.add_done_callback(_sink._done)
-        return sub
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
+        log.debug("Merge:__astart__()")
+        _sink = await chain(Merge.Stream(self), sink)
+        stream = await chain(self._source, _sink)
+        stream.add_done_callback(_sink._done)
+        return stream
 
-    class Sink(AsyncMultiFuture):
+    class Stream(AsyncSingleStream):
 
         def __init__(self, source: AsyncSource) -> None:
             super().__init__()
@@ -34,20 +35,20 @@ class Merge(AsyncSource):
             self._tasks = {}
 
         async def asend(self, stream: AsyncSource) -> None:
-            log.debug("Merge._:send(%s)" % stream)
-            inner_sink = await chain(Merge.Sink.Inner(self), self._sink)  # type: AsyncSink
+            log.debug("Merge.Stream:send(%s)" % stream)
+            inner_sink = await chain(Merge.Stream.InnerStream(self), self._sink)  # type: AsyncSink
             inner_sub = await chain(stream, inner_sink)
             self._tasks[inner_sink] = asyncio.ensure_future(inner_sub)
 
         async def aclose(self) -> None:
-            log.debug("Merge._:close()")
+            log.debug("Merge.Stream:aclose()")
             if len(self._tasks):
                 self._is_stopped = True
                 return
 
             await self._sink.aclose()
 
-        class Inner(AsyncMultiFuture):
+        class InnerStream(AsyncSingleStream):
 
             def __init__(self, sink) -> None:
                 super().__init__()
@@ -55,11 +56,11 @@ class Merge(AsyncSource):
                 self._tasks = sink._tasks
 
             async def aclose(self) -> None:
-                log.debug("Merge._.__:close()")
+                log.debug("Merge.Stream.InnerStream:aclose()")
                 if self in self._tasks:
                     del self._tasks[self]
 
-                # Close when no more inner subscriptions
+                # Close when no more inner streams
                 if len(self._tasks) or not self._parent._is_stopped:
                     return
 

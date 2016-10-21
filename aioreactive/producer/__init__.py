@@ -1,3 +1,3 @@
-from .producer import Producer, Stream
+from .producer import Producer, AsyncStream
 
 from . import operators as op

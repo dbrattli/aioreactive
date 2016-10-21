@@ -1,9 +1,13 @@
 import pytest
+import logging
 from asyncio import Future, CancelledError
 
 from aioreactive.core.sources.take import take
-from aioreactive.core import run, listen, Listener, Stream
+from aioreactive.core import run, start, FuncSink
 from aioreactive.producer import Producer
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio
@@ -17,7 +21,7 @@ async def test_take_zero():
     ys = take(0, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, Listener(asend))
+        await run(ys, FuncSink(asend))
 
     assert values == []
 
@@ -33,7 +37,7 @@ async def test_take_empty():
     ys = take(42, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, Listener(asend))
+        await run(ys, FuncSink(asend))
 
     assert values == []
 
@@ -60,7 +64,7 @@ async def test_take_normal():
 
     ys = take(2, xs)
 
-    result = await run(ys, Listener(asend))
+    result = await run(ys, FuncSink(asend))
 
     assert result == 2
     assert values == [1, 2]

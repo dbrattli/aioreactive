@@ -6,7 +6,7 @@ from aioreactive import core
 T = TypeVar('T')
 
 
-class Stream(core.Stream):
+class AsyncStream(core.AsyncStream):
     """A stream for testing.
 
     Provides methods for sending, throwing, and closing at a later

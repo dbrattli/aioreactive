@@ -1,9 +1,9 @@
-from aioreactive.core import AsyncSink, AsyncSource, Subscription
+from aioreactive.core import AsyncSink, AsyncSource, AsyncSingleStream
 
 
 class Never(AsyncSource):
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
-        return Subscription()
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
+        return AsyncSingleStream()
 
 
 def never() -> AsyncSource:

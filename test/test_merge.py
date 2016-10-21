@@ -1,10 +1,13 @@
 import pytest
 import asyncio
+import logging
 
-from aioreactive.core import listen
+from aioreactive.core import start
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.merge import merge
-from aioreactive.testing import Stream, VirtualTimeEventLoop, Listener
+from aioreactive.testing import AsyncStream, VirtualTimeEventLoop, FuncSink
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.yield_fixture()
@@ -16,12 +19,12 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_merge_done():
-    xs = Stream()
+    xs = AsyncStream()
 
     ys = merge(xs)
 
-    sink = Listener()
-    sub = await listen(ys, sink)
+    sink = FuncSink()
+    sub = await start(ys, sink)
     await xs.asend(from_iterable([10]))
     await xs.asend(from_iterable([20]))
     await xs.aclose()
@@ -35,14 +38,14 @@ async def test_merge_done():
 
 @pytest.mark.asyncio
 async def test_merge_streams():
-    xs = Stream()
-    s1 = Stream()
-    s2 = Stream()
+    xs = AsyncStream()
+    s1 = AsyncStream()
+    s2 = AsyncStream()
 
     ys = merge(xs)
 
-    sink = Listener()
-    sub = await listen(ys, sink)
+    sink = FuncSink()
+    sub = await start(ys, sink)
     await xs.asend(s1)
     await xs.asend(s2)
 

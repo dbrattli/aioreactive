@@ -1,10 +1,14 @@
 import pytest
 import asyncio
+import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.unit import unit
-from aioreactive.core import run, listen
-from aioreactive.testing import Listener
+from aioreactive.core import run, start
+from aioreactive.testing import FuncSink
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.yield_fixture()
@@ -22,7 +26,7 @@ async def test_unit_happy():
     async def asend(value):
         result.append(value)
 
-    await run(xs, Listener(asend))
+    await run(xs, FuncSink(asend))
     assert result == [42]
 
 
@@ -36,12 +40,11 @@ async def test_unit_sink_throws():
         result.append(value)
         raise error
 
-    sub = await listen(xs, Listener(asend))
+    sub = await start(xs, FuncSink(asend))
 
     try:
         await sub
     except Exception as ex:
-        print("Error -----")
         assert ex == error
     assert result == [42]
 
@@ -57,7 +60,7 @@ async def test_unit_close():
         sub.cancel()
         await asyncio.sleep(0)
 
-    sub = await listen(xs, Listener(asend))
+    sub = await start(xs, FuncSink(asend))
 
     try:
         await sub
@@ -73,7 +76,7 @@ async def test_unit_happy_resolved_future():
     xs = unit(fut)
     fut.set_result(42)
 
-    lis = Listener()
+    lis = FuncSink()
     await run(xs, lis)
     assert lis.values == [(0, 42), (0, )]
 
@@ -83,8 +86,8 @@ async def test_unit_happy_future_resolve():
     fut = asyncio.Future()
     xs = unit(fut)
 
-    lis = Listener()
-    sub = await listen(xs, lis)
+    lis = FuncSink()
+    sub = await start(xs, lis)
     fut.set_result(42)
     await sub
     assert lis.values == [(0, 42), (0, )]
@@ -96,8 +99,8 @@ async def test_unit_future_exception():
     ex = Exception("ex")
     xs = unit(fut)
 
-    lis = Listener()
-    sub = await listen(xs, lis)
+    lis = FuncSink()
+    sub = await start(xs, lis)
     fut.set_exception(ex)
     with pytest.raises(Exception):
         await sub
@@ -109,8 +112,8 @@ async def test_unit_future_cancel():
     fut = asyncio.Future()
     xs = unit(fut)
 
-    lis = Listener()
-    sub = await listen(xs, lis)
+    lis = FuncSink()
+    sub = await start(xs, lis)
     fut.cancel()
     with pytest.raises(asyncio.CancelledError):
         await sub

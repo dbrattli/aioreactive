@@ -1,15 +1,12 @@
-from asyncio import Future
-from collections.abc import AsyncIterator, AsyncIterable
 from typing import Callable, TypeVar
 
-from aioreactive.core import AsyncSource, AsyncSink, Subscription
-from aioreactive.core import AsyncIteratorSink, listen
+from aioreactive.core import AsyncSource, AsyncSink, AsyncSingleStream
 from aioreactive import core
 
 T = TypeVar('T')
 
 
-class Producer(AsyncSource, AsyncIterable):
+class Producer(AsyncSource):
     """An AsyncSource that works with Python special methods.
 
     This class supports python special methods including pipe-forward
@@ -20,8 +17,8 @@ class Producer(AsyncSource, AsyncIterable):
     def __init__(self, source: AsyncSource = None):
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
-        return await self._source.__alisten__(sink)
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
+        return await self._source.__astart__(sink)
 
     def __or__(self, other: Callable[[AsyncSource], "Producer"]) -> "Producer":
         """Forward pipe.
@@ -93,27 +90,6 @@ class Producer(AsyncSource, AsyncIterable):
         from aioreactive.core.sources.concat import concat
         return concat(other, self)
 
-    async def __aiter__(self) -> AsyncIterator:
-        """Iterate source stream asynchronously.
-
-        Creates and async iterable that may be used to iterate the async
-        source. There's no way of controlling the lifetime of the
-        subscription so iterating this way should only be used for cold
-        sources. To control the lifetime of the underlying subscription
-        one should instead first use listen() and instead iterate the
-        subscription:
-
-        async with listen(xs) as stream:
-            async for x in stream:
-                result.append(x)
-
-        Returns async iterator.
-        """
-
-        sink = AsyncIteratorSink()
-        await listen(self, sink)
-        return sink
-
     @classmethod
     def from_iterable(cls, iter) -> "Producer":
         from aioreactive.core.sources.from_iterable import from_iterable
@@ -135,5 +111,5 @@ class Producer(AsyncSource, AsyncIterable):
         return Producer(never())
 
 
-class Stream(core.Stream, Producer):
+class AsyncStream(core.AsyncStream, Producer):
     pass

@@ -1,10 +1,12 @@
 from abc import ABCMeta, abstractmethod
 
 from aioreactive.core import AsyncSink
-from aioreactive.core.utils import noop
+from aioreactive.core.utils import anoop
 
 
 class Observer(metaclass=ABCMeta):
+    """An abstract async observer."""
+
     @abstractmethod
     async def on_next(self, value):
         return NotImplemented
@@ -19,12 +21,12 @@ class Observer(metaclass=ABCMeta):
 
 
 class AnonymousObserver(Observer):
-    """A chained AsyncSink."""
+    """An anonymous async observer."""
 
     def __init__(self, on_next=None, on_error=None, on_completed=None):
-        self._on_next = on_next or noop
-        self._on_error = on_error or noop
-        self._on_completed = on_completed or noop
+        self._on_next = on_next or anoop
+        self._on_error = on_error or anoop
+        self._on_completed = on_completed or anoop
 
     async def on_next(self, value):
         await self._on_next(value)
@@ -48,7 +50,7 @@ class NoopObserver(Observer):
 
 
 class SinkObserver(AsyncSink):
-    """A chained Observer."""
+    """A async sink that forwards to an async observer."""
 
     def __init__(self):
         self._obv = NoopObserver()
@@ -62,6 +64,6 @@ class SinkObserver(AsyncSink):
     async def aclose(self):
         await self._obv.on_completed()
 
-    async def __alisten__(self, obv: Observer) -> AsyncSink:
+    async def __astart__(self, obv: Observer) -> AsyncSink:
         self._obv = obv
         return self

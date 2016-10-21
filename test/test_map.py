@@ -5,7 +5,7 @@ from asyncio import Future
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.map import map
-from aioreactive.core import run, listen, Listener, Stream
+from aioreactive.core import run, start, FuncSink, AsyncStream
 
 
 @pytest.yield_fixture()
@@ -29,9 +29,9 @@ async def test_map_happy():
 
     ys = map(mapper, xs)
 
-    result = await run(ys, Listener(asend))
+    result = await run(ys, FuncSink(asend))
 
-    #assert result == 30
+    assert result == 30
     assert values == [10, 20, 30]
 
 
@@ -44,12 +44,12 @@ async def test_map_mapper_sync():
         values.append(value)
 
     def mapper(value):
-        return value*10
+        return value * 10
 
     ys = map(mapper, xs)
 
-    result = await run(ys, Listener(asend))
-    #assert result == 30
+    result = await run(ys, FuncSink(asend))
+    assert result == 30
     assert values == [10, 20, 30]
 
 
@@ -72,7 +72,7 @@ async def test_map_mapper_throws():
     ys = map(mapper, xs)
 
     try:
-        await run(ys, Listener(asend, athrow))
+        await run(ys, FuncSink(asend, athrow))
     except Exception as ex:
         assert ex == error
 
@@ -81,7 +81,7 @@ async def test_map_mapper_throws():
 
 @pytest.mark.asyncio
 async def test_map_subscription_cancel():
-    xs = Stream()
+    xs = AsyncStream()
     result = []
     sub = None
 
@@ -91,10 +91,10 @@ async def test_map_subscription_cancel():
         await asyncio.sleep(0)
 
     async def mapper(value):
-        return value*10
+        return value * 10
 
     ys = map(mapper, xs)
-    with await listen(ys, Listener(asend)) as sub:
+    async with start(ys, FuncSink(asend)) as sub:
 
         await xs.asend(10)
         await asyncio.sleep(0)

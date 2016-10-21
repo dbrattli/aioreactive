@@ -1,7 +1,6 @@
 from typing import TypeVar, List
 
-from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.core import Subscription, AsyncSink, AsyncSource, chain
+from aioreactive.core import AsyncSingleStream, AsyncSink, AsyncSource, chain
 
 T = TypeVar('T')
 
@@ -12,10 +11,10 @@ class TakeLast(AsyncSource):
         self._source = source
         self._count = count
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
         return await chain(self._source, TakeLast._(sink, self))
 
-    class _(AsyncMultiFuture):
+    class _(AsyncSingleStream):
 
         def __init__(self, sink: AsyncSink, source: "TakeLast") -> None:
             super().__init__()

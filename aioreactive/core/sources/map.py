@@ -1,9 +1,8 @@
 from asyncio import iscoroutinefunction
 from typing import Callable, Awaitable, Union, TypeVar, Generic
 
-from aioreactive.core.futures import AsyncMultiFuture
 from aioreactive.core import AsyncSink, AsyncSource
-from aioreactive.core import Subscription, chain
+from aioreactive.core import AsyncSingleStream, chain
 
 T = TypeVar('T')
 
@@ -15,11 +14,11 @@ class Map(AsyncSource):
         self._mapper = mapper
         self._is_awaitable = iscoroutinefunction(mapper)
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
-        _sink = await chain(Map.Sink(self), sink)  # type: AsyncSink
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
+        _sink = await chain(Map.Stream(self), sink)  # type: AsyncSingleStream
         return await chain(self._source, _sink)
 
-    class Sink(AsyncMultiFuture, Generic[T]):
+    class Stream(AsyncSingleStream, Generic[T]):
 
         def __init__(self, source: "Map") -> None:
             super().__init__()

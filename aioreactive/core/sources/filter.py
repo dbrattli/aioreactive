@@ -2,7 +2,7 @@ from asyncio import iscoroutinefunction
 from typing import Awaitable, Union, Callable, TypeVar
 
 from aioreactive.core import AsyncSource, AsyncSink, chain
-from aioreactive.core.futures import AsyncMultiFuture
+from aioreactive.core import AsyncSingleStream
 
 T = TypeVar('T')
 
@@ -17,11 +17,11 @@ class Filter(AsyncSource):
         self._predicate = predicate
         self._is_awaitable = iscoroutinefunction(predicate)
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __astart__(self, sink: AsyncSink):
         _sink = await chain(Filter.Sink(self), sink)
         return await chain(self._source, _sink)
 
-    class Sink(AsyncMultiFuture):
+    class Sink(AsyncSingleStream):
 
         def __init__(self, source: "Filter") -> None:
             super().__init__()

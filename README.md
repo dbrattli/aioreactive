@@ -24,14 +24,14 @@ At the core, aioreactive is small low level asynchronous library for reactive pr
 
 Aioreactive is built around the asynchronous duals of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncSource and AsyncSink.
 
-AsyncSource is the dual or opposite of AsyncIterable and provides a single setter method called `__alisten__()` that is the dual of the `__aiter__()` getter method:
+AsyncSource is the dual or opposite of AsyncIterable and provides a single setter method called `__astart__()` that is the dual of the `__aiter__()` getter method:
 
 ```python
 from abc import ABCMeta, abstractmethod
 
 class AsyncSource(metaclass=ABCMeta):
     @abstractmethod
-    async def __alisten__(self, sink):
+    async def __astart__(self, sink):
         return NotImplemented
 ```
 
@@ -53,54 +53,81 @@ class AsyncSink(AsyncSource):
     async def aclose(self):
         return NotImplemented
 
-    async def __alisten__(self, sink):
+    async def __astart__(self, sink):
         return self
 ```
 
 Sinks are also sources. This is similar to how Iterators are also Iterables in Python. This enables sinks to be chained together. While chaining sinks is not normally done when using aioreactive, it's used extensively by the various sources and operators when you listen to them.
 
-## Listening to sources
+## Streaming sources
 
-A sink need to listen to sources in order to receive values sent by the source. The `listen()` function is used to attach a sink to a source. It returns a future when the subscription has been sucessfully set up. `Listener` is an anonymous sink that constructs an `AsyncSink` from plain functions, so you don't have to implement a new sink every time you need.
+A source starts streaming values by starting the source using `start()`. The `start()` function takes a source and an optional sink, and returns a stream. If a sink is given it will receive all values that are passed through the source. So the `start()` function is used to attach a sink to the source, and start streaming values though source. The stream returned by `start()` is is cancellable, iterable, and chainable. We will learn more about this later. Here is an example:
 
 ```python
 async def asend(value):
     print(value)
 
-fut = await listen(ys, Listener(asend))
+stream = await start(source, FuncSink(asend))
 ```
 
-To unsubscribe you simply just `cancel()` the future:
+`FuncSink` is an anonymous sink that constructs an `AsyncSink` out of plain async functions, so you don't have to implement a new named sink every time you need one.
+
+To stop streaming you need to call the `cancel()` method.
 
 ```python
-fut.cancel()
+stream.cancel()
 ```
 
-A subscription may also be awaited. It will resolve when the subscription closes either normally or with an error. The value returned will be the last value received through the subscription. If no value has been received when the subscription closes, then await will throw `CancelledError`.
+A stream may also be awaited. The await will resolve when the stream closes, either normally or with an error. The value returned will be the last value received through the stream. If no value has been received when the stream closes, then await will throw `CancelledError`.
 
-```
-value = await (await listen(ys, Listener(asend)))
+```pyhton
+value = await (await start(source, FuncSink(asend)))
 ```
 
 The double await can be replaced by the better looking function `run()` which basically does the same thing:
 
-```
-value = await run(ys, Listener(asend))
+```python
+value = await run(ys, FuncSink(asend))
 ```
 
-## Streams
-
-A stream if both a sink and a source. Since every sink is also a source, it's better described as as sink that supports multiple listeners. Thus you may both send values, and listen to it at the same time.
+Even more interresting, streams are also async iterable so you can flip around from `AsyncSource` to an `AsyncIterable` and use `async-for` to consume the stream.
 
 ```python
-xs = Stream()
-
-sink = Listener()
-await listen(xs, sink)
-await xs.asend(42)
+async with start(source) as stream:
+    async for x in stream:
+        print(x)
 ```
 
-You can listen to streams the same was as with any other source.
+## Streams are async iterables
+
+Streams implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from an async push model to an async pull model. This enable us to use language features such as async-for. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the stream as the source will await the iterator to pick up the next item.
+
+The for-loop may be wrapped with async-with may to control the lifetime of the subscription:
+
+```python
+xs = from_iterable([1, 2, 3])
+result = []
+
+async with start(xs) as ys:
+    async for x in ys:
+        result.append(x)
+
+assert result == [1, 2, 3]
+```
+
+## Async streams
+
+A stream is really just a sink and a source. Since every sink is also a source, it's better described as as a sink that may be chained together with other sinks or streams. Thus you may both send values, and listen to it at the same time.
+
+You can create streams directly from `AsyncStream`, and you can start streams the same was as with any other source:
+
+```python
+xs = AsyncStream()
+
+sink = FuncSink()
+await start(xs, sink)
+await xs.asend(42)
+```
 
 ## Functions and operators
 
@@ -136,27 +163,10 @@ The `Producer` is a functional world built on top of `AsyncSource` and `AsyncIte
 ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
 ```
 
-## Subscriptions are async iterables
-
-Subscriptions implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from an async push model to an async pull model. This enable us to use language features such as async-for. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator`.  This effectively applies so-called "back-pressure" up the stream as the source will await the iterator to pick up the next item.
-
-The for-loop may be wrapped with async-with may to control the lifetime of the subscription:
-
-```
-xs = Producer.from_iterable([1, 2, 3])
-result = []
-
-async with listen(xs) as ys:
-    async for x in ys:
-        result.append(x)
-
-assert result == [1, 2, 3]
-```
-
 Longer pipelines may break lines as for binary operators:
 
 ```python
-from aioreactive.producer import Stream, op
+from aioreactive.producer import start, op
 
 async def main():
     stream = Stream()
@@ -170,7 +180,7 @@ async def main():
           | op.switch_latest()
           )
 
-    async with listen(xs) as ys
+    async with start(xs) as ys
         async for value in ys:
             print(value)
 ```
@@ -188,7 +198,7 @@ async def test_slice_special():
 
     ys = xs[1:-1]
 
-    result = await run(ys, Listener(asend))
+    result = await run(ys, FuncSink(asend))
 
     assert result == 4
     assert values == [2, 3, 4]
@@ -252,7 +262,7 @@ async def test_call_later():
     assert result == [2, 3, 1]
 ```
 
-The `aioreactive.testing` module provides a test `Stream` that may delay sending values, and test `Listener` that records all events. These two classes helps you with testing in virtual time.
+The `aioreactive.testing` module provides a test `Stream` that may delay sending values, and test `FuncSink` that records all events. These two classes helps you with testing in virtual time.
 
 ```python
 @pytest.yield_fixture()
@@ -269,8 +279,8 @@ async def test_delay_done():
         return value * 10
 
     ys = delay(0.5, xs)
-    lis = Listener()  # Test listener
-    sub = await listen(ys, lis)
+    lis = FuncSink()  # Test FuncSink
+    sub = await start(ys, lis)
     await xs.asend_later(0, 10)
     await xs.asend_later(1, 20)
     await xs.aclose_later(1)
@@ -283,9 +293,11 @@ async def test_delay_done():
     ]
 ```
 
-# Why not just use AsyncIterable for everything?
+# Why not use AsyncIterable for everything?
 
 `AsyncIterable` and `AsyncSource` are closely related (in fact they are duals). `AsyncIterable` is an async iterable (pull) world, while `AsyncSource` is an async reactive (push) based world. There are many operations such as `map()` and `filter()` that may be simpler to implement using `AsyncIterable`, but once we start to include time, then `AsyncSource` really starts to shine. Operators such as `delay()` makes much more sense for `AsyncSource` than for `AsyncIterable`.
+
+However, aioreactive makes it easy for you to flip-around to async iterable just before you need to comsume the stream, thus giving you the best of both worlds.
 
 # Will aioreactive replace RxPY?
 
@@ -301,6 +313,7 @@ Aioreactive was inspired by:
 
 * [Is it really Pythonic to continue using linq operators instead of plain old functions?](https://github.com/ReactiveX/RxPY/issues/94)
 * [Reactive Extensions (Rx)](http://reactivex.io) and [RxPY](https://github.com/ReactiveX/RxPY).
+* [Dart Streams](https://www.dartlang.org/tutorials/language/streams)
 * [Underscore.js](http://underscorejs.org).
 * [itertools](https://docs.python.org/3/library/itertools.html) and [functools](https://docs.python.org/3/library/functools.html).
 * [dbrattli/OSlash](https://github.com/dbrattli/OSlash)

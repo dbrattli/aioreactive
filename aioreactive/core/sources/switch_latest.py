@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from aioreactive.core.futures import AsyncMultiFuture
+from aioreactive.core import AsyncSingleStream
 from aioreactive.core import AsyncSource, AsyncSink, chain
 
 log = logging.getLogger(__name__)
@@ -12,15 +12,16 @@ class SwitchLatest(AsyncSource):
     def __init__(self, source: AsyncSource) -> None:
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __astart__(self, sink: AsyncSink):
         _sink = await chain(SwitchLatest.Sink(self), sink)
         sub = await chain(self._source, _sink)
         sub.add_done_callback(_sink.done)
         return sub
 
-    class Sink(AsyncMultiFuture):
+    class Sink(AsyncSingleStream):
 
         def __init__(self, source: AsyncSource) -> None:
+            super().__init__()
             self._task = None  # type: asyncio.Task
             self._is_stopped = False
             self._latest = 0
@@ -47,9 +48,10 @@ class SwitchLatest(AsyncSource):
                 self._is_stopped = True
                 await self._sink.aclose()
 
-        class Inner(AsyncMultiFuture):
+        class Inner(AsyncSingleStream):
 
             def __init__(self, sink) -> None:
+                super().__init__()
                 self._parent = sink
 
             async def asend(self, value) -> None:

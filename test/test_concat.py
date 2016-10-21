@@ -2,12 +2,13 @@ import pytest
 import asyncio
 import logging
 
-from aioreactive.core import run, Listener
+from aioreactive.core import run, FuncSink
 from aioreactive.producer import Producer
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.concat import concat
 
 logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 @pytest.mark.asyncio
@@ -17,12 +18,12 @@ async def test_concat_happy():
     result = []
 
     async def asend(value):
-        print("test_merge_done:send: ", value)
+        log.debug("test_merge_done:send: ", value)
         result.append(value)
 
     zs = concat(ys, xs)
 
-    await run(zs, Listener(asend))
+    await run(zs, FuncSink(asend))
     assert result == list(range(10))
 
 
@@ -33,12 +34,12 @@ async def test_concat_special_add():
     result = []
 
     async def asend(value):
-        print("test_merge_done:send: ", value)
+        log.debug("test_merge_done:send: ", value)
         result.append(value)
 
     zs = xs + ys
 
-    await run(zs, Listener(asend))
+    await run(zs, FuncSink(asend))
     assert result == list(range(10))
 
 
@@ -49,12 +50,12 @@ async def test_concat_special_iadd():
     result = []
 
     async def asend(value):
-        print("test_merge_done:send: ", value)
+        log.debug("test_merge_done:asend(%s)", value)
         result.append(value)
 
     xs += ys
 
-    await run(xs, Listener(asend))
+    await run(xs, FuncSink(asend))
     assert result == list(range(10))
 
 if __name__ == '__main__':

@@ -18,8 +18,8 @@ import jinja2
 import aiohttp_jinja2
 from aiohttp import web
 
-from aioreactive.core import Listener, listen
-from aioreactive.producer import Producer, Stream
+from aioreactive.core import FuncSink, start
+from aioreactive.producer import Producer, AsyncStream
 from aioreactive.producer import op
 
 
@@ -41,7 +41,7 @@ async def search_wikipedia(term):
 async def websocket_handler(request):
     print("WebSocket opened")
 
-    stream = Stream()
+    stream = AsyncStream()
 
     # Line break before binary operator is more readable. Disable W503
     xs = (stream
@@ -60,10 +60,9 @@ async def websocket_handler(request):
         ws.send_str(value)
 
     async def athrow(ex):
-        print("throw()")
         print(ex)
 
-    await listen(xs, Listener(asend, athrow))
+    await start(xs, FuncSink(asend, athrow))
 
     async for msg in ws:
         if msg.type == aiohttp.WSMsgType.TEXT:

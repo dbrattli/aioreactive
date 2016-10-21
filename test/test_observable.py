@@ -1,9 +1,13 @@
 import pytest
 import asyncio
+import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.observable import Observable, AnonymousObserver
-from aioreactive.core import Stream
+from aioreactive.core import AsyncStream
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.yield_fixture()

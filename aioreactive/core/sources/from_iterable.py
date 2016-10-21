@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.core import AsyncSink, AsyncSource
-from aioreactive.core import Subscription
+from aioreactive.core import AsyncSingleStream
 
 log = logging.getLogger(__name__)
 T = TypeVar('T')
@@ -14,13 +14,13 @@ class FromIterable(AsyncSource, Generic[T]):
     def __init__(self, iterable) -> None:
         self.iterable = iterable
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
         task = None
 
         def cancel(sub):
             task.cancel()
 
-        sub = Subscription()
+        sub = AsyncSingleStream()
         sub.add_done_callback(cancel)
 
         async def async_worker() -> None:
@@ -34,8 +34,10 @@ class FromIterable(AsyncSource, Generic[T]):
             await sink.aclose()
 
         async def sync_worker() -> None:
+            log.debug("sync_worker()")
             for value in self.iterable:
                 try:
+                    log.debug("sync_worker. asending: %s" % value)
                     await sink.asend(value)
                 except Exception as ex:
                     await sink.athrow(ex)
@@ -45,8 +47,10 @@ class FromIterable(AsyncSource, Generic[T]):
 
         if hasattr(self.iterable, "__aiter__"):
             worker = async_worker
-        else:
+        elif hasattr(self.iterable, "__iter__"):
             worker = sync_worker
+        else:
+            raise ValueError("Argument must be iterable or async iterable.")
 
         try:
             task = asyncio.ensure_future(worker())

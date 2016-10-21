@@ -1,4 +1,4 @@
-from asyncio import Future
+from asyncio import Future, iscoroutinefunction
 from typing import TypeVar, AsyncIterator
 import logging
 
@@ -17,36 +17,37 @@ class AsyncIteratorSink(AsyncIterator, AsyncSink):
 
     def __init__(self) -> None:
         super().__init__()
-        self._future = Future()  # type: Future
-        self._wait = Future()  # type: Future
+        self._push = Future()  # type: Future
+        self._pull = Future()  # type: Future
 
     async def asend(self, value) -> None:
-        self._future.set_result(value)
-        await self._pong()
+        log.debug("AsyncStreamIterator:asend(%d)" % value)
+        self._push.set_result(value)
+        await self._wait_for_pull()
 
     async def athrow(self, err) -> None:
-        self._future.set_exception(err)
-        await self._pong()
+        self._push.set_exception(err)
+        await self._wait_for_pull()
 
     async def aclose(self) -> None:
-        self._future.set_exception(StopAsyncIteration)
-        await self._pong()
+        self._push.set_exception(StopAsyncIteration)
+        await self._wait_for_pull()
 
     async def __anext__(self):
-        return await self._ping()
+        return await self._wait_for_push()
 
-    async def _ping(self):
-        value = await self._future
-        self._future = Future()
-        self._wait.set_result(True)
+    async def _wait_for_push(self):
+        value = await self._push
+        self._push = Future()
+        self._pull.set_result(True)
         return value
 
-    async def _pong(self) -> None:
-        await self._wait
-        self._wait = Future()
+    async def _wait_for_pull(self) -> None:
+        await self._pull
+        self._pull = Future()
 
 
-class Listener(AsyncSink):
+class FuncSink(AsyncSink):
     """An anonymous AsyncSink.
 
     Creates as sink where the implementation is provided by three
@@ -55,8 +56,14 @@ class Listener(AsyncSink):
 
     def __init__(self, asend=anoop, athrow=anoop, aclose=anoop) -> None:
         super().__init__()
+
+        assert iscoroutinefunction(asend)
         self._send = asend
+
+        assert iscoroutinefunction(athrow)
         self._throw = athrow
+
+        assert iscoroutinefunction(aclose)
         self._close = aclose
 
     async def asend(self, value: T):

@@ -7,8 +7,8 @@ from aioreactive.core.utils import anoop
 T = TypeVar('T')
 
 
-class Listener(AsyncSink):
-    """A test listener.
+class FuncSink(AsyncSink):
+    """A test FuncSink.
 
     Records all values and events that happens and makes them available
     through the values property:

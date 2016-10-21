@@ -1,7 +1,11 @@
 import pytest
+import logging
 
-from aioreactive.core import run, listen, Listener, Stream
+from aioreactive.core import run, start, FuncSink
 from aioreactive.producer import Producer
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio
@@ -14,7 +18,7 @@ async def test_slice_special():
 
     ys = xs[1:-1]
 
-    result = await run(ys, Listener(asend))
+    result = await run(ys, FuncSink(asend))
 
     assert result == 4
     assert values == [2, 3, 4]
@@ -30,7 +34,7 @@ async def test_slice_step():
 
     ys = xs[::2]
 
-    result = await run(ys, Listener(asend))
+    result = await run(ys, FuncSink(asend))
 
     assert result == 5
     assert values == [1, 3, 5]

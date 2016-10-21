@@ -4,11 +4,12 @@ import asyncio
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.filter import filter
-from aioreactive.core import run, listen, Listener, Stream
+from aioreactive.core import run, start, FuncSink, AsyncStream
 
 
 class MyException(Exception):
     pass
+
 
 @pytest.yield_fixture()
 def event_loop():
@@ -30,8 +31,8 @@ async def test_filter_happy():
         return value > 1
 
     ys = filter(predicate, xs)
-    await run(ys, Listener(asend))
-
+    value = await run(ys, FuncSink(asend))
+    assert value == 3
     assert result == [2, 3]
 
 
@@ -51,6 +52,6 @@ async def test_filter_predicate_throws():
     ys = filter(predicate, xs)
 
     with pytest.raises(MyException):
-        await run(ys, Listener(asend))
+        await run(ys, FuncSink(asend))
 
     assert result == []

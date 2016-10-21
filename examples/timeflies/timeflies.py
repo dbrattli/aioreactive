@@ -1,8 +1,8 @@
 import asyncio
 from tkinter import *
 
-from aioreactive.core import listen, Listener
-from aioreactive.producer import Stream
+from aioreactive.core import start, FuncSink
+from aioreactive.producer import AsyncStream
 from aioreactive.producer import op
 
 
@@ -10,7 +10,7 @@ async def main(loop):
     root = Tk()
     root.title("aioreactive rocks")
 
-    mousemoves = Stream()
+    mousemoves = AsyncStream()
 
     frame = Frame(root, width=600, height=600)
 
@@ -27,11 +27,11 @@ async def main(loop):
     async def handle_label(i, label):
         label.config(dict(borderwidth=0, padx=0, pady=0))
 
-        def asend(ev):
+        async def asend(ev):
             label.place(x=ev.x + i * 12 + 15, y=ev.y)
 
         xs = mousemoves | op.delay(i / 10.0)
-        await listen(xs, Listener(asend))
+        await start(xs, FuncSink(asend))
 
     for i, label in enumerate(labels):
         await handle_label(i, label)
