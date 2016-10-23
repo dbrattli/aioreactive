@@ -2,6 +2,7 @@ import logging
 from asyncio import Future
 from typing import TypeVar, Generic
 
+from aioreactive.core.abc import Cancelable
 from .typing import AsyncSink
 
 log = logging.getLogger(__name__)
@@ -9,7 +10,7 @@ log = logging.getLogger(__name__)
 T = TypeVar('T')
 
 
-class AsyncMultiFuture(Future, AsyncSink, Generic[T]):
+class AsyncMultiFuture(Future, AsyncSink, Cancelable, Generic[T]):
 
     """An async multi-value future.
 

@@ -85,7 +85,7 @@ async def test_stream_send_after_close():
 
 
 @pytest.mark.asyncio
-async def test_stream_subscription_cancel():
+async def test_stream_cancel():
     xs = AsyncStream()
     sub = None
 
@@ -104,7 +104,7 @@ async def test_stream_subscription_cancel():
 
 
 @pytest.mark.asyncio
-async def test_stream_subscription_cancel_mapper():
+async def test_stream_cancel_asend():
     xs = AsyncStream()
     sub = None
 
@@ -124,3 +124,37 @@ async def test_stream_subscription_cancel_mapper():
         await xs.asend_later(1, 20)
 
     assert sink.values == [(1, 100)]
+
+
+@pytest.mark.asyncio
+async def test_stream_cancel_mapper():
+    xs = AsyncStream()
+    sub = None
+
+    async def mapper(value):
+        sub.cancel()
+        return value * 10
+
+    ys = map(mapper, xs)
+
+    sink = FuncSink()
+    async with start(ys, sink) as sub:
+
+        await xs.asend_later(1, 10)
+        await xs.asend_later(1, 20)
+
+    assert sink.values == []
+
+
+@pytest.mark.asyncio
+async def test_stream_cancel_context():
+    xs = AsyncStream()
+
+    sink = FuncSink()
+    with await start(xs, sink):
+        pass
+
+    await xs.asend_later(1, 10)
+    await xs.asend_later(1, 20)
+
+    assert sink.values == []

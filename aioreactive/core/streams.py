@@ -4,7 +4,10 @@ from asyncio import Future
 from typing import TypeVar, Generic, Dict, Optional
 from typing import AsyncIterable, AsyncIterator
 from collections.abc import Awaitable
+from abc import abstractmethod
 
+
+from aioreactive.core.abc import AsyncCancelable
 from .typing import AsyncSource, AsyncSink
 from .futures import AsyncMultiFuture, chain_future
 from .sinks import AsyncIteratorSink
@@ -28,20 +31,26 @@ class AsyncStreamIterable(AsyncIterable):
         await self.__astart__(_sink)
         return _sink
 
+    @abstractmethod
+    async def __astart__(self, sink: AsyncSink):
+        return NotImplemented
+
 
 class AsyncSingleStream(AsyncMultiFuture, AsyncStreamIterable, Generic[T]):
 
-    """An asynch multi-value future.
+    """An stream with a single sink.
 
-    Both a future and async sink. The future resolves with the last
-    value before the sink is closed. A close without any values sent is
-    the same as cancelling the future.
+    Both an async multi future and async iterable. Thus you may
+    .cancel() it to stop streaming, async iterate it using async-for.
+
+    The AsyncSingleStream is cold in the sense that it will await a
+    starting sink before forwarding any events.
     """
 
     def __init__(self) -> None:
         super().__init__()
 
-        self._wait = Future()
+        self._wait = Future()  # type: Future
         self._sink = None  # type: AsyncSink
 
     async def asend(self, value: T):
@@ -95,11 +104,13 @@ class AsyncSingleStream(AsyncMultiFuture, AsyncStreamIterable, Generic[T]):
 
 
 class AsyncMultiStream(AsyncMultiFuture, Generic[T]):
-    """The Async Stream.
+    """An stream with a multiple sinks.
 
-    The stream is both a source and a sink. Thus you can both listen
-    to it and send values to it. Any values send will be forwarded to
-    all FuncSinks.
+    Both an async multi future and async iterable. Thus you may
+    .cancel() it to stop streaming, async iterate it using async-for.
+
+    The AsyncMultiStream is hot in the sense that it will drop events
+    if there are currently no sinks running.
     """
 
     def __init__(self) -> None:
@@ -161,9 +172,12 @@ class AsyncMultiStream(AsyncMultiFuture, Generic[T]):
 AsyncStream = AsyncMultiStream
 
 
-class AsyncStreamFactory(Awaitable):
-    """A helper class that makes it possible to start streaming both
-    using await and async-with."""
+class AsyncStreamFactory(Awaitable, AsyncCancelable):
+    """Async stream factory.
+
+    A helper class that makes it possible to start() streaming both
+    using await and async-with. You will most likely not use this class
+    directly, but it will created when using start()."""
 
     def __init__(self, source, sink=None):
         self._source = source
@@ -186,15 +200,15 @@ class AsyncStreamFactory(Awaitable):
         self._stream = chain_future(down_stream, up_stream)
         return self._stream
 
+    async def acancel(self) -> None:
+        """Closes stream."""
+        self._stream.cancel()
+
     async def __aenter__(self) -> AsyncSingleStream:
         """Awaits stream creation."""
         return await self.create()
 
-    async def __aexit__(self, type, value, traceback) -> None:
-        """Closes stream."""
-        self._stream.cancel()
-
-    def __await__(self) -> AsyncSingleStream:
+    def __await__(self):
         """Await stream creation."""
         return self.create().__await__()
 
@@ -202,17 +216,66 @@ class AsyncStreamFactory(Awaitable):
 async def chain(source, sink):
     """Chains an async sink with an async source.
 
-    Performs the chaining done internally by most operators."""
+    Performs the chaining done internally by most operators. A much
+    more light-weight version of start()."""
 
     return await source.__astart__(sink)
 
 
 def start(source: AsyncSource, sink: Optional[AsyncSink]=None) -> AsyncStreamFactory:
+    """Start streaming source into sink.
+
+    Returns an AsyncStreamFactory that is lazy in the sense that it will
+    not start the source before it's either awaited or entered using
+    async-with.
+
+    Examples:
+
+    1. Awaiting stream with explicit cancel:
+
+    stream = await start(source, sink)
+    async for x in stream:
+        print(x)
+
+    stream.cancel()
+
+    2. Start streaming with a context manager:
+
+    async with start(source, sink) as stream:
+        async for x in stream:
+            print(x)
+
+    3. Start streaming without a specific sink
+
+    async with start(source) as stream:
+        async for x in stream:
+            print(x)
+
+    Keyword arguments:
+    sink -- Optional AsyncSink that will receive all events sent through
+        the stream.
+
+    Returns AsyncStreamFactory that may either be awaited or entered
+    using async-for.
+    """
     return AsyncStreamFactory(source, sink)
 
 
 async def run(source: AsyncSource[T], sink: Optional[AsyncSink]=None, timeout: int=2) -> T:
-    """Awaits until subscription closes and returns the final value"""
+    """Run the source with the given sink.
+
+    Similar to start() but also awaits until the stream closes and
+    returns the final value.
+
+    Keyword arguments:
+    timeout -- Seconds before timing out in case source never closes.
+
+    Returns last event sent through the stream. If any values have been
+    sent through the stream it will return the last value. If the stream
+    is closed without any previous values it will throw
+    StopAsyncIteration. For any other errors it will throw the
+    exception.
+    """
 
     # For run we need a noopsink if no sink is specified to avoid
     # blocking the last single stream in the chain.

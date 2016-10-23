@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class Cancellable(metaclass=ABCMeta):
+class Cancelable(metaclass=ABCMeta):
     """A cancellable class with a context manager.
 
     Must implement the cancel method. Will cancel on exit."""
@@ -19,7 +19,7 @@ class Cancellable(metaclass=ABCMeta):
         self.cancel()
 
 
-class AsyncCancellable(metaclass=ABCMeta):
+class AsyncCancelable(metaclass=ABCMeta):
     """A cancellable class with a context manager.
 
     Must implement the cancel method. Will cancel on exit."""
