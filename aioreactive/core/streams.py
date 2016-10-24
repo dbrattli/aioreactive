@@ -7,7 +7,7 @@ from collections.abc import Awaitable
 from abc import abstractmethod
 
 
-from aioreactive.core.abc import AsyncCancelable
+from aioreactive.core.abc import AsyncCancellable
 from .typing import AsyncSource, AsyncSink
 from .futures import AsyncMultiFuture, chain_future
 from .sinks import AsyncIteratorSink
@@ -172,7 +172,7 @@ class AsyncMultiStream(AsyncMultiFuture, Generic[T]):
 AsyncStream = AsyncMultiStream
 
 
-class AsyncStreamFactory(Awaitable, AsyncCancelable):
+class AsyncStreamFactory(Awaitable, AsyncCancellable):
     """Async stream factory.
 
     A helper class that makes it possible to start() streaming both
