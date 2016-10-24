@@ -61,7 +61,7 @@ Sinks are also sources. This is similar to how Iterators are also Iterables in P
 
 ## Streaming sources
 
-A source starts streaming values by starting the source using `start()`. The `start()` function takes a source and an optional sink, and returns a stream. If a sink is given it will receive all values that are passed through the source. So the `start()` function is used to attach a sink to the source, and start streaming values though source. The stream returned by `start()` is is cancellable, iterable, and chainable. We will learn more about this later. Here is an example:
+A source starts streaming values by starting the source using `start()`. The `start()` function takes a source and an optional sink, and returns a stream. If a sink is given it will receive all values that are passed through the source. So the `start()` function is used to attach a sink to the source, and start streaming values though source. The stream returned by `start()` is cancellable, iterable, and chainable. We will learn more about this later. Here is an example:
 
 ```python
 async def asend(value):
@@ -80,7 +80,7 @@ stream.cancel()
 
 A stream may also be awaited. The await will resolve when the stream closes, either normally or with an error. The value returned will be the last value received through the stream. If no value has been received when the stream closes, then await will throw `CancelledError`.
 
-```pyhton
+```python
 value = await (await start(source, FuncSink(asend)))
 ```
 
