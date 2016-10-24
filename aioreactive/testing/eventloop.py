@@ -38,6 +38,7 @@ def isfuture(obj):
 
 
 class VirtualTimeEventLoop(asyncio.AbstractEventLoop):
+
     def __init__(self):
         self._timer_cancelled_count = 0
         self._closed = False

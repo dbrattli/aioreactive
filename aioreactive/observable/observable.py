@@ -1,6 +1,6 @@
 from typing import Callable
 
-from aioreactive.core import AsyncSource, listen
+from aioreactive.core import AsyncSource, start
 from aioreactive.producer import Producer
 
 from .observer import Observer, SinkObserver
@@ -21,8 +21,8 @@ class Observable(Producer):
         self._source = source
 
     async def subscribe(self, obv: Observer):
-        _sink = await SinkObserver().__alisten__(obv)
-        return await listen(self, _sink)
+        _sink = await SinkObserver().__astart__(obv)
+        return await start(self, _sink)
 
     def __getitem__(self, key) -> "Observable":
         """Slices the given source stream using Python slice notation.

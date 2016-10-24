@@ -6,8 +6,8 @@ import logging
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.map import map
-from aioreactive.core import run, start, chain
-from aioreactive.testing import AsyncStream, FuncSink
+from aioreactive.core import run, start
+from aioreactive.testing import AsyncSingleStream, FuncSink
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -26,7 +26,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_stream_happy():
-    xs = AsyncStream()
+    xs = AsyncSingleStream()
 
     sink = FuncSink()
     await start(xs, sink)
@@ -44,7 +44,7 @@ async def test_stream_happy():
 @pytest.mark.asyncio
 async def test_stream_throws():
     ex = MyException("ex")
-    xs = AsyncStream()
+    xs = AsyncSingleStream()
 
     sink = FuncSink()
     with pytest.raises(MyException):
@@ -66,7 +66,7 @@ async def test_stream_throws():
 
 @pytest.mark.asyncio
 async def test_stream_send_after_close():
-    xs = AsyncStream()
+    xs = AsyncSingleStream()
 
     sink = FuncSink()
     await start(xs, sink)
@@ -86,8 +86,8 @@ async def test_stream_send_after_close():
 
 @pytest.mark.asyncio
 async def test_stream_cancel():
-    xs = AsyncStream()
-    stream = None
+    xs = AsyncSingleStream()
+    sub = None
 
     async def mapper(value):
         return value * 10
@@ -95,9 +95,9 @@ async def test_stream_cancel():
     ys = map(mapper, xs)
 
     sink = FuncSink()
-    stream = await start(ys, sink)
+    sub = await start(ys, sink)
     await xs.asend_later(1, 10)
-    stream.cancel()
+    sub.cancel()
     await xs.asend_later(1, 20)
 
     assert sink.values == [(1, 100)]
@@ -105,11 +105,11 @@ async def test_stream_cancel():
 
 @pytest.mark.asyncio
 async def test_stream_cancel_asend():
-    xs = AsyncStream()
-    stream = None
+    xs = AsyncSingleStream()
+    sub = None
 
     async def asend(value):
-        stream.cancel()
+        sub.cancel()
         await asyncio.sleep(0)
 
     async def mapper(value):
@@ -118,7 +118,8 @@ async def test_stream_cancel_asend():
     ys = map(mapper, xs)
 
     sink = FuncSink(asend)
-    async with start(ys, sink) as stream:
+    async with start(ys, sink) as sub:
+
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
 
@@ -127,17 +128,17 @@ async def test_stream_cancel_asend():
 
 @pytest.mark.asyncio
 async def test_stream_cancel_mapper():
-    xs = AsyncStream()
-    stream = None
+    xs = AsyncSingleStream()
+    sub = None
 
     async def mapper(value):
-        stream.cancel()
+        sub.cancel()
         return value * 10
 
     ys = map(mapper, xs)
 
     sink = FuncSink()
-    async with start(ys, sink) as stream:
+    async with start(ys, sink) as sub:
 
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
@@ -147,7 +148,7 @@ async def test_stream_cancel_mapper():
 
 @pytest.mark.asyncio
 async def test_stream_cancel_context():
-    xs = AsyncStream()
+    xs = AsyncSingleStream()
 
     sink = FuncSink()
     with await start(xs, sink):
@@ -160,16 +161,60 @@ async def test_stream_cancel_context():
 
 
 @pytest.mark.asyncio
-async def test_stream_chain_sink():
-    xs = AsyncStream()
+async def test_stream_cold_send():
+    xs = AsyncSingleStream()
 
     sink = FuncSink()
-    await chain(xs, sink)
 
-    await xs.asend_later(1, 10)
-    await xs.asend_later(1, 20)
+    async def asend(value):
+        await xs.asend(value)
+
+    asyncio.ensure_future(asend(42))
+    await asyncio.sleep(10)
+
+    with await start(xs, sink):
+        await xs.asend_later(1, 20)
 
     assert sink.values == [
-        (1, 10),
-        (2, 20)
+        (10, 42),
+        (11, 20)
+    ]
+
+
+@pytest.mark.asyncio
+async def test_stream_cold_throw():
+    xs = AsyncSingleStream()
+
+    sink = FuncSink()
+
+    async def athrow():
+        await xs.athrow(MyException)
+
+    asyncio.ensure_future(athrow())
+    await asyncio.sleep(10)
+
+    with await start(xs, sink):
+        await xs.asend_later(1, 20)
+
+    assert sink.values == [
+        (10, MyException)
+    ]
+
+
+@pytest.mark.asyncio
+async def test_stream_cold_close():
+    xs = AsyncSingleStream()
+
+    sink = FuncSink()
+
+    async def aclose():
+        await xs.aclose()
+
+    asyncio.ensure_future(aclose())
+    await asyncio.sleep(10)
+    with await start(xs, sink):
+        await xs.asend_later(1, 20)
+
+    assert sink.values == [
+        (10,)
     ]

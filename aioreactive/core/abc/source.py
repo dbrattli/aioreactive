@@ -5,7 +5,7 @@ class Source(metaclass=ABCMeta):
     __slots__ = ()
 
     @abstractmethod
-    def __listen__(self, sink):
+    def __stream__(self, sink):
         return NotImplemented
 
 
@@ -13,5 +13,5 @@ class AsyncSource(metaclass=ABCMeta):
     __slots__ = ()
 
     @abstractmethod
-    async def __alisten__(self, sink):
+    async def __astart__(self, sink):
         return NotImplemented

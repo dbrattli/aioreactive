@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from aioreactive.core.futures import AsyncMultiFuture
+from aioreactive.core import AsyncSingleStream
 from aioreactive.core import AsyncSink, AsyncSource, chain
 
 T = TypeVar('T')
@@ -12,11 +12,11 @@ class Skip(AsyncSource):
         self._source = source
         self._count = count
 
-    async def __alisten__(self, sink: AsyncSink):
+    async def __astart__(self, sink: AsyncSink):
         _sink = await chain(Skip.Sink(self), sink)
         return await chain(self._source, _sink)
 
-    class Sink(AsyncMultiFuture):
+    class Sink(AsyncSingleStream):
 
         def __init__(self, source: "Skip") -> None:
             super().__init__()

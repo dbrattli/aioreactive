@@ -4,7 +4,7 @@ import asyncio
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.distinct_until_changed import distinct_until_changed
-from aioreactive.core import run, listen, Listener, Stream
+from aioreactive.core import run, start, FuncSink
 
 
 class MyException(Exception):
@@ -28,7 +28,7 @@ async def test_distinct_until_changed_different():
 
     ys = distinct_until_changed(xs)
 
-    await run(ys, Listener(asend))
+    await run(ys, FuncSink(asend))
     assert result == [1, 2, 3]
 
 
@@ -42,5 +42,5 @@ async def test_distinct_until_changed_changed():
 
     ys = distinct_until_changed(xs)
 
-    await run(ys, Listener(asend))
+    await run(ys, FuncSink(asend))
     assert result == [1, 2, 1, 3, 1, 2]

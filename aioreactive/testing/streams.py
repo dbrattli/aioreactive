@@ -6,22 +6,16 @@ from aioreactive import core
 T = TypeVar('T')
 
 
-class Stream(core.Stream):
-    """A stream for testing.
+class AsyncStreamBase:
+    """A stream base for testing.
 
     Provides methods for sending, throwing, and closing at a later
     time both relative and absolute.
     """
 
-    def __init__(self):
-        super().__init__()
-        self._loop = asyncio.get_event_loop()
-
     async def asend_at(self, when: float, value: T):
-        asend = super().asend
-
         async def task():
-            await asend(value)
+            await self.asend(value)
 
         def callback():
             asyncio.ensure_future(task())
@@ -33,11 +27,9 @@ class Stream(core.Stream):
         await self.asend(value)
 
     async def asend_later_scheduled(self, delay: float, value: T):
-        asend = super().asend
-
         async def task():
             await asyncio.sleep(delay)
-            await asend(value)
+            await self.asend(value)
         asyncio.ensure_future(task())
 
     async def athrow_at(self, when: float, err: Exception):
@@ -54,11 +46,9 @@ class Stream(core.Stream):
         await self.athrow(err)
 
     async def athrow_later_scheduled(self, delay: float, err: Exception):
-        athrow = super().athrow
-
         async def task():
             await asyncio.sleep(delay)
-            await athrow(err)
+            await self.athrow(err)
         asyncio.ensure_future(task())
 
     async def aclose_at(self, when: float):
@@ -75,9 +65,24 @@ class Stream(core.Stream):
         await self.aclose()
 
     async def close_later_scheduled(self, delay: float):
-        aclose = super().aclose
-
         async def task():
             await asyncio.sleep(delay)
-            await aclose()
+            await self.aclose()
         asyncio.ensure_future(task())
+
+
+class AsyncMultipleStream(core.AsyncStream, AsyncStreamBase):
+
+    def __init__(self):
+        super().__init__()
+        self._loop = asyncio.get_event_loop()
+
+
+AsyncStream = AsyncMultipleStream
+
+
+class AsyncSingleStream(core.AsyncSingleStream, AsyncStreamBase):
+
+    def __init__(self):
+        super().__init__()
+        self._loop = asyncio.get_event_loop()

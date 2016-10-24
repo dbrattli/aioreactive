@@ -1,9 +1,13 @@
 import pytest
 import asyncio
+import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.debounce import debounce
-from aioreactive.core import listen, Listener, Stream
+from aioreactive.core import start, FuncSink, AsyncStream
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.yield_fixture()
@@ -15,16 +19,16 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_debounce():
-    xs = Stream()
+    xs = AsyncStream()
     result = []
 
     async def asend(value):
-        print("Send: %d" % value)
+        log.debug("test_debounce:asend(%s)", value)
         nonlocal result
         result.append(value)
 
     ys = debounce(0.5, xs)
-    sub = await listen(ys, Listener(asend))
+    sub = await start(ys, FuncSink(asend))
     await xs.asend(1)
     await asyncio.sleep(0.6)
     await xs.asend(2)
@@ -37,16 +41,16 @@ async def test_debounce():
 
 @pytest.mark.asyncio
 async def test_debounce_filter():
-    xs = Stream()
+    xs = AsyncStream()
     result = []
 
     async def asend(value):
-        print("Send: %d" % value)
+        log.debug("test_debounce_filter:asend(%s)", value)
         nonlocal result
         result.append(value)
 
     ys = debounce(0.5, xs)
-    sub = await listen(ys, Listener(asend))
+    sub = await start(ys, FuncSink(asend))
     await xs.asend(1)
     await asyncio.sleep(0.3)
     await xs.asend(2)

@@ -1,12 +1,16 @@
+import logging
 import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import listen, run, Listener, Stream
+from aioreactive.core import AsyncStream, run, FuncSink, start
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.with_latest_from import with_latest_from
 from aioreactive.core.sources.never import never
 from aioreactive.core.sources.empty import empty
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.yield_fixture()
@@ -23,14 +27,13 @@ async def test_withlatestfrom_never_never():
     result = []
 
     async def asend(value):
-        print("test_withlatestfrom_done:send: ", value)
         nonlocal result
         asyncio.sleep(0.1)
         result.append(value)
 
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
-    await listen(zs, Listener(asend))
+    await start(zs, FuncSink(asend))
     await asyncio.sleep(1)
 
     assert result == []
@@ -43,7 +46,7 @@ async def test_withlatestfrom_never_empty():
     result = []
 
     async def asend(value):
-        print("test_withlatestfrom_done:send: ", value)
+        log.debug("test_withlatestfrom_never_empty:asend(%s)", value)
         nonlocal result
         asyncio.sleep(0.1)
         result.append(value)
@@ -51,7 +54,7 @@ async def test_withlatestfrom_never_empty():
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
     try:
-        await run(zs, Listener(asend))
+        await run(zs, FuncSink(asend))
     except asyncio.CancelledError:
         pass
     assert result == []
@@ -59,19 +62,19 @@ async def test_withlatestfrom_never_empty():
 
 @pytest.mark.asyncio
 async def test_withlatestfrom_done():
-    xs = Stream()
-    ys = Stream()
+    xs = AsyncStream()
+    ys = AsyncStream()
     result = []
 
     async def asend(value):
-        print("test_withlatestfrom_done:send: ", value)
+        log.debug("test_withlatestfrom_done:asend(%s)", value)
         nonlocal result
         asyncio.sleep(0.1)
         result.append(value)
 
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
-    sub = await listen(zs, Listener(asend))
+    sub = await start(zs, FuncSink(asend))
     await xs.asend(1)
     await ys.asend(2)
     await xs.asend(3)

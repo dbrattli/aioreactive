@@ -19,7 +19,7 @@ class Sink(Source):
     def close(self):
         return NotImplemented
 
-    def __listen__(self, sink):
+    def __start__(self, sink):
         return self
 
 
@@ -40,5 +40,5 @@ class AsyncSink(AsyncSource):
     async def aclose(self):
         return NotImplemented
 
-    async def __alisten__(self, sink):
+    async def __astart__(self, sink):
         return self

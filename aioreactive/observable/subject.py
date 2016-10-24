@@ -1,12 +1,13 @@
-from aioreactive.core.stream import Stream
+from aioreactive.core.stream import AsyncStream
 
 from .observable import Observable
 from .observer import Observer
 
 
 class Subject(Observable, Observer):
+
     def __init__(self):
-        self._stream = Stream()
+        self._stream = AsyncStream()
         super().__init__(self._stream)
 
     async def on_next(self, value):

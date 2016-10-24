@@ -2,8 +2,7 @@ from asyncio import iscoroutinefunction, Future
 from typing import Callable, Awaitable, TypeVar
 
 from aioreactive.core import AsyncSink, AsyncSource
-from aioreactive.core import Subscription, chain, chain_future
-from aioreactive.core.futures import AsyncMultiFuture
+from aioreactive.core import AsyncSingleStream, chain, chain_future
 
 T = TypeVar('T')
 
@@ -15,15 +14,15 @@ class WithLatestFrom(AsyncSource):
         self._other = other
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
-        _sink = await chain(WithLatestFrom.SourceSink(self), sink)
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
+        _sink = await chain(WithLatestFrom.SourceStream(self), sink)
         sub = await chain(self._source, _sink)
 
-        _other = WithLatestFrom.OtherSink(self, _sink)
+        _other = WithLatestFrom.OtherStream(self, _sink)
         sub_other = await chain(self._other, _other)
         return chain_future(sub, sub_other)
 
-    class SourceSink(AsyncMultiFuture):
+    class SourceStream(AsyncSingleStream):
 
         def __init__(self, source: "WithLatestFrom") -> None:
             super().__init__()
@@ -51,7 +50,7 @@ class WithLatestFrom(AsyncSource):
             self._latest = value
             self._has_latest = True
 
-    class OtherSink(AsyncMultiFuture):
+    class OtherStream(AsyncSingleStream):
         def __init__(self, source: "WithLatestFrom", sink: "AsyncSink") -> None:
             super().__init__()
             self._source = source

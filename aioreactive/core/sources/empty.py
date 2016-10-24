@@ -4,7 +4,9 @@ from aioreactive.core import AsyncSink, AsyncSource
 
 
 class Empty(AsyncSource):
-    async def __alisten__(self, sink: AsyncSink):
+    async def __astart__(self, sink: AsyncSink):
+        """Start streaming."""
+
         async def worker():
             await sink.aclose()
 

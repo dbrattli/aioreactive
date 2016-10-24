@@ -1,8 +1,7 @@
 import asyncio
 from typing import List
 
-from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.core import Subscription, AsyncSink, AsyncSource, chain
+from aioreactive.core import AsyncSingleStream, AsyncSink, AsyncSource, chain
 
 
 class Delay(AsyncSource):
@@ -11,19 +10,19 @@ class Delay(AsyncSource):
         self._seconds = seconds
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
         tasks = []  # type: List[asyncio.Task]
 
-        _sink = await chain(Delay.Sink(self, tasks), sink)
-        sub = await chain(self._source, _sink)
+        _sink = await chain(Delay.Stream(self, tasks), sink)
+        stream = await chain(self._source, _sink)
 
         def cancel(sub):
             for task in tasks:
                 task.cancel()
-        sub.add_done_callback(cancel)
-        return sub
+        stream.add_done_callback(cancel)
+        return stream
 
-    class Sink(AsyncMultiFuture):
+    class Stream(AsyncSingleStream):
 
         def __init__(self, source, tasks) -> None:
             super().__init__()

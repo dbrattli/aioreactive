@@ -5,7 +5,7 @@ from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.from_iterable import from_iterable
 from aioreactive.core.sources.flat_map import flat_map
 from aioreactive.core.sources.unit import unit
-from aioreactive.core import listen, Listener, Stream, run
+from aioreactive.core import AsyncStream, FuncSink, start, run
 
 
 @pytest.yield_fixture()
@@ -17,7 +17,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_flap_map_done():
-    xs = Stream()
+    xs = AsyncStream()
     result = []
 
     async def asend(value):
@@ -28,7 +28,7 @@ async def test_flap_map_done():
         return from_iterable([value])
 
     ys = flat_map(mapper, xs)
-    sub = await listen(ys, Listener(asend))
+    await start(ys, FuncSink(asend))
     await xs.asend(10)
     await xs.asend(20)
 
@@ -89,3 +89,8 @@ async def test_flat_map_monad_law_associativity():
     b = await run(flat_map(lambda x: flat_map(g, f(x)), m))
 
     assert a == b
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(test_flat_map_monad())
+    loop.close()

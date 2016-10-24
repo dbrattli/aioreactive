@@ -1,9 +1,13 @@
 import pytest
 import asyncio
+import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.producer import Producer, op
-from aioreactive.core import run, listen, Stream, Listener
+from aioreactive.core import run, start, AsyncStream, FuncSink
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.yield_fixture()
@@ -20,14 +24,14 @@ async def test_producer_map():
 
     async def mapper(value):
         await asyncio.sleep(0.1)
-        return value*10
+        return value * 10
 
     ys = xs | op.map(mapper)
 
     async def asend(value):
         result.append(value)
 
-    await run(ys, Listener(asend))
+    await run(ys, FuncSink(asend))
     assert result == [10, 20, 30]
 
 
@@ -49,7 +53,7 @@ async def test_producer_simple_pipe():
     async def asend(value):
         result.append(value)
 
-    await run(ys, Listener(asend))
+    await run(ys, FuncSink(asend))
     assert result == [20, 30]
 
 
@@ -75,7 +79,7 @@ async def test_producer_complex_pipe():
           | op.flat_map(long_running)
           )
 
-    async with listen(ys) as stream:
+    async with start(ys) as stream:
         async for value in stream:
             result.append(value)
 
@@ -86,7 +90,7 @@ async def test_producer_async_iteration():
     xs = Producer.from_iterable([1, 2, 3])
     result = []
 
-    stream = await listen(xs)
+    stream = await start(xs)
     async for x in stream:
         result.append(x)
     stream.cancel()
@@ -99,7 +103,7 @@ async def test_producer_async_iteration_aync_with():
     xs = Producer.from_iterable([1, 2, 3])
     result = []
 
-    async with listen(xs) as stream:
+    async with start(xs) as stream:
         async for x in stream:
             result.append(x)
 
@@ -109,10 +113,11 @@ async def test_producer_async_iteration_aync_with():
 @pytest.mark.asyncio
 async def test_producer_async_iteration_inception():
     # iterable to async source to async iterator to async source
-    xs = Producer.from_iterable(Producer.from_iterable([1, 2, 3]))
+    ys = await start(Producer.from_iterable([1, 2, 3]))
+    xs = Producer.from_iterable(ys)
     result = []
 
-    async with listen(xs) as stream:
+    async with start(xs) as stream:
         async for x in stream:
             result.append(x)
 

@@ -2,9 +2,8 @@ from typing import Tuple
 import asyncio
 import logging
 
-from aioreactive.core.futures import AsyncMultiFuture
 from aioreactive.core import AsyncSource, AsyncSink
-from aioreactive.core import chain, Subscription
+from aioreactive.core import chain, AsyncSingleStream
 
 log = logging.getLogger(__name__)
 
@@ -27,23 +26,26 @@ class Concat(AsyncSource):
         except Exception as ex:
             await sink.athrow(ex)
         else:
-            _sink = await chain(Concat.Sink(), sink)  # type: AsyncMultiFuture
+            _sink = await chain(Concat.Stream(), sink)  # type: AsyncSingleStream
             _sink.add_done_callback(recurse)
 
             self._subscription = await chain(source, _sink)
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
+        stream = AsyncSingleStream()
+
         def cancel(sub):
             if self._subscription is not None:
                 self._subscription.cancel()
 
             if self._task is not None:
                 self._task.cancel()
+        stream.add_done_callback(cancel)
 
         self._task = asyncio.ensure_future(self.worker(sink))
-        return Subscription(cancel)
+        return stream
 
-    class Sink(AsyncMultiFuture):
+    class Stream(AsyncSingleStream):
 
         async def aclose(self) -> None:
             log.debug("Concat._:close()")

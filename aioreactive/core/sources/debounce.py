@@ -1,8 +1,7 @@
 import asyncio
 from typing import TypeVar, Generic, List
 
-from aioreactive.core.futures import AsyncMultiFuture
-from aioreactive.core import Subscription, AsyncSink, AsyncSource, chain
+from aioreactive.core import AsyncSingleStream, AsyncSink, AsyncSource, chain
 
 T = TypeVar("T")
 
@@ -13,10 +12,12 @@ class Debounce(AsyncSource):
         self._seconds = seconds
         self._source = source
 
-    async def __alisten__(self, sink: AsyncSink) -> Subscription:
+    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
+        """Start streaming."""
+
         tasks = []  # type: List[asyncio.Task]
 
-        _sink = await chain(Debounce.Sink(self, tasks), sink)
+        _sink = await chain(Debounce.Stream(self, tasks), sink)
         sub = await chain(self._source, _sink)
 
         def cancel(sub):
@@ -25,7 +26,7 @@ class Debounce(AsyncSource):
         sub.add_done_callback(cancel)
         return sub
 
-    class Sink(AsyncMultiFuture, Generic[T]):
+    class Stream(AsyncSingleStream, Generic[T]):
 
         def __init__(self, source, tasks) -> None:
             super().__init__()

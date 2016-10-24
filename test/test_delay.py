@@ -1,10 +1,14 @@
 import pytest
 import asyncio
+import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core.sources.delay import delay
-from aioreactive.core import listen
-from aioreactive.testing import Stream, Listener
+from aioreactive.core import start
+from aioreactive.testing import AsyncStream, FuncSink
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.yield_fixture()
@@ -16,14 +20,14 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_delay_done():
-    xs = Stream()
+    xs = AsyncStream()
 
     async def mapper(value):
         return value * 10
 
     ys = delay(0.5, xs)
-    lis = Listener()
-    sub = await listen(ys, lis)
+    lis = FuncSink()
+    sub = await start(ys, lis)
     await xs.asend_later(0, 10)
     await xs.asend_later(1, 20)
     await xs.aclose_later(1)
@@ -38,7 +42,7 @@ async def test_delay_done():
 
 @pytest.mark.asyncio
 async def test_delay_cancel_before_done():
-    xs = Stream()
+    xs = AsyncStream()
     result = []
 
     async def asend(value):
@@ -50,7 +54,7 @@ async def test_delay_cancel_before_done():
         return value * 10
 
     ys = delay(0.3, xs)
-    with await listen(ys, Listener(asend)):
+    async with start(ys, FuncSink(asend)):
         await xs.asend(10)
         await asyncio.sleep(1.5)
         await xs.asend(20)
@@ -61,7 +65,7 @@ async def test_delay_cancel_before_done():
 
 @pytest.mark.asyncio
 async def test_delay_throw():
-    xs = Stream()
+    xs = AsyncStream()
     result = []
 
     async def asend(value):
@@ -73,7 +77,7 @@ async def test_delay_throw():
         return value * 10
 
     ys = delay(0.3, xs)
-    await listen(ys, Listener(asend))
+    await start(ys, FuncSink(asend))
     await xs.asend(10)
     await asyncio.sleep(1.5)
     await xs.asend(20)
