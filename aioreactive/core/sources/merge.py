@@ -46,7 +46,8 @@ class Merge(AsyncSource):
                 self._is_stopped = True
                 return
 
-            await self._sink.aclose()
+            log.debug("Closing merge ...")
+            await super().aclose()
 
         class InnerStream(AsyncSingleStream):
 
@@ -64,7 +65,8 @@ class Merge(AsyncSource):
                 if len(self._tasks) or not self._parent._is_stopped:
                     return
 
-                await self._sink.aclose()
+                log.debug("Closing merge by inner ...")
+                await super().aclose()
 
 
 def merge(source: AsyncSource) -> AsyncSource:
