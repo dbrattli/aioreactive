@@ -17,7 +17,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_map_happy():
-    xs = from_iterable([1, 2, 3])  # type: AsyncSource[str]
+    xs = from_iterable([1, 2, 3])  # type: AsyncSource[int]
     values = []
 
     async def asend(value):
