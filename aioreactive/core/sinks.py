@@ -20,32 +20,58 @@ class AsyncIteratorSink(AsyncIterator, AsyncSink):
         self._push = Future()  # type: Future
         self._pull = Future()  # type: Future
 
+        self._awaiters = []  # type: List[Future]
+        self._busy = False
+
     async def asend(self, value) -> None:
-        log.debug("AsyncStreamIterator:asend(%d)" % value)
+        log.debug("AsyncIteratorSink:asend(%d)", value)
+        #assert not self._push.done()
+
+        await self._serialize_access()
+
         self._push.set_result(value)
         await self._wait_for_pull()
 
     async def athrow(self, err) -> None:
+        await self._serialize_access()
+
         self._push.set_exception(err)
         await self._wait_for_pull()
 
     async def aclose(self) -> None:
+        await self._serialize_access()
+
         self._push.set_exception(StopAsyncIteration)
         await self._wait_for_pull()
 
     async def __anext__(self):
         return await self._wait_for_push()
 
+    async def _serialize_access(self):
+        # Serialize producer event to the iterator
+        while self._busy:
+            fut = Future()
+            self._awaiters.append(fut)
+            await fut
+            self._awaiters.remove(fut)
+
+        self._busy = True
+
     async def _wait_for_push(self):
         value = await self._push
         self._push = Future()
         self._pull.set_result(True)
+
+        # Wake up any awaiters
+        for awaiter in self._awaiters[:1]:
+            awaiter.set_result(True)
         return value
 
     async def _wait_for_pull(self) -> None:
         await self._pull
         self._pull = Future()
-
+        #print("NEW FUTURE")
+        self._busy = False
 
 class FuncSink(AsyncSink):
     """An anonymous AsyncSink.
