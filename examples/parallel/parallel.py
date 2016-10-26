@@ -3,6 +3,7 @@ import asyncio
 import logging
 from asyncio.futures import wrap_future
 from concurrent.futures import ThreadPoolExecutor
+from threading import current_thread
 
 from aioreactive.core import start
 from aioreactive.producer import Producer, op
@@ -14,10 +15,11 @@ executor = ThreadPoolExecutor(max_workers=10)
 
 
 def long_running(value):
-    print("Long running (%s)" % value)
+    print("Long running ({0}) on thread {1}".format(value, current_thread().name))
     time.sleep(3)
-    print("Long running, done (%s)" % value)
+    print("Long running, done ({0}) on thread {1}".format(value, current_thread().name))
     return value
+
 
 async def main():
     xs = Producer.from_iterable([1, 2, 3, 4, 5])
