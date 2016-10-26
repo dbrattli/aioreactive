@@ -18,11 +18,11 @@ Aioreactive is an asynchronous and reactive Python library for asyncio using asy
 
 # Core level
 
-At the core, aioreactive is small low level asynchronous library for reactive programming. This core library may be used directly at the `AsyncSource` level, or one may choose to use higher level abstractions such as `Producer` or `Observable` described further down on this page.
+At the core, aioreactive is small low-level asynchronous library for reactive programming. This core library may be used directly at the `AsyncSource` level, or one may choose to use higher level abstractions such as `Producer` or `Observable` described further down on this page.
 
 ## AsyncSource and AsyncSink
 
-Aioreactive is built around the asynchronous duals of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncSource and AsyncSink.
+Aioreactive is built around the asynchronous duals, or opposites of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncSource and AsyncSink.
 
 AsyncSource is the dual or opposite of AsyncIterable and provides a single setter method called `__astart__()` that is the dual of the `__aiter__()` getter method:
 
@@ -35,7 +35,7 @@ class AsyncSource(metaclass=ABCMeta):
         return NotImplemented
 ```
 
-AsyncSink is modelled after the so called [consumer interface](http://effbot.org/zone/consumer.htm), the enhanced generator interface in [PEP-342](https://www.python.org/dev/peps/pep-0342/) and async generators in [PEP-525](https://www.python.org/dev/peps/pep-0525/). It is the dual of the AsyncIterator `__anext__()` method, and provides three async methods `asend()`, that is the opposite of `__anext__()`, `athrow()` that is the opposite of an `raise Exception()` and `aclose()` that is the opposite of `raise StopAsyncIteration`:
+AsyncSink is modelled after the so-called [consumer interface](http://effbot.org/zone/consumer.htm), the enhanced generator interface in [PEP-342](https://www.python.org/dev/peps/pep-0342/) and async generators in [PEP-525](https://www.python.org/dev/peps/pep-0525/). It is the dual of the AsyncIterator `__anext__()` method, and expands to three async methods `asend()`, that is the opposite of `__anext__()`, `athrow()` that is the opposite of an `raise Exception()` and `aclose()` that is the opposite of `raise StopAsyncIteration`:
 
 ```python
 from abc import ABCMeta, abstractmethod
@@ -57,11 +57,11 @@ class AsyncSink(AsyncSource):
         return self
 ```
 
-Sinks are also sources. This is similar to how Iterators are also Iterables in Python. This enables sinks to be chained together. While chaining sinks is not normally done when using aioreactive, it's used extensively by the various sources and operators when you listen to them.
+Sinks are also sources. This is similar to how Iterators are also Iterables in Python. This enable us to chain sinks together. While chaining sinks is not normally done when using aioreactive, it's used extensively by the various sources and operators when you start streaming them.
 
 ## Streaming sources
 
-A source starts streaming values by starting the source using `start()`. The `start()` function takes a source and an optional sink, and returns a stream. If a sink is given it will receive all values that are passed through the source. So the `start()` function is used to attach a sink to the source, and start streaming values though source. The stream returned by `start()` is cancellable, iterable, and chainable. We will learn more about this later. Here is an example:
+A source starts streaming by using the `start()` function. The `start()` function takes a source and an optional sink, and returns a stream. If a sink is given it will receive all values that are passed through the source. So the `start()` function is used to attach a sink to the source, and start streaming values though source. The stream returned by `start()` is cancellable, iterable, and chainable. We will learn more about this later. Here is an example:
 
 ```python
 async def asend(value):
@@ -98,9 +98,9 @@ async with start(source) as stream:
         print(x)
 ```
 
-## Streams are async iterables
+## Streams are also async iterables
 
-Streams implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from an async push model to an async pull model. This enable us to use language features such as async-for. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the stream as the source will await the iterator to pick up the next item.
+Streams implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from an async push model to an async pull model. This enable us to use language features such as async-for. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the stream as the source will await the iterator to pick up the sent item.
 
 The for-loop may be wrapped with async-with may to control the lifetime of the subscription:
 
@@ -157,7 +157,7 @@ With aioreactive you can choose to program functionally with plain old functions
 
 ## Producers are composed with pipelining
 
-The `Producer` is a functional world built on top of `AsyncSource` and `AsyncIterable`. `Producer` can compose operators using forward pipelining using the `|` (or) operator. The operators are partially applied with arguments.
+The `Producer` is a functional world built on top of `AsyncSource` and `AsyncIterable`. `Producer` composes operators using forward pipelining with the `|` (or) operator. This works by having the operators partially applied with their arguments before being given the source stream argument.
 
 ```python
 ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
