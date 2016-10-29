@@ -2,6 +2,7 @@ from asyncio.locks import BoundedSemaphore
 import logging
 from typing import Dict, TypeVar
 
+from aioreactive.core.utils import noopsink
 from aioreactive.core import AsyncSingleStream
 from aioreactive.core import AsyncSource, AsyncSink, chain
 
@@ -43,12 +44,12 @@ class Merge(AsyncSource):
             inner_stream = await chain(Merge.Stream.InnerStream(self), self._sink)  # type: AsyncSink
             self._streams[inner_stream] = None
 
-            def done(fut):
-                print("DONE!")
-                #self._sem.release()
-            inner_stream.add_done_callback(done)
-
             await self._sem.acquire()
+
+            def done(fut):
+                self._sem.release()
+
+            inner_stream.add_done_callback(done)
             self._streams[inner_stream] = await chain(stream, inner_stream)
 
         async def aclose(self) -> None:
@@ -72,13 +73,14 @@ class Merge(AsyncSource):
                 if self in self._streams:
                     del self._streams[self]
 
-                self._parent._sem.release()
-
-                # Close when no more inner streams
                 if len(self._streams) or not self._parent._is_stopped:
-                    return
+                    # Unlink sink instead of returning. This will make
+                    # sure we stil get the done callback for the stream
+                    # without forwarding the close.
+                    self._sink = noopsink
 
                 log.debug("Closing merge by inner ...")
+                # Close when no more inner streams
                 await super().aclose()
 
 
