@@ -70,8 +70,8 @@ class AsyncIteratorSink(AsyncIterator, AsyncSink):
     async def _wait_for_pull(self) -> None:
         await self._pull
         self._pull = Future()
-        #print("NEW FUTURE")
         self._busy = False
+
 
 class FuncSink(AsyncSink):
     """An anonymous AsyncSink.

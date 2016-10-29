@@ -126,7 +126,7 @@ class AsyncMultiStream(AsyncMultiFuture, Generic[T]):
         for stream in list(self._sinks):
             await stream.asend(value)
         else:
-            log.info("AsyncMultiFuture.athrow, value dropped")
+            log.info("AsyncMultiStream.asend, dropped value")
 
     async def athrow(self, ex: Exception) -> None:
         if self.done():
@@ -137,7 +137,7 @@ class AsyncMultiStream(AsyncMultiFuture, Generic[T]):
         for stream in list(self._sinks):
             await stream.athrow(ex)
         else:
-            log.info("AsyncMultiFuture.athrow, exception dropped")
+            log.info("AsyncMultiStream.athrow, dropped exception: ", ex)
 
     async def aclose(self) -> None:
         if self.done():
@@ -148,7 +148,7 @@ class AsyncMultiStream(AsyncMultiFuture, Generic[T]):
         for stream in list(self._sinks):
             await stream.aclose()
         else:
-            log.info("AsyncMultiFuture.athrow, close dropped")
+            log.info("AsyncMultiStream.aclose, dropped close")
 
     async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
         """Start streaming."""

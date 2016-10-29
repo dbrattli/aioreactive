@@ -6,7 +6,7 @@ from aioreactive import core
 T = TypeVar('T')
 
 
-class AsyncStreamBase:
+class AsyncStreamBase(core.AsyncSink):
     """A stream base for testing.
 
     Provides methods for sending, throwing, and closing at a later
@@ -14,38 +14,38 @@ class AsyncStreamBase:
     """
 
     async def asend_at(self, when: float, value: T):
-        async def task():
+        async def task() -> None:
             await self.asend(value)
 
-        def callback():
+        def callback() -> None:
             asyncio.ensure_future(task())
 
         self._loop.call_at(when, callback)
 
-    async def asend_later(self, delay: float, value: T):
+    async def asend_later(self, delay: float, value: T) -> None:
         await asyncio.sleep(delay)
         await self.asend(value)
 
-    async def asend_later_scheduled(self, delay: float, value: T):
-        async def task():
+    async def asend_later_scheduled(self, delay: float, value: T) -> None:
+        async def task() -> None:
             await asyncio.sleep(delay)
             await self.asend(value)
         asyncio.ensure_future(task())
 
-    async def athrow_at(self, when: float, err: Exception):
-        async def task():
+    async def athrow_at(self, when: float, err: Exception) -> None:
+        async def task() -> None:
             await self.athrow(err)
 
-        def callback():
+        def callback() -> None:
             asyncio.ensure_future(task())
 
         self._loop.call_at(when, callback)
 
-    async def athrow_later(self, delay: float, err: Exception):
+    async def athrow_later(self, delay: float, err: Exception) -> None:
         await asyncio.sleep(delay)
         await self.athrow(err)
 
-    async def athrow_later_scheduled(self, delay: float, err: Exception):
+    async def athrow_later_scheduled(self, delay: float, err: Exception) -> None:
         async def task():
             await asyncio.sleep(delay)
             await self.athrow(err)
