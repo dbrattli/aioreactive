@@ -13,7 +13,7 @@ Aioreactive is an asynchronous and reactive Python library for asyncio using asy
 * All operators and tools are implemented as plain old functions. No methods other than Python special methods.
 * Everything is `async`. Sending values is async, listening to sources is async, even mappers or predicates may sleep or perform other async operations.
 * One scheduler to rule them all. Everything runs on the asyncio base event-loop.
-* No multi-threading. Only async and await with concurrency using asyncio. Threads are hard, and in many cases it doesn’t make sense to use multi-threading in Python applications. If you need to use threads you may wrap them with [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#module-concurrent.futures) or similar.
+* No multi-threading. Only async and await with concurrency using asyncio. Threads are hard, and in many cases it doesn’t make sense to use multi-threading in Python applications. If you need to use threads you may wrap them with [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#module-concurrent.futures) and compose them into the chain with `flat_map()` or similar. See [`parallel.py`](https://github.com/dbrattli/aioreactive/blob/master/examples/parallel/parallel.py) for an example.
 * Simple, clean and use few abstractions. Try to align with the itertools package, and reuse as much from the Python standard library as possible.
 
 # Core level
@@ -117,7 +117,9 @@ assert result == [1, 2, 3]
 
 ## Async streams
 
-A stream is really just a sink and a source. Since every sink is also a source, it's better described as as a sink that may be chained together with other sinks or streams. Thus you may both send values, and listen to it at the same time.
+Aioreactive also lets you create streams directly. A stream is really just a sink and a source.
+
+Since every sink is also a source, it's better described as as a sink that may be chained together with other sinks or streams. Thus you may both send values, and listen to it at the same time.
 
 You can create streams directly from `AsyncStream`, and you can start streams the same was as with any other source:
 
@@ -131,7 +133,9 @@ await xs.asend(42)
 
 ## Functions and operators
 
-aioreactive contains many of the same operators as you know from Rx. Our goal is not to implement them all, but to have the most essential onces. Other may be added by extension libraries.
+Sources and streams may be created, transformed, filtered, aggregated, or combined using operators. Operators are plain functions that you may apply to a source stream.
+
+Aioreactive contains many of the same operators as you know from Rx. Our goal is not to implement them all, but to have the most essential onces. Other may be added by extension libraries.
 
 * **concat** -- Concatenates two source streams.
 * **debounce** -- Throttles a source stream.
@@ -155,9 +159,11 @@ With aioreactive you can choose to program functionally with plain old functions
 
 # Producer
 
+The `Producer` is a functional world built on top of `AsyncSource`.
+
 ## Producers are composed with pipelining
 
-The `Producer` is a functional world built on top of `AsyncSource` and `AsyncIterable`. `Producer` composes operators using forward pipelining with the `|` (or) operator. This works by having the operators partially applied with their arguments before being given the source stream argument.
+`Producer` composes operators using forward pipelining with the `|` (or) operator. This works by having the operators partially applied with their arguments before being given the source stream argument.
 
 ```python
 ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
