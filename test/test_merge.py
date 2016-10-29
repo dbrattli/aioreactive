@@ -73,6 +73,36 @@ async def test_merge_streams():
     ]
 
 
+@pytest.mark.asyncio
+async def test_merge_streams_concat():
+    s1 = AsyncStream()
+    s2 = from_iterable([1, 2, 3])
+
+    xs = from_iterable([s1, s2])
+
+    ys = merge(xs, 1)
+
+    sink = FuncSink()
+    sub = await start(ys, sink)
+
+    await s1.asend_at(1, 10)
+    await s1.asend_at(2, 20)
+    await s1.asend_at(4, 30)
+    await s1.aclose_at(6)
+
+    await sub
+
+    assert sink.values == [
+        (1, 10),
+        (2, 20),
+        (4, 30),
+        (6, 1),
+        (6, 2),
+        (6, 3),
+        (6,)
+    ]
+
+
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(test_merge_streams())
