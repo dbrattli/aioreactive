@@ -1,10 +1,11 @@
+import asyncio
 from asyncio.locks import BoundedSemaphore
-import logging
 from typing import Dict, TypeVar
+import logging
 
 from aioreactive.core.utils import noopsink
 from aioreactive.core import AsyncSingleStream
-from aioreactive.core import AsyncSource, AsyncSink, chain
+from aioreactive.core import AsyncSource, AsyncSink, chain, chain_future
 
 T = TypeVar('T')
 log = logging.getLogger(__name__)
@@ -18,44 +19,54 @@ class Merge(AsyncSource):
 
     async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
         log.debug("Merge:__astart__()")
-        _sink = await chain(Merge.Stream(self, self.max_concurrent), sink)
-        stream = await chain(self._source, _sink)
-        stream.add_done_callback(_sink._done)
+        merge_stream = await chain(Merge.Stream(self, self.max_concurrent), sink)
+        stream = await chain(self._source, merge_stream)
+        chain_future(stream, merge_stream)
         return stream
 
     class Stream(AsyncSingleStream):
 
         def __init__(self, source: AsyncSource, max_concurrent: int) -> None:
             super().__init__()
-            self._streams = {}  # type: Dict[AsyncSink[T], AsyncSingleStream]
-            self._is_stopped = False
+            self._inner_streams = {}  # type: Dict[AsyncSink[T], AsyncSingleStream]
             self._sem = BoundedSemaphore(max_concurrent)
+            self._is_closed = False
 
-        def _done(self, sub=None) -> None:
-            log.debug("Merge._:done()")
-            for stream in self._streams.values():
+        def cancel(self, sub=None) -> None:
+            log.debug("Merge.Stream:cancel()")
+            super().cancel()
+
+            # Use .values() so that no one modifies the dict while we
+            # cancel the inner streams.
+            for stream in self._inner_streams.values():
                 if stream is not None:
                     stream.cancel()
-            self._streams = {}
+            self._inner_streams = {}
 
         async def asend(self, stream: AsyncSource) -> None:
             log.debug("Merge.Stream:send(%s)" % stream)
 
-            inner_stream = await chain(Merge.Stream.InnerStream(self), self._sink)  # type: AsyncSink
-            self._streams[inner_stream] = None
+            inner_stream = await chain(Merge.Stream.InnerStream(), self._sink)  # type: AsyncSink
 
+            # Allocate entry to make sure no-one closes the merge before
+            # we get to aquire the semaphore.
+            self._inner_streams[inner_stream] = None
             await self._sem.acquire()
 
             def done(fut):
+                self._inner_streams.pop(inner_stream, None)
                 self._sem.release()
 
+                if self._is_closed:
+                    asyncio.ensure_future(self.aclose())
+
             inner_stream.add_done_callback(done)
-            self._streams[inner_stream] = await chain(stream, inner_stream)
+            self._inner_streams[inner_stream] = await chain(stream, inner_stream)
 
         async def aclose(self) -> None:
             log.debug("Merge.Stream:aclose()")
-            if len(self._streams):
-                self._is_stopped = True
+            if len(self._inner_streams):
+                self._is_closed = True
                 return
 
             log.debug("Closing merge ...")
@@ -63,24 +74,13 @@ class Merge(AsyncSource):
 
         class InnerStream(AsyncSingleStream):
 
-            def __init__(self, parent) -> None:
-                super().__init__()
-                self._parent = parent
-                self._streams = parent._streams
-
             async def aclose(self) -> None:
                 log.debug("Merge.Stream.InnerStream:aclose()")
-                if self in self._streams:
-                    del self._streams[self]
 
-                if len(self._streams) or not self._parent._is_stopped:
-                    # Unlink sink instead of returning. This will make
-                    # sure we stil get the done callback for the stream
-                    # without forwarding the close.
-                    self._sink = noopsink
-
-                log.debug("Closing merge by inner ...")
-                # Close when no more inner streams
+                # Unlink sink to avoid forwarding the close. This will
+                # make the inner_stream complete, and the done callback
+                # will take care of any cleanup.
+                self._sink = noopsink
                 await super().aclose()
 
 
