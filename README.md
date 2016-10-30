@@ -215,7 +215,7 @@ async def test_slice_special():
 
 ## Async observables and async observers
 
-An alternative to `Producer` and pipelining is to use async observables and method chaining as we know from [ReactiveX](http://reactivex.io). Async AsyncObservables are almost the same as the AsyncObservables we are used to from [RxPY](https://github.com/ReactiveX/RxPY). The difference is that all methods such as `.subscribe()` and observer methods such as `on_next(value)`, `on_error(err)` and `on_completed()` are all async and needs to be awaited.
+An alternative to `Producer` and pipelining is to use async observables and method chaining as we know from [ReactiveX](http://reactivex.io). Async Observables are almost the same as the Observables we are used to from [RxPY](https://github.com/ReactiveX/RxPY). The difference is that all methods such as `.subscribe()` and observer methods such as `on_next(value)`, `on_error(err)` and `on_completed()` are all async and needs to be awaited.
 
 ```python
 @pytest.mark.asyncio
