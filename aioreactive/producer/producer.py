@@ -77,7 +77,7 @@ class Producer(AsyncSource):
         Returns concat(other, self)"""
 
         from aioreactive.core.sources.concat import concat
-        return concat(other, self)
+        return concat(self, other)
 
     def __iadd__(self, other):
         """Pythonic use of concat
@@ -88,7 +88,7 @@ class Producer(AsyncSource):
         Returns self.concat(other, self)"""
 
         from aioreactive.core.sources.concat import concat
-        return concat(other, self)
+        return concat(self, other)
 
     @classmethod
     def from_iterable(cls, iter) -> "Producer":

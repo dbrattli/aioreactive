@@ -15,6 +15,7 @@ Aioreactive is an asynchronous and reactive Python library for asyncio using asy
 * One scheduler to rule them all. Everything runs on the asyncio base event-loop.
 * No multi-threading. Only async and await with concurrency using asyncio. Threads are hard, and in many cases it doesn’t make sense to use multi-threading in Python applications. If you need to use threads you may wrap them with [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#module-concurrent.futures) and compose them into the chain with `flat_map()` or similar. See [`parallel.py`](https://github.com/dbrattli/aioreactive/blob/master/examples/parallel/parallel.py) for an example.
 * Simple, clean and use few abstractions. Try to align with the itertools package, and reuse as much from the Python standard library as possible.
+* Implicit synchronous back-pressure &trade;. Producers of events will simply be awaited until the event can be processed by the down-stream event consumers.
 
 # Core level
 
@@ -137,7 +138,7 @@ Sources and streams may be created, transformed, filtered, aggregated, or combin
 
 Aioreactive contains many of the same operators as you know from Rx. Our goal is not to implement them all, but to have the most essential onces. Other may be added by extension libraries.
 
-* **concat** -- Concatenates two source streams.
+* **concat** -- Concatenates two or more source streams.
 * **debounce** -- Throttles a source stream.
 * **delay** -- delays the items within a source stream.
 * **distinct_until_changed** -- stream with continously distict values.

@@ -21,7 +21,7 @@ async def test_concat_happy():
         log.debug("test_merge_done:send: ", value)
         result.append(value)
 
-    zs = concat(ys, xs)
+    zs = concat(xs, ys)
 
     await run(zs, FuncSink(asend))
     assert result == list(range(10))

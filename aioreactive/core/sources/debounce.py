@@ -6,13 +6,13 @@ from aioreactive.core import AsyncSingleStream, AsyncSink, AsyncSource, chain
 T = TypeVar("T")
 
 
-class Debounce(AsyncSource):
+class Debounce(AsyncSource, Generic[T]):
 
     def __init__(self, source: AsyncSource, seconds: float) -> None:
         self._seconds = seconds
         self._source = source
 
-    async def __astart__(self, sink: AsyncSink) -> AsyncSingleStream:
+    async def __astart__(self, sink: AsyncSink[T]) -> AsyncSingleStream:
         """Start streaming."""
 
         tasks = []  # type: List[asyncio.Task]
@@ -20,7 +20,7 @@ class Debounce(AsyncSource):
         _sink = await chain(Debounce.Stream(self, tasks), sink)
         sub = await chain(self._source, _sink)
 
-        def cancel(sub):
+        def cancel(sub: asyncio.Future):
             for task in tasks:
                 task.cancel()
         sub.add_done_callback(cancel)
@@ -28,7 +28,7 @@ class Debounce(AsyncSource):
 
     class Stream(AsyncSingleStream, Generic[T]):
 
-        def __init__(self, source, tasks) -> None:
+        def __init__(self, source: 'Debounce[T]', tasks: List[asyncio.Task]) -> None:
             super().__init__()
             self._source = source
             self._tasks = tasks

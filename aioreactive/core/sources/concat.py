@@ -52,9 +52,9 @@ class Concat(AsyncSource):
             self.cancel()
 
 
-def concat(other: AsyncSource, source: AsyncSource) -> AsyncSource:
+def concat(*sources: Tuple[AsyncSource]) -> AsyncSource:
     """Concatenate two source streams.
 
     Returns concatenated source stream.
     """
-    return Concat(source, other)
+    return Concat(*sources)
