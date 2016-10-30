@@ -119,14 +119,24 @@ assert result == [1, 2, 3]
 
 ## Async streams
 
-Aioreactive also lets you create streams directly. A stream is really just a sink and a source.
+Aioreactive also lets you create streams directly. A stream is really just a sink and a source. The sink and the source may however be chained together though multiple operators that transforms the stream in some way.
 
-Since every sink is also a source, it's better described as as a sink that may be chained together with other sinks or streams. Thus you may both send values, and listen to it at the same time.
+    Source -> Operator -> Operator -> Operator -> Sink
 
-You can create streams directly from `AsyncStream`, and you can start streams the same was as with any other source:
+Or they may be a single object where the object defines some semantics that the stream should ahere to.
+
+    AsyncMuliStream or AsyncSingleStream
+
+Since every sink is also a source, it's better described as as a sink that may be chained together with other sinks or streams. Thus the simplest form of a stream is just a single `Sink`.
+
+    Sink
+
+You can create streams directly from `AsyncMultiStream` or `AsyncSingleStream`. `AsyncMultiStream` supports multiple sinks, and is hot in the sense that it will drop any event if there are no sinks attached. `AsyncSingleStream` on the other hand supports a single sink, and is cold in the sense that it will await any producer until there is a sink attached.
+
+You start streaming a stream the same was as with any other source:
 
 ```python
-xs = AsyncStream()
+xs = AsyncStream()  # Alias for AsyncMultiStream
 
 sink = FuncSink()
 await start(xs, sink)
