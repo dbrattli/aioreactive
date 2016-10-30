@@ -15,6 +15,7 @@ Aioreactive is an asynchronous and reactive Python library for asyncio using asy
 * One scheduler to rule them all. Everything runs on the asyncio base event-loop.
 * No multi-threading. Only async and await with concurrency using asyncio. Threads are hard, and in many cases it doesn’t make sense to use multi-threading in Python applications. If you need to use threads you may wrap them with [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#module-concurrent.futures) and compose them into the chain with `flat_map()` or similar. See [`parallel.py`](https://github.com/dbrattli/aioreactive/blob/master/examples/parallel/parallel.py) for an example.
 * Simple, clean and use few abstractions. Try to align with the itertools package, and reuse as much from the Python standard library as possible.
+* Support type hints and optional static type checking.
 * Implicit synchronous back-pressure &trade;. Producers of events will simply be awaited until the event can be processed by the down-stream event consumers.
 
 # Core level
@@ -308,7 +309,7 @@ However, aioreactive makes it easy for you to flip-around to async iterable just
 
 # Will aioreactive replace RxPY?
 
-Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `AsyncObservable`. Aioreactive however lives within the `AsyncAsyncObservable` dimension.
+Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive however lives within the `AsyncObservable` dimension.
 
 Rx and RxPY has hundreds of different query operators, and we have no plans to implementing all of those for aioreactive.
 
