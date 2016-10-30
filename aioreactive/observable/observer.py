@@ -4,7 +4,7 @@ from aioreactive.core import AsyncSink
 from aioreactive.core.utils import anoop
 
 
-class Observer(metaclass=ABCMeta):
+class AsyncObserver(metaclass=ABCMeta):
     """An abstract async observer."""
 
     @abstractmethod
@@ -20,7 +20,7 @@ class Observer(metaclass=ABCMeta):
         return NotImplemented
 
 
-class AnonymousObserver(Observer):
+class AsyncAnonymousObserver(AsyncObserver):
     """An anonymous async observer."""
 
     def __init__(self, on_next=None, on_error=None, on_completed=None):
@@ -38,7 +38,7 @@ class AnonymousObserver(Observer):
         await self._on_completed()
 
 
-class NoopObserver(Observer):
+class AsyncNoopObserver(AsyncObserver):
     async def on_next(self, value):
         pass
 
@@ -49,11 +49,11 @@ class NoopObserver(Observer):
         pass
 
 
-class SinkObserver(AsyncSink):
+class AsyncSinkObserver(AsyncSink):
     """A async sink that forwards to an async observer."""
 
     def __init__(self):
-        self._obv = NoopObserver()
+        self._obv = AsyncNoopObserver()
 
     async def asend(self, value):
         await self._obv.on_next(value)
@@ -64,6 +64,6 @@ class SinkObserver(AsyncSink):
     async def aclose(self):
         await self._obv.on_completed()
 
-    async def __astart__(self, obv: Observer) -> AsyncSink:
+    async def __astart__(self, obv: AsyncObserver) -> AsyncSink:
         self._obv = obv
         return self

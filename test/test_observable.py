@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.observable import Observable, AnonymousObserver
+from aioreactive.observable import AsyncObservable, AsyncAnonymousObserver
 from aioreactive.core import AsyncStream
 
 log = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_observable_map():
-    xs = Observable.from_iterable([1, 2, 3])
+    xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
     async def mapper(value):
@@ -31,14 +31,14 @@ async def test_observable_map():
     async def on_next(value):
         result.append(value)
 
-    sub = await ys.subscribe(AnonymousObserver(on_next))
+    sub = await ys.subscribe(AsyncAnonymousObserver(on_next))
     await sub
     assert result == [10, 20, 30]
 
 
 @pytest.mark.asyncio
 async def test_observable_simple_pipe():
-    xs = Observable.from_iterable([1, 2, 3])
+    xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
     async def mapper(value):
@@ -54,14 +54,14 @@ async def test_observable_simple_pipe():
     async def on_next(value):
         result.append(value)
 
-    sub = await ys.subscribe(AnonymousObserver(on_next))
+    sub = await ys.subscribe(AsyncAnonymousObserver(on_next))
     await sub
     assert result == [20, 30]
 
 
 @pytest.mark.asyncio
 async def test_observable_complex_pipe():
-    xs = Observable.from_iterable([1, 2, 3])
+    xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
     async def mapper(value):
@@ -73,13 +73,16 @@ async def test_observable_complex_pipe():
         return value > 1
 
     async def long_running(value):
-        return Observable.from_iterable([value])
+        return AsyncObservable.from_iterable([value])
 
-    ys = xs.where(predicate).select(mapper).select_many(long_running)
+    ys = (xs
+          .where(predicate)
+          .select(mapper)
+          .select_many(long_running))
 
     async def on_next(value):
         result.append(value)
 
-    sub = await ys.subscribe(AnonymousObserver(on_next))
+    sub = await ys.subscribe(AsyncAnonymousObserver(on_next))
     await sub
     assert result == [20, 30]

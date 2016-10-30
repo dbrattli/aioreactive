@@ -1,10 +1,10 @@
 from aioreactive.core.stream import AsyncStream
 
-from .observable import Observable
-from .observer import Observer
+from .observable import AsyncObservable
+from .observer import AsyncObserver
 
 
-class Subject(Observable, Observer):
+class AsyncSubject(AsyncObservable, AsyncObserver):
 
     def __init__(self):
         self._stream = AsyncStream()

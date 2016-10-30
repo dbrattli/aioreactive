@@ -3,11 +3,11 @@ from typing import Callable
 from aioreactive.core import AsyncSource, start
 from aioreactive.producer import Producer
 
-from .observer import Observer, SinkObserver
+from .observer import AsyncObserver, AsyncSinkObserver
 
 
-class Observable(Producer):
-    """An Observable example class similar to RxPY.
+class AsyncObservable(Producer):
+    """An AsyncObservable example class similar to RxPY.
 
     This class supports has all operators as methods.
 
@@ -20,11 +20,11 @@ class Observable(Producer):
         super().__init__()
         self._source = source
 
-    async def subscribe(self, obv: Observer):
-        _sink = await SinkObserver().__astart__(obv)
+    async def subscribe(self, obv: AsyncObserver):
+        _sink = await AsyncSinkObserver().__astart__(obv)
         return await start(self, _sink)
 
-    def __getitem__(self, key) -> "Observable":
+    def __getitem__(self, key) -> "AsyncObservable":
         """Slices the given source stream using Python slice notation.
         The arguments to slice is start, stop and step given within
         brackets [] and separated with the ':' character. It is
@@ -51,17 +51,17 @@ class Observable(Producer):
 
         Returne a sliced source stream."""
 
-        return Observable(super(Observable, self).__getitem__(key))
+        return AsyncObservable(super(AsyncObservable, self).__getitem__(key))
 
-    def __add__(self, other) -> "Observable":
+    def __add__(self, other) -> "AsyncObservable":
         """Pythonic version of concat
 
         Example:
         zs = xs + ys
         Returns self.concat(other)"""
 
-        xs = super(Observable, self).__add__(other)
-        return Observable(xs)
+        xs = super(AsyncObservable, self).__add__(other)
+        return AsyncObservable(xs)
 
     def __iadd__(self, other):
         """Pythonic use of concat
@@ -71,22 +71,22 @@ class Observable(Producer):
 
         Returns self.concat(self, other)"""
 
-        xs = super(Observable, self).__iadd__(other)
-        return Observable(xs)
+        xs = super(AsyncObservable, self).__iadd__(other)
+        return AsyncObservable(xs)
 
     @classmethod
     def from_iterable(cls, iter):
-        return Observable(Producer.from_iterable(iter))
+        return AsyncObservable(Producer.from_iterable(iter))
 
     @classmethod
-    def just(cls, value) -> "Observable":
-        return Observable(Producer.unit(value))
+    def just(cls, value) -> "AsyncObservable":
+        return AsyncObservable(Producer.unit(value))
 
     @classmethod
-    def empty(cls) -> "Observable":
-        return Observable(Producer.empty())
+    def empty(cls) -> "AsyncObservable":
+        return AsyncObservable(Producer.empty())
 
-    def debounce(self, seconds: float) -> "Observable":
+    def debounce(self, seconds: float) -> "AsyncObservable":
         """Debounce observable source.
 
         Ignores values from a source stream which are followed by
@@ -102,28 +102,28 @@ class Observable(Producer):
         """
 
         from aioreactive.core.sources.debounce import debounce
-        return Observable(debounce(seconds, self))
+        return AsyncObservable(debounce(seconds, self))
 
-    def delay(self, seconds: float) -> "Observable":
+    def delay(self, seconds: float) -> "AsyncObservable":
         from aioreactive.core.sources.delay import delay
-        return Observable(delay(seconds, self))
+        return AsyncObservable(delay(seconds, self))
 
-    def where(self, predicate: Callable) -> "Observable":
+    def where(self, predicate: Callable) -> "AsyncObservable":
         from aioreactive.core.sources.filter import filter
-        return Observable(filter(predicate, self))
+        return AsyncObservable(filter(predicate, self))
 
-    def select_many(self, selector: Callable) -> "Observable":
+    def select_many(self, selector: Callable) -> "AsyncObservable":
         from aioreactive.core.sources.flat_map import flat_map
-        return Observable(flat_map(selector, self))
+        return AsyncObservable(flat_map(selector, self))
 
-    def select(self, selector: Callable) -> "Observable":
+    def select(self, selector: Callable) -> "AsyncObservable":
         from aioreactive.core.sources.map import map
-        return Observable(map(selector, self))
+        return AsyncObservable(map(selector, self))
 
-    def merge(self, other: AsyncSource) -> "Observable":
+    def merge(self, other: AsyncSource) -> "AsyncObservable":
         from aioreactive.core.sources.merge import merge
-        return Observable(merge(other, self))
+        return AsyncObservable(merge(other, self))
 
-    def with_latest_from(self, mapper, other) -> "Observable":
+    def with_latest_from(self, mapper, other) -> "AsyncObservable":
         from aioreactive.core.sources.with_latest_from import with_latest_from
-        return Observable(with_latest_from(mapper, other, self))
+        return AsyncObservable(with_latest_from(mapper, other, self))

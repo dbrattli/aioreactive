@@ -19,7 +19,7 @@ Aioreactive is an asynchronous and reactive Python library for asyncio using asy
 
 # Core level
 
-At the core, aioreactive is small low-level asynchronous library for reactive programming. This core library may be used directly at the `AsyncSource` level, or one may choose to use higher level abstractions such as `Producer` or `Observable` described further down on this page.
+At the core, aioreactive is small low-level asynchronous library for reactive programming. This core library may be used directly at the `AsyncSource` level, or one may choose to use higher level abstractions such as `Producer` or `AsyncObservable` described further down on this page.
 
 ## AsyncSource and AsyncSink
 
@@ -156,7 +156,7 @@ Aioreactive contains many of the same operators as you know from Rx. Our goal is
 
 # Functional or object-oriented, reactive or interactive
 
-With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. There are currently two different implementations layered on top of `AsyncSource` called `Producer`and `Observable`. `Producer` is a functional reactive and interactive world, while `Observable` is an object-oriented and reactive world.
+With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. There are currently two different implementations layered on top of `AsyncSource` called `Producer`and `AsyncObservable`. `Producer` is a functional reactive and interactive world, while `AsyncObservable` is an object-oriented and reactive world.
 
 # Producer
 
@@ -211,16 +211,16 @@ async def test_slice_special():
     assert values == [2, 3, 4]
 ```
 
-# Observable
+# AsyncObservable
 
 ## Async observables and async observers
 
-An alternative to `Producer` and pipelining is to use async observables and method chaining as we know from [ReactiveX](http://reactivex.io). Async Observables are almost the same as the Observables we are used to from [RxPY](https://github.com/ReactiveX/RxPY). The difference is that all methods such as `.subscribe()` and observer methods such as `on_next(value)`, `on_error(err)` and `on_completed()` are all async and needs to be awaited.
+An alternative to `Producer` and pipelining is to use async observables and method chaining as we know from [ReactiveX](http://reactivex.io). Async AsyncObservables are almost the same as the AsyncObservables we are used to from [RxPY](https://github.com/ReactiveX/RxPY). The difference is that all methods such as `.subscribe()` and observer methods such as `on_next(value)`, `on_error(err)` and `on_completed()` are all async and needs to be awaited.
 
 ```python
 @pytest.mark.asyncio
 async def test_observable_simple_pipe():
-    xs = Observable.from_iterable([1, 2, 3])
+    xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
     async def mapper(value):
@@ -236,8 +236,8 @@ async def test_observable_simple_pipe():
     async def on_next(value):
         result.append(value)
 
-    sub = await ys.subscribe(AnonymousObserver(on_next))
-    await sub
+    subscription = await ys.subscribe(AsyncAnonymousObserver(on_next))
+    await subsubscription
     assert result == [20, 30]
 ```
 
@@ -308,7 +308,7 @@ However, aioreactive makes it easy for you to flip-around to async iterable just
 
 # Will aioreactive replace RxPY?
 
-Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive however lives within the `AsyncObservable` dimension.
+Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `AsyncObservable`. Aioreactive however lives within the `AsyncAsyncObservable` dimension.
 
 Rx and RxPY has hundreds of different query operators, and we have no plans to implementing all of those for aioreactive.
 
