@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/dbrattli/aioreactive.svg?branch=master)](https://travis-ci.org/dbrattli/aioreactive)
 [![Coverage Status](https://coveralls.io/repos/github/dbrattli/aioreactive/badge.svg?branch=master)](https://coveralls.io/github/dbrattli/aioreactive?branch=master)
 
-# aioreactive - RxPY-vNext for asyncio using async and await
+# aioreactive - RxPY for asyncio using async and await
 
 Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY) for asyncio. It's an asynchronous and reactive Python library for asyncio using async and await. Aioreactive is the next version of [RxPY](https://github.com/ReactiveX/RxPY), that integrates more naturally with the Python language.
 
@@ -84,13 +84,13 @@ To stop streaming you need to call the `dispose()` method.
 subscription.dispose()
 ```
 
-A subscription may also be awaited. The await will resolve when the subscription closes, either normally or with an error. The value returned will be the last value received through the subscriptiion. If no value has been received when the subscription closes, then await will throw `CancelledError`.
+A subscription may also be awaited. The await will resolve when the subscription ends, either normally or with an error. The returned value will be the last value received through the subscriptiion. If no value has been received when the subscription ends, then await will throw `CancelledError`.
 
 ```python
 value = await (await subscribe(source, AnonymousAsyncObserver(asend)))
 ```
 
-The double await can be replaced by the better looking function `run()` which basically does the same thing:
+The double await can be replaced by the better looking function `run()` which basically does the same thing. This will run the subscription to completion before returning:
 
 ```python
 value = await run(ys, AnonymousAsyncObserver(asend))
@@ -137,7 +137,7 @@ You can create streams directly from `AsyncMultiStream` or `AsyncSingleStream`. 
 
 ## Operators
 
-The Rx operators in aioreactive are plain old functions. You can apply them to an observable and compose it into a transformed, filtered, aggregated or combined observable. This transformed observable can be streamed into an observer.
+The Rx operators in aioreactive are all plain old functions. You can apply them to an observable and compose it into a transformed, filtered, aggregated or combined observable. This transformed observable can be streamed into an observer.
 
     Observable -> Operator -> Operator -> Operator -> Observer
 
@@ -312,7 +312,7 @@ However, aioreactive makes it easy for you to flip-around to async iterable just
 
 Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive however is an implementation of `AsyncObservable`.
 
-Rx and RxPY has hundreds of different query operators, and we have no plans to implementing all of those for aioreactive.
+Rx and RxPY has hundreds of different query operators, and we currently have no plans to implementing all of them for aioreactive.
 
 Many ideas from aioreactive might be ported back into "classic" RxPY.
 
