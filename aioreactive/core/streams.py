@@ -4,8 +4,7 @@ from typing import TypeVar, Generic
 from typing import AsyncIterable, AsyncIterator
 from abc import abstractmethod
 
-
-from .typing import AsyncObservable, AsyncObserver
+from .typing import AsyncObserver
 from .futures import AsyncMultiFuture, chain_future
 from .observers import AsyncIteratorObserver
 from .observables import AsyncObservable

@@ -1,32 +1,32 @@
 [![Build Status](https://travis-ci.org/dbrattli/aioreactive.svg?branch=master)](https://travis-ci.org/dbrattli/aioreactive)
 [![Coverage Status](https://coveralls.io/repos/github/dbrattli/aioreactive/badge.svg?branch=master)](https://coveralls.io/github/dbrattli/aioreactive?branch=master)
 
-# aioreactive - reactive and async RxPY for asyncio
+# aioreactive - RxPY-vNext for asyncio using async and await
 
-Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY) for asyncio, an asynchronous and reactive Python library for asyncio using async and await. Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY)-vNext, and integrates more naturally with the Python language.
+Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY) for asyncio. It's an asynchronous and reactive Python library for asyncio using async and await. Aioreactive is the next version of [RxPY](https://github.com/ReactiveX/RxPY), that integrates more naturally with the Python language.
 
->aioreactive is the unification of RxPY, reactive programming and asyncio using async and await.
-
-With aioreactive you subsribe observers to observables, and the key abstractions of aioreactive can be seen in this single line of code:
-
-```python
-subscription = await subscribe(observable, observer)
-```
+>aioreactive is the unification of RxPY, reactive programming with asyncio using async and await.
 
 ## The design goals for aioreactive:
 
 * Python 3.5+ only. We have a hard dependency on `async` and `await`.
 * All operators and tools are implemented as plain old functions. No methods other than Python special methods.
-* Everything is `async`. Sending values is async, listening to operators is async.
+* Everything is `async`. Sending values is async, subscribing to observables is async.
 * One scheduler to rule them all. Everything runs on the asyncio base event-loop.
 * No multi-threading. Only async and await with concurrency using asyncio. Threads are hard, and in many cases it doesn’t make sense to use multi-threading in Python applications. If you need to use threads you may wrap them with [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#module-concurrent.futures) and compose them into the chain with `flat_map()` or similar. See [`parallel.py`](https://github.com/dbrattli/aioreactive/blob/master/examples/parallel/parallel.py) for an example.
 * Simple, clean and use few abstractions. Try to align with the itertools package, and reuse as much from the Python standard library as possible.
 * Support type hints and optional static type checking.
-* Implicit synchronous back-pressure &trade;. Producers of events will simply be awaited until the event can be processed by the down-stream event consumers.
+* Implicit synchronous back-pressure &trade;. Producers of events will simply be awaited until the event can be processed by the down-stream consumers.
 
 ## AsyncObservable and AsyncObserver
 
-Aioreactive is built around the asynchronous duals, or opposites of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncObservable and AsyncObserver.
+With aioreactive you subscribe observers to observables, and the key abstractions of aioreactive can be seen in this single line of code:
+
+```python
+subscription = await subscribe(observable, observer)
+```
+
+The difference from RxPY can be seen with the 'await' expression. Aioreactive is built around the asynchronous duals, or opposites of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncObservable and AsyncObserver.
 
 AsyncObservable is a producer of events. It may be seen as the dual or opposite of AsyncIterable and provides a single setter method called `__asubscribe__()` that is the dual of the `__aiter__()` getter method:
 
@@ -96,17 +96,17 @@ The double await can be replaced by the better looking function `run()` which ba
 value = await run(ys, AnonymousAsyncObserver(asend))
 ```
 
-Even more interresting, subscriptions are also async iterable so you can flip around from `AsyncObservable` to an `AsyncIterable` and use `async-for` to consume the stream.
+## Subscriptions may be iterated asynchronously
+
+Even more interresting, subscriptions are also async iterables so you can flip around from `AsyncObservable` to an `AsyncIterable` and use `async-for` to consume the stream of events.
 
 ```python
-async with subscribe(source) as subscription:
-    async for x in subscription:
-        print(x)
+subscription = subscribe(source)
+async for x in subscription:
+    print(x)
 ```
 
-## Subscriptions are also async iterables
-
-Subscriptions implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from an async push model to an async pull model. This enable us to use language features such as async-for. We do this without any queueing as push by the `AsyncObservable` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the subscription as the producer will await the iterator to pick up the sent item.
+They effectively transform us from an async push model to an async pull model. This enable us to use the awsome new language features such as `async for` and `async-with`. We do this without any queueing as push by the `AsyncObservable` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the subscription as the producer will await the iterator to pick up the item send.
 
 The for-loop may be wrapped with async-with to control the lifetime of the subscription:
 
@@ -137,7 +137,7 @@ You can create streams directly from `AsyncMultiStream` or `AsyncSingleStream`. 
 
 ## Operators
 
-Operators are plain functions that you can apply to an observable and compose it into a transformed, filtered, aggregated or combined observable. This transformed observable can be streamed into an obsever.
+The Rx operators in aioreactive are plain old functions. You can apply them to an observable and compose it into a transformed, filtered, aggregated or combined observable. This transformed observable can be streamed into an observer.
 
     Observable -> Operator -> Operator -> Operator -> Observer
 
@@ -161,15 +161,11 @@ Aioreactive contains many of the same operators as you know from RxPY. Our goal 
 
 # Functional or object-oriented, reactive or interactive
 
-With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. Aioreactive supports both method chaining or forward pipe
+With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. Aioreactive supports both method chaining or forward pipe programming styles.
 
 ## Pipe forward programming style
 
-The `Producer` is a functional world built on top of `AsyncObservable`.
-
-## Observables are composed with pipelining
-
-`AsyncObservable` composes operators using forward pipelining with the `|` (or) operator. This works by having the operators partially applied with their arguments before being given the source stream argument.
+`AsyncObservable` may compose operators using forward pipelining with the `|` (or) operator. This works by having the operators partially applied with their arguments before being given the source stream argument.
 
 ```python
 ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
@@ -275,7 +271,7 @@ async def test_call_later():
     assert result == [2, 3, 1]
 ```
 
-The `aioreactive.testing` module provides a test `Stream` that may delay sending values, and test `AnonymousAsyncObserver` that records all events. These two classes helps you with testing in virtual time.
+The `aioreactive.testing` module provides a test `AsyncStream` that may delay sending values, and test `AnonymousAsyncObserver` that records all events. These two classes helps you with testing in virtual time.
 
 ```python
 @pytest.yield_fixture()
@@ -286,7 +282,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_delay_done():
-    xs = Stream()  # Test stream
+    xs = AsyncStream()  # Test stream
 
     async def mapper(value):
         return value * 10
