@@ -1,8 +1,10 @@
-from typing import Callable, TypeVar, Generic
+from typing import Callable, TypeVar, Generic, Iterable
 
 from .observers import AsyncObserver
 from .typing import AsyncObservable as AsyncObservableGeneric
+
 T = TypeVar('T')
+T2 = TypeVar('T2')
 
 
 class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
@@ -16,10 +18,10 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
     def __init__(self, source: 'AsyncObservable' = None) -> None:
         self._source = source
 
-    async def __asubscribe__(self, sink: AsyncObserver) -> 'AsyncSingleStream':
+    async def __asubscribe__(self, sink: AsyncObserver[T]) -> 'AsyncSingleStream':
         return await self._source.__asubscribe__(sink)
 
-    def __or__(self, other: Callable[['AsyncObservable'], 'AsyncObservable']) -> 'AsyncObservable':
+    def __or__(self, other: Callable[['AsyncObservable[T]'], 'AsyncObservable[T2]']) -> 'AsyncObservable[T2]':
         """Forward pipe.
 
         Composes an async observable with a partally applied operator.
@@ -28,7 +30,7 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
         """
         return other(self)
 
-    def __getitem__(self, key) -> 'AsyncObservable':
+    def __getitem__(self, key) -> 'AsyncObservable[T]':
         """Slices the given source stream using Python slice notation.
         The arguments to slice is start, stop and step given within
         brackets [] and separated with the ':' character. It is
@@ -66,7 +68,7 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
 
         return _slice(start, stop, step, self)
 
-    def __add__(self, other: 'AsyncObservable') -> 'AsyncObservable':
+    def __add__(self, other: 'AsyncObservable[T]') -> 'AsyncObservable[T]':
         """Pythonic version of concat
 
         Example:
@@ -77,7 +79,7 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
         from aioreactive.operators.concat import concat
         return concat(self, other)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: 'AsyncObservable[T]') -> 'AsyncObservable[T]':
         """Pythonic use of concat
 
         Example:
@@ -89,22 +91,22 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
         return concat(self, other)
 
     @classmethod
-    def from_iterable(cls, iter) -> 'AsyncObservable':
+    def from_iterable(cls, iter: Iterable[T]) -> 'AsyncObservable[T]':
         from aioreactive.operators.from_iterable import from_iterable
         return from_iterable(iter)
 
     @classmethod
-    def unit(cls, value) -> 'AsyncObservable':
+    def unit(cls, value: T) -> 'AsyncObservable[T]':
         from aioreactive.operators.unit import unit
         return unit(value)
 
     @classmethod
-    def empty(cls) -> 'AsyncObservable':
+    def empty(cls) -> 'AsyncObservable[T]':
         from aioreactive.operators.empty import empty
         return empty()
 
     @classmethod
-    def never(cls) -> 'AsyncObservable':
+    def never(cls) -> 'AsyncObservable[T]':
         from aioreactive.operators.never import never
         return never()
 
