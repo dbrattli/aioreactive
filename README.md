@@ -1,48 +1,50 @@
 [![Build Status](https://travis-ci.org/dbrattli/aioreactive.svg?branch=master)](https://travis-ci.org/dbrattli/aioreactive)
 [![Coverage Status](https://coveralls.io/repos/github/dbrattli/aioreactive/badge.svg?branch=master)](https://coveralls.io/github/dbrattli/aioreactive?branch=master)
 
-# aioreactive - reactive tools for asyncio
+# aioreactive - reactive and async RxPY for asyncio
 
-Aioreactive is an asynchronous and reactive Python library for asyncio using async and await. Aioreactive is based on concepts from [RxPY](https://github.com/ReactiveX/RxPY), but is more low-level, and integrates more naturally with the Python language.
+Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY) for asyncio, an asynchronous and reactive Python library for asyncio using async and await. Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY)-vNext, and integrates more naturally with the Python language.
 
->aioreactive is the unification of reactive programming and asyncio using async and await.
+>aioreactive is the unification of RxPY, reactive programming and asyncio using async and await.
+
+With aioreactive you subsribe observers to observables, and the key abstractions of aioreactive can be seen in this single line of code:
+
+```python
+subscription = await subscribe(observable, observer)
+```
 
 ## The design goals for aioreactive:
 
 * Python 3.5+ only. We have a hard dependency on `async` and `await`.
 * All operators and tools are implemented as plain old functions. No methods other than Python special methods.
-* Everything is `async`. Sending values is async, listening to sources is async, even mappers or predicates may sleep or perform other async operations.
+* Everything is `async`. Sending values is async, listening to operators is async.
 * One scheduler to rule them all. Everything runs on the asyncio base event-loop.
 * No multi-threading. Only async and await with concurrency using asyncio. Threads are hard, and in many cases it doesn’t make sense to use multi-threading in Python applications. If you need to use threads you may wrap them with [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#module-concurrent.futures) and compose them into the chain with `flat_map()` or similar. See [`parallel.py`](https://github.com/dbrattli/aioreactive/blob/master/examples/parallel/parallel.py) for an example.
 * Simple, clean and use few abstractions. Try to align with the itertools package, and reuse as much from the Python standard library as possible.
 * Support type hints and optional static type checking.
 * Implicit synchronous back-pressure &trade;. Producers of events will simply be awaited until the event can be processed by the down-stream event consumers.
 
-# Core level
+## AsyncObservable and AsyncObserver
 
-At the core, aioreactive is small low-level asynchronous library for reactive programming. This core library may be used directly at the `AsyncSource` level, or one may choose to use higher level abstractions such as `Producer` or `AsyncObservable` described further down on this page.
+Aioreactive is built around the asynchronous duals, or opposites of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncObservable and AsyncObserver.
 
-## AsyncSource and AsyncSink
-
-Aioreactive is built around the asynchronous duals, or opposites of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncSource and AsyncSink.
-
-AsyncSource is the dual or opposite of AsyncIterable and provides a single setter method called `__astart__()` that is the dual of the `__aiter__()` getter method:
+AsyncObservable is a producer of events. It may be seen as the dual or opposite of AsyncIterable and provides a single setter method called `__asubscribe__()` that is the dual of the `__aiter__()` getter method:
 
 ```python
 from abc import ABCMeta, abstractmethod
 
-class AsyncSource(metaclass=ABCMeta):
+class AsyncObservable(metaclass=ABCMeta):
     @abstractmethod
-    async def __astart__(self, sink):
+    async def __asubscribe__(self, sink):
         return NotImplemented
 ```
 
-AsyncSink is modelled after the so-called [consumer interface](http://effbot.org/zone/consumer.htm), the enhanced generator interface in [PEP-342](https://www.python.org/dev/peps/pep-0342/) and async generators in [PEP-525](https://www.python.org/dev/peps/pep-0525/). It is the dual of the AsyncIterator `__anext__()` method, and expands to three async methods `asend()`, that is the opposite of `__anext__()`, `athrow()` that is the opposite of an `raise Exception()` and `aclose()` that is the opposite of `raise StopAsyncIteration`:
+AsyncObserver is a consumer of events and is modelled after the so-called [consumer interface](http://effbot.org/zone/consumer.htm), the enhanced generator interface in [PEP-342](https://www.python.org/dev/peps/pep-0342/) and async generators in [PEP-525](https://www.python.org/dev/peps/pep-0525/). It is the dual of the AsyncIterator `__anext__()` method, and expands to three async methods `asend()`, that is the opposite of `__anext__()`, `athrow()` that is the opposite of an `raise Exception()` and `aclose()` that is the opposite of `raise StopAsyncIteration`:
 
 ```python
 from abc import ABCMeta, abstractmethod
 
-class AsyncSink(AsyncSource):
+class AsyncObserver(AsyncObservable):
     @abstractmethod
     async def asend(self, value):
         return NotImplemented
@@ -55,63 +57,65 @@ class AsyncSink(AsyncSource):
     async def aclose(self):
         return NotImplemented
 
-    async def __astart__(self, sink):
+    async def __asubscribe__(self, sink):
         return self
 ```
 
-Sinks are also sources. This is similar to how Iterators are also Iterables in Python. This enable us to chain sinks together. While chaining sinks is not normally done when using aioreactive, it's used extensively by the various sources and operators when you start streaming them.
+Obsevers are also Observables. This is similar to how Iterators are also Iterables in Python. This enable us to chain observers together. While chaining observers is not normally done when using aioreactive, it's used extensively by the various operators when you subscribe them.
 
-## Streaming sources
+## Subscribing to observables
 
-A source starts streaming by using the `start()` function. The `start()` function takes a source and an optional sink, and returns a stream. If a sink is given it will receive all values that are passed through the source. So the `start()` function is used to attach a sink to the source, and start streaming values though source. The stream returned by `start()` is cancellable, iterable, and chainable. We will learn more about this later. Here is an example:
+An observable becomes hot and starts streaming items by using the `subscribe()` function. The `subscribe()` function takes an observable and an optional observer, and returns a subscription. If an observer is given it will receive all values that are passed through the observable. So the `subscribe()` function is used to attach a observer to the observable.
+
+The subscription returned by `subscribe()` is cancellable, iterable, and chainable. We will learn more about this later. Here is an example:
 
 ```python
 async def asend(value):
     print(value)
 
-stream = await start(source, FuncSink(asend))
+subscription = await subscribe(source, AnonymousAsyncObserver(asend))
 ```
 
-`FuncSink` is an anonymous sink that constructs an `AsyncSink` out of plain async functions, so you don't have to implement a new named sink every time you need one.
+`AnonymousAsyncObserver` is an anonymous observer that constructs an `AsyncObserver` out of plain async functions, so you don't have to implement a new named observer every time you need one.
 
-To stop streaming you need to call the `cancel()` method.
+To stop streaming you need to call the `dispose()` method.
 
 ```python
-stream.cancel()
+subscription.dispose()
 ```
 
-A stream may also be awaited. The await will resolve when the stream closes, either normally or with an error. The value returned will be the last value received through the stream. If no value has been received when the stream closes, then await will throw `CancelledError`.
+A subscription may also be awaited. The await will resolve when the subscription closes, either normally or with an error. The value returned will be the last value received through the subscriptiion. If no value has been received when the subscription closes, then await will throw `CancelledError`.
 
 ```python
-value = await (await start(source, FuncSink(asend)))
+value = await (await subscribe(source, AnonymousAsyncObserver(asend)))
 ```
 
 The double await can be replaced by the better looking function `run()` which basically does the same thing:
 
 ```python
-value = await run(ys, FuncSink(asend))
+value = await run(ys, AnonymousAsyncObserver(asend))
 ```
 
-Even more interresting, streams are also async iterable so you can flip around from `AsyncSource` to an `AsyncIterable` and use `async-for` to consume the stream.
+Even more interresting, subscriptions are also async iterable so you can flip around from `AsyncObservable` to an `AsyncIterable` and use `async-for` to consume the stream.
 
 ```python
-async with start(source) as stream:
-    async for x in stream:
+async with subscribe(source) as subscription:
+    async for x in subscription:
         print(x)
 ```
 
-## Streams are also async iterables
+## Subscriptions are also async iterables
 
-Streams implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from an async push model to an async pull model. This enable us to use language features such as async-for. We do this without any queueing as push by the `AsyncSource` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the stream as the source will await the iterator to pick up the sent item.
+Subscriptions implements `AsyncIterable` so may iterate them asynchronously. They effectively transform us from an async push model to an async pull model. This enable us to use language features such as async-for. We do this without any queueing as push by the `AsyncObservable` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the subscription as the producer will await the iterator to pick up the sent item.
 
-The for-loop may be wrapped with async-with may to control the lifetime of the subscription:
+The for-loop may be wrapped with async-with to control the lifetime of the subscription:
 
 ```python
 xs = from_iterable([1, 2, 3])
 result = []
 
-async with start(xs) as ys:
-    async for x in ys:
+async with subscribe(xs) as subscription:
+    async for x in subscription:
         result.append(x)
 
 assert result == [1, 2, 3]
@@ -119,63 +123,53 @@ assert result == [1, 2, 3]
 
 ## Async streams
 
-Aioreactive also lets you create streams directly. A stream is really just a sink and a source. The sink and the source may however be chained together though multiple operators that transforms the stream in some way.
-
-    Source -> Operator -> Operator -> Operator -> Sink
-
-Or they may be a single object where the object defines some semantics that the stream should ahere to.
-
-    AsyncMuliStream or AsyncSingleStream
-
-Since every sink is also a source, it's better described as as a sink that may be chained together with other sinks or streams. Thus the simplest form of a stream is just a single `Sink`.
-
-    Sink
-
-You can create streams directly from `AsyncMultiStream` or `AsyncSingleStream`. `AsyncMultiStream` supports multiple sinks, and is hot in the sense that it will drop any event if there are no sinks attached. `AsyncSingleStream` on the other hand supports a single sink, and is cold in the sense that it will await any producer until there is a sink attached.
-
-You start streaming a stream the same was as with any other source:
+Aioreactive also lets you create streams explicitly.
 
 ```python
-xs = AsyncStream()  # Alias for AsyncMultiStream
+stream = AsyncStream()  # Alias for AsyncMultiStream
 
-sink = FuncSink()
-await start(xs, sink)
-await xs.asend(42)
+sink = AnonymousAsyncObserver()
+await subscribe(stream, sink)
+await stream.asend(42)
 ```
 
-## Functions and operators
+You can create streams directly from `AsyncMultiStream` or `AsyncSingleStream`. `AsyncMultiStream` supports multiple observers, and is hot in the sense that it will drop any event that is sent if there are currently no observers attached. `AsyncSingleStream` on the other hand supports a single observer, and is cold in the sense that it will await any producer until there is an observer attached.
 
-Sources and streams may be created, transformed, filtered, aggregated, or combined using operators. Operators are plain functions that you may apply to a source stream.
+## Operators
 
-Aioreactive contains many of the same operators as you know from Rx. Our goal is not to implement them all, but to have the most essential onces. Other may be added by extension libraries.
+Operators are plain functions that you can apply to an observable and compose it into a transformed, filtered, aggregated or combined observable. This transformed observable can be streamed into an obsever.
 
-* **concat** -- Concatenates two or more source streams.
-* **debounce** -- Throttles a source stream.
-* **delay** -- delays the items within a source stream.
-* **distinct_until_changed** -- stream with continously distict values.
-* **filter** -- filters a source stream.
-* **flat_map** -- transforms a stream into a stream of streams and flattens the resulting stream.
-* **from_iterable** -- Create a source stream from an (async) iterable.
-* **listen** -- Subscribes a sink to a source. Returns a future.
-* **map** -- transforms a source stream.
-* **merge** -- Merges a stream of streams.
-* **run** -- Awaits the future returned by listen. Returns when the subscription closes.
-* **slice** -- Slices a source stream.
-* **switch_latest** -- Merges the latest stream in a stream of streams.
-* **unit** -- Converts a value or future to a source stream.
-* **with_latest_from** -- Combines two streams.
+    Observable -> Operator -> Operator -> Operator -> Observer
+
+Aioreactive contains many of the same operators as you know from RxPY. Our goal is not to implement them all, but to have the most essential onces.
+
+* **concat** -- Concatenates two or more observables.
+* **debounce** -- Throttles an observable.
+* **delay** -- delays the items within an observable.
+* **distinct_until_changed** -- an observable with continously distict values.
+* **filter** -- filters an observable.
+* **flat_map** -- transforms an observable into a stream of observables and flattens the resulting observable.
+* **from_iterable** -- Create an observable from an (async) iterable.
+* **subscribe** -- Subscribes an observer to an observable. Returns a subscription.
+* **map** -- transforms an observable.
+* **merge** -- Merges an observable of observables.
+* **run** -- Awaits the future returned by subscribe. Returns when the subscription closes.
+* **slice** -- Slices an observable.
+* **switch_latest** -- Merges the latest stream in an observable of streams.
+* **unit** -- Converts a value or future to an observable.
+* **with_latest_from** -- Combines two observable.
 
 # Functional or object-oriented, reactive or interactive
 
-With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. There are currently two different implementations layered on top of `AsyncSource` called `Producer`and `AsyncObservable`. `Producer` is a functional reactive and interactive world, while `AsyncObservable` is an object-oriented and reactive world.
+With aioreactive you can choose to program functionally with plain old functions, or object-oriented with classes and methods. Aioreactive supports both method chaining or forward pipe
 
-# Producer
+## Pipe forward programming style
 
-The `Producer` is a functional world built on top of `AsyncSource`.
+The `Producer` is a functional world built on top of `AsyncObservable`.
 
-## Producers are composed with pipelining
+## Observables are composed with pipelining
 
-`Producer` composes operators using forward pipelining with the `|` (or) operator. This works by having the operators partially applied with their arguments before being given the source stream argument.
+`AsyncObservable` composes operators using forward pipelining with the `|` (or) operator. This works by having the operators partially applied with their arguments before being given the source stream argument.
 
 ```python
 ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
@@ -184,10 +178,11 @@ ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
 Longer pipelines may break lines as for binary operators:
 
 ```python
-from aioreactive.producer import start, op
+from aioreactive.core import AsyncStream, subscribe
+from aioreactive.core.operators import pipe as op
 
 async def main():
-    stream = Stream()
+    stream = AsyncStream()
 
     xs = (stream
           | op.map(lambda x: x["term"])
@@ -198,12 +193,12 @@ async def main():
           | op.switch_latest()
           )
 
-    async with start(xs) as ys
+    async with subscribe(xs) as ys
         async for value in ys:
             print(value)
 ```
 
-Producers also supports slicing using the Python slice notation.
+AsyncObservable also supports slicing using the Python slice notation.
 
 ```python
 @pytest.mark.asyncio
@@ -216,17 +211,17 @@ async def test_slice_special():
 
     ys = xs[1:-1]
 
-    result = await run(ys, FuncSink(asend))
+    result = await run(ys, AnonymousAsyncObserver(asend))
 
     assert result == 4
     assert values == [2, 3, 4]
 ```
 
-# AsyncObservable
+# Fluent and chained programming style
 
-## Async observables and async observers
+An alternative to pipelining is to use classic and fluent method chaining as we know from [ReactiveX](http://reactivex.io).
 
-An alternative to `Producer` and pipelining is to use async observables and method chaining as we know from [ReactiveX](http://reactivex.io). Async Observables are almost the same as the Observables we are used to from [RxPY](https://github.com/ReactiveX/RxPY). The difference is that all methods such as `.subscribe()` and observer methods such as `on_next(value)`, `on_error(err)` and `on_completed()` are all async and needs to be awaited.
+Note the difference from RxPY, that we need to call the `chain()` function on an `AsyncObservable ` to get a `ChainedAsyncObservable`. Once we have a `ChainedAsyncObservable` we may use methods such as `.where()` and `.select()`.
 
 ```python
 @pytest.mark.asyncio
@@ -242,12 +237,12 @@ async def test_observable_simple_pipe():
         await asyncio.sleep(0.1)
         return value > 1
 
-    ys = xs.where(predicate).select(mapper)
+    ys = chain(xs).where(predicate).select(mapper)
 
     async def on_next(value):
         result.append(value)
 
-    subscription = await ys.subscribe(AsyncAnonymousObserver(on_next))
+    subscription = await ys.subscribe(AsyncAnonymousAsyncObserver(on_next))
     await subsubscription
     assert result == [20, 30]
 ```
@@ -280,7 +275,7 @@ async def test_call_later():
     assert result == [2, 3, 1]
 ```
 
-The `aioreactive.testing` module provides a test `Stream` that may delay sending values, and test `FuncSink` that records all events. These two classes helps you with testing in virtual time.
+The `aioreactive.testing` module provides a test `Stream` that may delay sending values, and test `AnonymousAsyncObserver` that records all events. These two classes helps you with testing in virtual time.
 
 ```python
 @pytest.yield_fixture()
@@ -297,8 +292,8 @@ async def test_delay_done():
         return value * 10
 
     ys = delay(0.5, xs)
-    lis = FuncSink()  # Test FuncSink
-    sub = await start(ys, lis)
+    lis = AnonymousAsyncObserver()  # Test AnonymousAsyncObserver
+    sub = await subscribe(ys, lis)
     await xs.asend_later(0, 10)
     await xs.asend_later(1, 20)
     await xs.aclose_later(1)
@@ -313,17 +308,17 @@ async def test_delay_done():
 
 # Why not use AsyncIterable for everything?
 
-`AsyncIterable` and `AsyncSource` are closely related (in fact they are duals). `AsyncIterable` is an async iterable (pull) world, while `AsyncSource` is an async reactive (push) based world. There are many operations such as `map()` and `filter()` that may be simpler to implement using `AsyncIterable`, but once we start to include time, then `AsyncSource` really starts to shine. Operators such as `delay()` makes much more sense for `AsyncSource` than for `AsyncIterable`.
+`AsyncIterable` and `AsyncObservable` are closely related (in fact they are duals). `AsyncIterable` is an async iterable (pull) world, while `AsyncObservable` is an async reactive (push) based world. There are many operations such as `map()` and `filter()` that may be simpler to implement using `AsyncIterable`, but once we start to include time, then `AsyncObservable` really starts to shine. Operators such as `delay()` makes much more sense for `AsyncObservable` than for `AsyncIterable`.
 
 However, aioreactive makes it easy for you to flip-around to async iterable just before you need to comsume the stream, thus giving you the best of both worlds.
 
 # Will aioreactive replace RxPY?
 
-Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive however lives within the `AsyncObservable` dimension.
+Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive however is an implementation of `AsyncObservable`.
 
 Rx and RxPY has hundreds of different query operators, and we have no plans to implementing all of those for aioreactive.
 
-Many ideas from aioreactive might be ported back into RxPY, and the goal is that RxPY one day may be built on top of aioreactive.
+Many ideas from aioreactive might be ported back into "classic" RxPY.
 
 # References
 

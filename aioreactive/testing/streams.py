@@ -6,7 +6,7 @@ from aioreactive import core
 T = TypeVar('T')
 
 
-class AsyncStreamBase(core.AsyncSink):
+class AsyncStreamBase(core.AsyncObserver):
     """A stream base for testing.
 
     Provides methods for sending, throwing, and closing at a later
@@ -75,7 +75,7 @@ class AsyncMultipleStream(core.AsyncStream, AsyncStreamBase):
 
     def __init__(self):
         super().__init__()
-        self._loop = asyncio.get_event_loop()
+        #self._loop = asyncio.get_event_loop()
 
 
 AsyncStream = AsyncMultipleStream
@@ -85,4 +85,4 @@ class AsyncSingleStream(core.AsyncSingleStream, AsyncStreamBase):
 
     def __init__(self):
         super().__init__()
-        self._loop = asyncio.get_event_loop()
+        #self._loop = asyncio.get_event_loop()

@@ -5,8 +5,8 @@ from asyncio.futures import wrap_future
 from concurrent.futures import ThreadPoolExecutor
 from threading import current_thread
 
-from aioreactive.core import start
-from aioreactive.producer import Producer, op
+from aioreactive.core import AsyncObservable, subscribe
+from aioreactive.core.operators import pipe as op
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -22,14 +22,14 @@ def long_running(value):
 
 
 async def main():
-    xs = Producer.from_iterable([1, 2, 3, 4, 5])
+    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
 
     async def mapper(value):
         fut = executor.submit(long_running, value)
-        return Producer.unit(wrap_future(fut))
+        return AsyncObservable.unit(wrap_future(fut))
 
     ys = xs | op.flat_map(mapper)
-    async with start(ys) as stream:
+    async with subscribe(ys) as stream:
         async for x in stream:
             print(x)
 

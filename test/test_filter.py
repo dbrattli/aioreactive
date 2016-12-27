@@ -2,9 +2,9 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.sources.from_iterable import from_iterable
-from aioreactive.core.sources.filter import filter
-from aioreactive.core import run, start, FuncSink, AsyncStream
+from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.core.operators.filter import filter
+from aioreactive.core import run, subscribe, AnonymousAsyncObserver, AsyncStream
 
 
 class MyException(Exception):
@@ -31,7 +31,7 @@ async def test_filter_happy():
         return value > 1
 
     ys = filter(predicate, xs)
-    value = await run(ys, FuncSink(asend))
+    value = await run(ys, AnonymousAsyncObserver(asend))
     assert value == 3
     assert result == [2, 3]
 
@@ -52,6 +52,6 @@ async def test_filter_predicate_throws():
     ys = filter(predicate, xs)
 
     with pytest.raises(MyException):
-        await run(ys, FuncSink(asend))
+        await run(ys, AnonymousAsyncObserver(asend))
 
     assert result == []

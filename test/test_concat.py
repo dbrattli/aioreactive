@@ -2,10 +2,9 @@ import pytest
 import asyncio
 import logging
 
-from aioreactive.core import run, FuncSink
-from aioreactive.producer import Producer
-from aioreactive.core.sources.from_iterable import from_iterable
-from aioreactive.core.sources.concat import concat
+from aioreactive.core import AsyncObservable, run, AnonymousAsyncObserver
+from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.core.operators.concat import concat
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -23,14 +22,14 @@ async def test_concat_happy():
 
     zs = concat(xs, ys)
 
-    await run(zs, FuncSink(asend))
+    await run(zs, AnonymousAsyncObserver(asend))
     assert result == list(range(10))
 
 
 @pytest.mark.asyncio
 async def test_concat_special_add():
-    xs = Producer.from_iterable(range(5))
-    ys = Producer.from_iterable(range(5, 10))
+    xs = AsyncObservable.from_iterable(range(5))
+    ys = AsyncObservable.from_iterable(range(5, 10))
     result = []
 
     async def asend(value):
@@ -39,14 +38,14 @@ async def test_concat_special_add():
 
     zs = xs + ys
 
-    await run(zs, FuncSink(asend))
+    await run(zs, AnonymousAsyncObserver(asend))
     assert result == list(range(10))
 
 
 @pytest.mark.asyncio
 async def test_concat_special_iadd():
-    xs = Producer.from_iterable(range(5))
-    ys = Producer.from_iterable(range(5, 10))
+    xs = AsyncObservable.from_iterable(range(5))
+    ys = AsyncObservable.from_iterable(range(5, 10))
     result = []
 
     async def asend(value):
@@ -55,7 +54,7 @@ async def test_concat_special_iadd():
 
     xs += ys
 
-    await run(xs, FuncSink(asend))
+    await run(xs, AnonymousAsyncObserver(asend))
     assert result == list(range(10))
 
 if __name__ == '__main__':

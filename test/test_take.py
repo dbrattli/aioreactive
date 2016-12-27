@@ -2,9 +2,8 @@ import pytest
 import logging
 from asyncio import Future, CancelledError
 
-from aioreactive.core.sources.take import take
-from aioreactive.core import run, start, FuncSink
-from aioreactive.producer import Producer
+from aioreactive.core.operators.take import take
+from aioreactive.core import AsyncObservable, run, subscribe, AnonymousAsyncObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -12,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 @pytest.mark.asyncio
 async def test_take_zero():
-    xs = Producer.from_iterable([1, 2, 3, 4, 5])
+    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value):
@@ -21,14 +20,14 @@ async def test_take_zero():
     ys = take(0, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, FuncSink(asend))
+        await run(ys, AnonymousAsyncObserver(asend))
 
     assert values == []
 
 
 @pytest.mark.asyncio
 async def test_take_empty():
-    xs = Producer.empty()
+    xs = AsyncObservable.empty()
     values = []
 
     async def asend(value):
@@ -37,14 +36,14 @@ async def test_take_empty():
     ys = take(42, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, FuncSink(asend))
+        await run(ys, AnonymousAsyncObserver(asend))
 
     assert values == []
 
 
 @pytest.mark.asyncio
 async def test_take_negative():
-    xs = Producer.from_iterable([1, 2, 3, 4, 5])
+    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value):
@@ -56,7 +55,7 @@ async def test_take_negative():
 
 @pytest.mark.asyncio
 async def test_take_normal():
-    xs = Producer.from_iterable([1, 2, 3, 4, 5])
+    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value):
@@ -64,7 +63,7 @@ async def test_take_normal():
 
     ys = take(2, xs)
 
-    result = await run(ys, FuncSink(asend))
+    result = await run(ys, AnonymousAsyncObserver(asend))
 
     assert result == 2
     assert values == [1, 2]

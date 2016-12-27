@@ -1,3 +1,3 @@
-from .source import Source, AsyncSource
-from .sink import Sink, AsyncSink
-from .cancellable import Cancellable, AsyncCancellable
+from .observable import Observable, AsyncObservable
+from .observer import Observer, AsyncObserver
+from .disposable import Disposable, AsyncDisposable

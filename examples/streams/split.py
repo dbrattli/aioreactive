@@ -1,24 +1,24 @@
 """Example to show how to split a stream into two substreams."""
 import asyncio
 
-from aioreactive.core import start, FuncSink
+from aioreactive.core import subscribe, AnonymousAsyncObserver
 
-from aioreactive.producer import Producer
-import aioreactive.producer.operators as ops
+from aioreactive.core import AsyncObservable
+from aioreactive.core.operators import pipe as op
 
 
 async def main():
-    xs = Producer.from_iterable(range(10))
+    xs = AsyncObservable.from_iterable(range(10))
 
     # Split into odds and evens
-    odds = xs | ops.filter(lambda x: x % 2 == 1)
-    evens = xs | ops.filter(lambda x: x % 2 == 0)
+    odds = xs | op.filter(lambda x: x % 2 == 1)
+    evens = xs | op.filter(lambda x: x % 2 == 0)
 
     async def mysink(value):
         print(value)
 
-    await start(odds, FuncSink(mysink))
-    await start(evens, FuncSink(mysink))
+    await subscribe(odds, AnonymousAsyncObserver(mysink))
+    await subscribe(evens, AnonymousAsyncObserver(mysink))
 
 
 if __name__ == '__main__':

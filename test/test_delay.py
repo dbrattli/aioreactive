@@ -3,9 +3,9 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.sources.delay import delay
-from aioreactive.core import start
-from aioreactive.testing import AsyncStream, FuncSink
+from aioreactive.core.operators.delay import delay
+from aioreactive.core import subscribe
+from aioreactive.testing import AsyncStream, AnonymousAsyncObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -22,12 +22,9 @@ def event_loop():
 async def test_delay_done():
     xs = AsyncStream()
 
-    async def mapper(value):
-        return value * 10
-
     ys = delay(0.5, xs)
-    lis = FuncSink()
-    sub = await start(ys, lis)
+    lis = AnonymousAsyncObserver()
+    sub = await subscribe(ys, lis)
     await xs.asend_later(0, 10)
     await xs.asend_later(1, 20)
     await xs.aclose_later(1)
@@ -50,11 +47,8 @@ async def test_delay_cancel_before_done():
         nonlocal result
         result.append(value)
 
-    async def mapper(value):
-        return value * 10
-
     ys = delay(0.3, xs)
-    async with start(ys, FuncSink(asend)):
+    async with subscribe(ys, AnonymousAsyncObserver(asend)):
         await xs.asend(10)
         await asyncio.sleep(1.5)
         await xs.asend(20)
@@ -73,11 +67,8 @@ async def test_delay_throw():
         nonlocal result
         result.append(value)
 
-    async def mapper(value):
-        return value * 10
-
     ys = delay(0.3, xs)
-    await start(ys, FuncSink(asend))
+    await subscribe(ys, AnonymousAsyncObserver(asend))
     await xs.asend(10)
     await asyncio.sleep(1.5)
     await xs.asend(20)

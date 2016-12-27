@@ -4,10 +4,10 @@ from asyncio import Future
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.sources.from_iterable import from_iterable
-from aioreactive.core.sources.map import map
-from aioreactive.core import run, start, chain
-from aioreactive.testing import AsyncStream, FuncSink
+from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.core.operators.map import map
+from aioreactive.core import run, subscribe, chain
+from aioreactive.testing import AsyncStream, AnonymousAsyncObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -28,8 +28,8 @@ def event_loop():
 async def test_stream_happy():
     xs = AsyncStream()
 
-    sink = FuncSink()
-    await start(xs, sink)
+    sink = AnonymousAsyncObserver()
+    await subscribe(xs, sink)
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
@@ -46,9 +46,9 @@ async def test_stream_throws():
     ex = MyException("ex")
     xs = AsyncStream()
 
-    sink = FuncSink()
+    sink = AnonymousAsyncObserver()
     with pytest.raises(MyException):
-        sub = await start(xs, sink)
+        sub = await subscribe(xs, sink)
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
         await xs.asend_later(1, 30)
@@ -68,8 +68,8 @@ async def test_stream_throws():
 async def test_stream_send_after_close():
     xs = AsyncStream()
 
-    sink = FuncSink()
-    await start(xs, sink)
+    sink = AnonymousAsyncObserver()
+    await subscribe(xs, sink)
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
@@ -89,13 +89,13 @@ async def test_stream_cancel():
     xs = AsyncStream()
     stream = None
 
-    async def mapper(value):
+    def mapper(value):
         return value * 10
 
     ys = map(mapper, xs)
 
-    sink = FuncSink()
-    stream = await start(ys, sink)
+    sink = AnonymousAsyncObserver()
+    stream = await subscribe(ys, sink)
     await xs.asend_later(1, 10)
     stream.cancel()
     await xs.asend_later(1, 20)
@@ -112,13 +112,13 @@ async def test_stream_cancel_asend():
         stream.cancel()
         await asyncio.sleep(0)
 
-    async def mapper(value):
+    def mapper(value):
         return value * 10
 
     ys = map(mapper, xs)
 
-    sink = FuncSink(asend)
-    async with start(ys, sink) as stream:
+    sink = AnonymousAsyncObserver(asend)
+    async with subscribe(ys, sink) as stream:
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
 
@@ -130,14 +130,14 @@ async def test_stream_cancel_mapper():
     xs = AsyncStream()
     stream = None
 
-    async def mapper(value):
+    def mapper(value):
         stream.cancel()
         return value * 10
 
     ys = map(mapper, xs)
 
-    sink = FuncSink()
-    async with start(ys, sink) as stream:
+    sink = AnonymousAsyncObserver()
+    async with subscribe(ys, sink) as stream:
 
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
@@ -149,8 +149,8 @@ async def test_stream_cancel_mapper():
 async def test_stream_cancel_context():
     xs = AsyncStream()
 
-    sink = FuncSink()
-    with await start(xs, sink):
+    sink = AnonymousAsyncObserver()
+    with await subscribe(xs, sink):
         pass
 
     await xs.asend_later(1, 10)
@@ -160,10 +160,10 @@ async def test_stream_cancel_context():
 
 
 @pytest.mark.asyncio
-async def test_stream_chain_sink():
+async def test_stream_chain_observer():
     xs = AsyncStream()
 
-    sink = FuncSink()
+    sink = AnonymousAsyncObserver()
     await chain(xs, sink)
 
     await xs.asend_later(1, 10)

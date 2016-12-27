@@ -4,10 +4,10 @@ from asyncio import Future
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.sources.from_iterable import from_iterable
-from aioreactive.core.sources.map import map
-from aioreactive.core import run, start
-from aioreactive.testing import AsyncSingleStream, FuncSink
+from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.core.operators.map import map
+from aioreactive.core import run, subscribe
+from aioreactive.testing import AsyncSingleStream, AnonymousAsyncObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -28,8 +28,8 @@ def event_loop():
 async def test_stream_happy():
     xs = AsyncSingleStream()
 
-    sink = FuncSink()
-    await start(xs, sink)
+    sink = AnonymousAsyncObserver()
+    await subscribe(xs, sink)
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
@@ -46,9 +46,9 @@ async def test_stream_throws():
     ex = MyException("ex")
     xs = AsyncSingleStream()
 
-    sink = FuncSink()
+    sink = AnonymousAsyncObserver()
     with pytest.raises(MyException):
-        sub = await start(xs, sink)
+        sub = await subscribe(xs, sink)
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
         await xs.asend_later(1, 30)
@@ -68,8 +68,8 @@ async def test_stream_throws():
 async def test_stream_send_after_close():
     xs = AsyncSingleStream()
 
-    sink = FuncSink()
-    await start(xs, sink)
+    sink = AnonymousAsyncObserver()
+    await subscribe(xs, sink)
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
@@ -89,13 +89,13 @@ async def test_stream_cancel():
     xs = AsyncSingleStream()
     sub = None
 
-    async def mapper(value):
+    def mapper(value):
         return value * 10
 
     ys = map(mapper, xs)
 
-    sink = FuncSink()
-    sub = await start(ys, sink)
+    sink = AnonymousAsyncObserver()
+    sub = await subscribe(ys, sink)
     await xs.asend_later(1, 10)
     sub.cancel()
     await xs.asend_later(1, 20)
@@ -112,13 +112,13 @@ async def test_stream_cancel_asend():
         sub.cancel()
         await asyncio.sleep(0)
 
-    async def mapper(value):
+    def mapper(value):
         return value * 10
 
     ys = map(mapper, xs)
 
-    sink = FuncSink(asend)
-    async with start(ys, sink) as sub:
+    sink = AnonymousAsyncObserver(asend)
+    async with subscribe(ys, sink) as sub:
 
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
@@ -131,14 +131,14 @@ async def test_stream_cancel_mapper():
     xs = AsyncSingleStream()
     sub = None
 
-    async def mapper(value):
+    def mapper(value):
         sub.cancel()
         return value * 10
 
     ys = map(mapper, xs)
 
-    sink = FuncSink()
-    async with start(ys, sink) as sub:
+    sink = AnonymousAsyncObserver()
+    async with subscribe(ys, sink) as sub:
 
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
@@ -150,8 +150,8 @@ async def test_stream_cancel_mapper():
 async def test_stream_cancel_context():
     xs = AsyncSingleStream()
 
-    sink = FuncSink()
-    with await start(xs, sink):
+    sink = AnonymousAsyncObserver()
+    with await subscribe(xs, sink):
         pass
 
     await xs.asend_later(1, 10)
@@ -164,7 +164,7 @@ async def test_stream_cancel_context():
 async def test_stream_cold_send():
     xs = AsyncSingleStream()
 
-    sink = FuncSink()
+    sink = AnonymousAsyncObserver()
 
     async def asend(value):
         await xs.asend(value)
@@ -172,7 +172,7 @@ async def test_stream_cold_send():
     asyncio.ensure_future(asend(42))
     await asyncio.sleep(10)
 
-    with await start(xs, sink):
+    with await subscribe(xs, sink):
         await xs.asend_later(1, 20)
 
     assert sink.values == [
@@ -185,7 +185,7 @@ async def test_stream_cold_send():
 async def test_stream_cold_throw():
     xs = AsyncSingleStream()
 
-    sink = FuncSink()
+    sink = AnonymousAsyncObserver()
 
     async def athrow():
         await xs.athrow(MyException)
@@ -193,7 +193,7 @@ async def test_stream_cold_throw():
     asyncio.ensure_future(athrow())
     await asyncio.sleep(10)
 
-    with await start(xs, sink):
+    with await subscribe(xs, sink):
         await xs.asend_later(1, 20)
 
     assert sink.values == [
@@ -205,14 +205,14 @@ async def test_stream_cold_throw():
 async def test_stream_cold_close():
     xs = AsyncSingleStream()
 
-    sink = FuncSink()
+    sink = AnonymousAsyncObserver()
 
     async def aclose():
         await xs.aclose()
 
     asyncio.ensure_future(aclose())
     await asyncio.sleep(10)
-    with await start(xs, sink):
+    with await subscribe(xs, sink):
         await xs.asend_later(1, 20)
 
     assert sink.values == [

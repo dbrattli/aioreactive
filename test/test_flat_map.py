@@ -2,10 +2,10 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.sources.from_iterable import from_iterable
-from aioreactive.core.sources.flat_map import flat_map
-from aioreactive.core.sources.unit import unit
-from aioreactive.core import AsyncStream, FuncSink, start, run
+from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.core.operators.flat_map import flat_map
+from aioreactive.core.operators.unit import unit
+from aioreactive.core import AsyncStream, AnonymousAsyncObserver, subscribe, run
 
 
 @pytest.yield_fixture()
@@ -28,7 +28,7 @@ async def test_flap_map_done():
         return from_iterable([value])
 
     ys = flat_map(mapper, xs)
-    await start(ys, FuncSink(asend))
+    await subscribe(ys, AnonymousAsyncObserver(asend))
     await xs.asend(10)
     await xs.asend(20)
 
@@ -41,7 +41,10 @@ async def test_flap_map_done():
 async def test_flat_map_monad():
     m = unit(42)
 
-    a = await run(flat_map(lambda x: unit(x * 10), m))
+    async def mapper(x):
+        return unit(x * 10)
+
+    a = await run(flat_map(mapper, m))
     b = await run(unit(420))
     assert a == b
 
@@ -52,11 +55,11 @@ async def test_flat_map_monad_law_left_identity():
 
     x = 3
 
-    def f(x):
+    async def f(x):
         return unit(x + 100000)
 
     a = await run(flat_map(f, unit(x)))
-    b = await run(f(x))
+    b = await run(await f(x))
 
     assert a == b
 
@@ -67,7 +70,10 @@ async def test_flat_map_monad_law_right_identity():
 
     m = unit("move on up")
 
-    a = await run(flat_map(unit, m))
+    async def aunit(x):
+        return unit(x)
+
+    a = await run(flat_map(aunit, m))
     b = await run(m)
 
     assert a == b
@@ -79,14 +85,17 @@ async def test_flat_map_monad_law_associativity():
 
     m = unit(42)
 
-    def f(x):
+    async def f(x):
         return unit(x + 1000)
 
-    def g(y):
+    async def g(y):
         return unit(y * 333)
 
+    async def h(x):
+        return flat_map(g, await f(x))
+
     a = await run(flat_map(g, flat_map(f, m)))
-    b = await run(flat_map(lambda x: flat_map(g, f(x)), m))
+    b = await run(flat_map(h, m))
 
     assert a == b
 

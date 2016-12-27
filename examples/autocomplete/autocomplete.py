@@ -18,9 +18,9 @@ import jinja2
 import aiohttp_jinja2
 from aiohttp import web
 
-from aioreactive.core import FuncSink, start
-from aioreactive.producer import Producer, AsyncStream
-from aioreactive.producer import op
+from aioreactive.core import AnonymousAsyncObserver, subscribe
+from aioreactive.core import AsyncObservable, AsyncStream
+from aioreactive.core.operators import pipe as op
 
 
 async def search_wikipedia(term):
@@ -35,7 +35,7 @@ async def search_wikipedia(term):
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as resp:
-            return Producer.unit(await resp.text())
+            return AsyncObservable.unit(await resp.text())
 
 
 async def websocket_handler(request):
@@ -49,8 +49,8 @@ async def websocket_handler(request):
           | op.filter(lambda text: len(text) > 2)
           | op.debounce(0.75)
           | op.distinct_until_changed()
-          | op.map(search_wikipedia)
-          | op.switch_latest()
+          | op.flat_map(search_wikipedia)
+          #| op.switch_latest()
           )
 
     ws = web.WebSocketResponse()
@@ -62,7 +62,7 @@ async def websocket_handler(request):
     async def athrow(ex):
         print(ex)
 
-    await start(xs, FuncSink(asend, athrow))
+    await subscribe(xs, AnonymousAsyncObserver(asend, athrow))
 
     async for msg in ws:
         if msg.type == aiohttp.WSMsgType.TEXT:

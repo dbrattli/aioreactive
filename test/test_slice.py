@@ -1,8 +1,7 @@
 import pytest
 import logging
 
-from aioreactive.core import run, start, FuncSink
-from aioreactive.producer import Producer
+from aioreactive.core import AsyncObservable, run, subscribe, AnonymousAsyncObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -10,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 @pytest.mark.asyncio
 async def test_slice_special():
-    xs = Producer.from_iterable([1, 2, 3, 4, 5])
+    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value):
@@ -18,7 +17,7 @@ async def test_slice_special():
 
     ys = xs[1:-1]
 
-    result = await run(ys, FuncSink(asend))
+    result = await run(ys, AnonymousAsyncObserver(asend))
 
     assert result == 4
     assert values == [2, 3, 4]
@@ -26,7 +25,7 @@ async def test_slice_special():
 
 @pytest.mark.asyncio
 async def test_slice_step():
-    xs = Producer.from_iterable([1, 2, 3, 4, 5])
+    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value):
@@ -34,7 +33,7 @@ async def test_slice_step():
 
     ys = xs[::2]
 
-    result = await run(ys, FuncSink(asend))
+    result = await run(ys, AnonymousAsyncObserver(asend))
 
     assert result == 5
     assert values == [1, 3, 5]

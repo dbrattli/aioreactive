@@ -14,7 +14,7 @@ async def anoop(*args, **kw):
     pass
 
 
-class NoopSink(typing.AsyncSink):
+class NoopObserver(typing.AsyncObserver):
     async def asend(self, value):
         log.debug("NoopSink:asend(%s)", value)
         pass
@@ -28,4 +28,4 @@ class NoopSink(typing.AsyncSink):
         pass
 
 
-noopsink = NoopSink()
+noopobserver = NoopObserver()

@@ -1,9 +1,9 @@
 import asyncio
 from tkinter import *
 
-from aioreactive.core import start, FuncSink
-from aioreactive.producer import AsyncStream
-from aioreactive.producer import op
+from aioreactive.core import subscribe, AnonymousAsyncObserver
+from aioreactive.core import AsyncStream
+from aioreactive.core.operators import pipe as op
 
 
 async def main(loop):
@@ -31,7 +31,7 @@ async def main(loop):
             label.place(x=ev.x + i * 12 + 15, y=ev.y)
 
         xs = mousemoves | op.delay(i / 10.0)
-        await start(xs, FuncSink(asend))
+        await subscribe(xs, AnonymousAsyncObserver(asend))
 
     for i, label in enumerate(labels):
         await handle_label(i, label)
