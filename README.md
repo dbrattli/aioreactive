@@ -179,7 +179,7 @@ Longer pipelines may break lines as for binary operators:
 
 ```python
 from aioreactive.core import AsyncStream, subscribe
-from aioreactive.core.operators import pipe as op
+from aioreactive.operators import pipe as op
 
 async def main():
     stream = AsyncStream()

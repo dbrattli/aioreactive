@@ -4,7 +4,7 @@ import asyncio
 from aioreactive.core import subscribe, AnonymousAsyncObserver
 
 from aioreactive.core import AsyncObservable
-from aioreactive.core.operators import pipe as op
+from aioreactive.operators import pipe as op
 
 
 async def main():

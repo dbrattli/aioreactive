@@ -34,7 +34,7 @@ setup(
     setup_requires=['pytest-runner'],
     tests_require=['pytest', "pytest-asyncio"],
 
-    packages=['aioreactive', 'aioreactive.core', 'aioreactive.core.abc',
-              'aioreactive.core.operators', 'aioreactive.testing'],
+    packages=['aioreactive', 'aioreactive.core', 'aioreactive.abc',
+              'aioreactive.operators', 'aioreactive.testing'],
     package_dir={'aioreactive': 'aioreactive'}
 )

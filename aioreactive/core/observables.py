@@ -55,7 +55,7 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
 
         Return a sliced source stream."""
 
-        from .operators.slice import slice as _slice
+        from aioreactive.operators.slice import slice as _slice
 
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step
@@ -74,7 +74,7 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
 
         Returns concat(other, self)"""
 
-        from .operators.concat import concat
+        from aioreactive.operators.concat import concat
         return concat(self, other)
 
     def __iadd__(self, other):
@@ -85,26 +85,26 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
 
         Returns self.concat(other, self)"""
 
-        from .operators.concat import concat
+        from aioreactive.operators.concat import concat
         return concat(self, other)
 
     @classmethod
     def from_iterable(cls, iter) -> 'AsyncObservable':
-        from .operators.from_iterable import from_iterable
+        from aioreactive.operators.from_iterable import from_iterable
         return from_iterable(iter)
 
     @classmethod
     def unit(cls, value) -> 'AsyncObservable':
-        from .operators.unit import unit
+        from aioreactive.operators.unit import unit
         return unit(value)
 
     @classmethod
     def empty(cls) -> 'AsyncObservable':
-        from .operators.empty import empty
+        from aioreactive.operators.empty import empty
         return empty()
 
     @classmethod
     def never(cls) -> 'AsyncObservable':
-        from .operators.never import never
+        from aioreactive.operators.never import never
         return never()
 

@@ -3,8 +3,8 @@ import asyncio
 import logging
 
 from aioreactive.core import subscribe
-from aioreactive.core.operators.from_iterable import from_iterable
-from aioreactive.core.operators.merge import merge
+from aioreactive.operators.from_iterable import from_iterable
+from aioreactive.operators.merge import merge
 from aioreactive.testing import AsyncStream, VirtualTimeEventLoop, AnonymousAsyncObserver
 
 logging.basicConfig(level=logging.DEBUG)

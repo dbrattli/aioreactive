@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.operators.delay import delay
+from aioreactive.operators.delay import delay
 from aioreactive.core import subscribe
 from aioreactive.testing import AsyncStream, AnonymousAsyncObserver
 

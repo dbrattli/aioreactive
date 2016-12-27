@@ -2,7 +2,7 @@ import pytest
 import logging
 from asyncio import Future, CancelledError
 
-from aioreactive.core.operators.take import take
+from aioreactive.operators.take import take
 from aioreactive.core import AsyncObservable, run, subscribe, AnonymousAsyncObserver
 
 log = logging.getLogger(__name__)

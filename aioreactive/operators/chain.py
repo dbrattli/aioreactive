@@ -97,31 +97,31 @@ class ChainedAsyncObservable(AsyncObservable):
         Returns partially applied function that takes a source sequence.
         """
 
-        from aioreactive.core.operators.debounce import debounce
+        from aioreactive.operators.debounce import debounce
         return ChainedAsyncObservable(debounce(seconds, self))
 
     def delay(self, seconds: float) -> 'ChainedAsyncObservable':
-        from aioreactive.core.operators.delay import delay
+        from aioreactive.operators.delay import delay
         return ChainedAsyncObservable(delay(seconds, self))
 
     def where(self, predicate: Callable) -> 'ChainedAsyncObservable':
-        from aioreactive.core.operators.filter import filter
+        from aioreactive.operators.filter import filter
         return ChainedAsyncObservable(filter(predicate, self))
 
     def select_many(self, selector: Callable) -> 'ChainedAsyncObservable':
-        from aioreactive.core.operators.flat_map import flat_map
+        from aioreactive.operators.flat_map import flat_map
         return ChainedAsyncObservable(flat_map(selector, self))
 
     def select(self, selector: Callable) -> 'ChainedAsyncObservable':
-        from aioreactive.core.operators.map import map
+        from aioreactive.operators.map import map
         return ChainedAsyncObservable(map(selector, self))
 
     def merge(self, other: 'ChainedAsyncObservable') -> 'ChainedAsyncObservable':
-        from aioreactive.core.operators.merge import merge
+        from aioreactive.operators.merge import merge
         return ChainedAsyncObservable(merge(other, self))
 
     def with_latest_from(self, mapper, other) -> 'ChainedAsyncObservable':
-        from aioreactive.core.operators.with_latest_from import with_latest_from
+        from aioreactive.operators.with_latest_from import with_latest_from
         return ChainedAsyncObservable(with_latest_from(mapper, other, self))
 
 

@@ -4,9 +4,9 @@ from typing import TypeVar
 from asyncio import Future
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.core import run, subscribe, AnonymousAsyncObserver, AsyncStream
-from aioreactive.core.operators import pipe as op
+from aioreactive.operators import pipe as op
 
 
 @pytest.yield_fixture()

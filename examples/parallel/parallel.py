@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import current_thread
 
 from aioreactive.core import AsyncObservable, subscribe
-from aioreactive.core.operators import pipe as op
+from aioreactive.operators import pipe as op
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

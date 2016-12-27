@@ -20,7 +20,7 @@ from aiohttp import web
 
 from aioreactive.core import AnonymousAsyncObserver, subscribe
 from aioreactive.core import AsyncObservable, AsyncStream
-from aioreactive.core.operators import pipe as op
+from aioreactive.operators import pipe as op
 
 
 async def search_wikipedia(term):

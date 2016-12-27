@@ -3,7 +3,7 @@ from tkinter import *
 
 from aioreactive.core import subscribe, AnonymousAsyncObserver
 from aioreactive.core import AsyncStream
-from aioreactive.core.operators import pipe as op
+from aioreactive.operators import pipe as op
 
 
 async def main(loop):

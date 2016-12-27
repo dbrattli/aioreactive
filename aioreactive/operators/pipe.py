@@ -23,7 +23,7 @@ def debounce(seconds: float) -> Callable[[AsyncObservable], AsyncObservable]:
     Returns a partially applied function that takes a source stream to
     debounce."""
 
-    from aioreactive.core.operators.debounce import debounce
+    from aioreactive.operators.debounce import debounce
     return partial(debounce, seconds)
 
 

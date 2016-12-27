@@ -4,8 +4,8 @@ from asyncio import Future
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core.operators.from_iterable import from_iterable
-from aioreactive.core.operators.map import map
+from aioreactive.operators.from_iterable import from_iterable
+from aioreactive.operators.map import map
 from aioreactive.core import run, subscribe
 from aioreactive.testing import AsyncSingleStream, AnonymousAsyncObserver
 

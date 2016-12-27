@@ -4,7 +4,7 @@ import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import AsyncStream, AnonymousAsyncObserver, AsyncObservable
-from aioreactive.core.operators.chain import chain
+from aioreactive.operators.chain import chain
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)

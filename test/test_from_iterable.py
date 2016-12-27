@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from asyncio import Future
 
-from aioreactive.core.operators.from_iterable import from_iterable
+from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.core import run, subscribe, AnonymousAsyncObserver
 
 
