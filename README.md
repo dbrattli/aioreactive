@@ -26,7 +26,7 @@ With aioreactive you subscribe observers to observables, and the key abstraction
 subscription = await subscribe(observable, observer)
 ```
 
-The difference from RxPY can be seen with the 'await' expression. Aioreactive is built around the asynchronous duals, or opposites of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncObservable and AsyncObserver.
+The difference from RxPY can be seen with the `await` expression. Aioreactive is built around the asynchronous duals, or opposites of the AsyncIterable and AsyncIterator abstract base classes. These async classes are called AsyncObservable and AsyncObserver.
 
 AsyncObservable is a producer of events. It may be seen as the dual or opposite of AsyncIterable and provides a single setter method called `__asubscribe__()` that is the dual of the `__aiter__()` getter method:
 
@@ -78,7 +78,7 @@ subscription = await subscribe(source, AnonymousAsyncObserver(asend))
 
 `AnonymousAsyncObserver` is an anonymous observer that constructs an `AsyncObserver` out of plain async functions, so you don't have to implement a new named observer every time you need one.
 
-To stop streaming you need to call the `dispose()` method.
+To unsubscribe you need to call the `dispose()` method on the subscription.
 
 ```python
 subscription.dispose()
@@ -106,7 +106,7 @@ async for x in subscription:
     print(x)
 ```
 
-They effectively transform us from an async push model to an async pull model. This enable us to use the awsome new language features such as `async for` and `async-with`. We do this without any queueing as push by the `AsyncObservable` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the subscription as the producer will await the iterator to pick up the item send.
+They effectively transform us from an async push model to an async pull model, and lets us use the awsome new language features such as `async for` and `async-with`. We do this without any queueing as push by the `AsyncObservable` will await the pull by the `AsyncIterator.  This effectively applies so-called "back-pressure" up the subscription as the producer will await the iterator to pick up the item send.
 
 The for-loop may be wrapped with async-with to control the lifetime of the subscription:
 
@@ -157,7 +157,7 @@ Aioreactive contains many of the same operators as you know from RxPY. Our goal 
 * **slice** -- Slices an observable.
 * **switch_latest** -- Merges the latest stream in an observable of streams.
 * **unit** -- Converts a value or future to an observable.
-* **with_latest_from** -- Combines two observable.
+* **with_latest_from** -- Combines two observables into one.
 
 # Functional or object-oriented, reactive or interactive
 
