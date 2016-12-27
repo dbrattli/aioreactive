@@ -10,11 +10,11 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio
-async def test_take_zero():
+async def test_take_zero() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
-    async def asend(value):
+    async def asend(value) -> None:
         values.append(value)
 
     ys = take(0, xs)
@@ -26,11 +26,11 @@ async def test_take_zero():
 
 
 @pytest.mark.asyncio
-async def test_take_empty():
+async def test_take_empty() -> None:
     xs = AsyncObservable.empty()
     values = []
 
-    async def asend(value):
+    async def asend(value) -> None:
         values.append(value)
 
     ys = take(42, xs)
@@ -42,11 +42,11 @@ async def test_take_empty():
 
 
 @pytest.mark.asyncio
-async def test_take_negative():
+async def test_take_negative() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
-    async def asend(value):
+    async def asend(value) -> None:
         values.append(value)
 
     with pytest.raises(ValueError):
@@ -54,11 +54,11 @@ async def test_take_negative():
 
 
 @pytest.mark.asyncio
-async def test_take_normal():
+async def test_take_normal() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
-    async def asend(value):
+    async def asend(value) -> None:
         values.append(value)
 
     ys = take(2, xs)
