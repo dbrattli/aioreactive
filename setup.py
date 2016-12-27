@@ -7,8 +7,8 @@ except ImportError:
 
 setup(
     name='aioreactive',
-    version='0.3.0',
-    description='Async/await Reactive Tools for Python 3.5+',
+    version='0.4.0',
+    description='Async/await Reactive Tools for Python 3.6+',
     long_description=(
         "aioreactive is a library for asynchronous and reactive "
         "programming using asyncio, async and await"),
@@ -27,7 +27,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],

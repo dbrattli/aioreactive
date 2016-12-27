@@ -1,6 +1,6 @@
 language: python
 python:
-    - "3.5"
+    - "3.6"
 before_install:
     - python setup.py install
     - pip install pytest>=3.0.2 pytest-asyncio pytest-cov --upgrade
