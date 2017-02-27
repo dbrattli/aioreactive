@@ -3,6 +3,7 @@ from typing import Callable, Awaitable, Union, TypeVar, Generic
 
 from aioreactive.core import AsyncObserver, AsyncObservable
 from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
 
 T = TypeVar('T')
 
@@ -14,9 +15,11 @@ class Scan(AsyncObservable):
         self._function = function
         self._is_awaitable = iscoroutinefunction(function)
 
-    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncSingleStream:
-        _observer = await chain(Scan.Stream(self), sink)  # type: AsyncSingleStream
-        return await chain(self._source, _observer)
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        sink = Scan.Stream(self)
+        down = await chain(sink, observer)
+        up = await chain(self._source, sink)
+        return AsyncCompositeDisposable(up, down)
 
     class Stream(AsyncSingleStream, Generic[T]):
 
@@ -29,7 +32,7 @@ class Scan(AsyncObservable):
             self._has_value = False
             self._value = None
 
-        async def asend(self, value: T) -> None:
+        async def asend_core(self, value: T) -> None:
             try:
                 result = await self._function(value, value) if self._is_awaitable else self._selector(value)
             except Exception as err:

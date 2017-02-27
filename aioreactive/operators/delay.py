@@ -2,6 +2,7 @@ import asyncio
 from typing import List
 
 from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, chain
+from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
 
 
 class Delay(AsyncObservable):
@@ -10,26 +11,26 @@ class Delay(AsyncObservable):
         self._seconds = seconds
         self._source = source
 
-    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncSingleStream:
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         tasks = []  # type: List[asyncio.Task]
 
-        _observer = await chain(Delay.Stream(self, tasks), sink)
-        stream = await chain(self._source, _observer)
+        sink = Delay.Sink(self, tasks)
+        down = await chain(sink, observer)
+        up = await chain(self._source, sink)
 
-        def cancel(sub):
+        async def cancel():
             for task in tasks:
                 task.cancel()
-        stream.add_done_callback(cancel)
-        return stream
+        return AsyncCompositeDisposable(up, down, AsyncDisposable(cancel))
 
-    class Stream(AsyncSingleStream):
+    class Sink(AsyncSingleStream):
 
         def __init__(self, source, tasks) -> None:
             super().__init__()
             self._source = source
             self._tasks = tasks
 
-        async def asend(self, value) -> None:
+        async def asend_core(self, value) -> None:
             async def _delay(value):
                 await asyncio.sleep(self._source._seconds)
                 await self._observer.asend(value)
@@ -38,7 +39,7 @@ class Delay(AsyncObservable):
             task = asyncio.ensure_future(_delay(value))
             self._tasks.append(task)
 
-        async def aclose(self) -> None:
+        async def aclose_core(self) -> None:
             async def _delay():
                 await asyncio.sleep(self._source._seconds)
                 await self._observer.aclose()

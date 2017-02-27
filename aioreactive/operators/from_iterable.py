@@ -14,7 +14,7 @@ class FromIterable(AsyncObservable, Generic[T]):
     def __init__(self, iterable) -> None:
         self.iterable = iterable
 
-    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncDisposable:
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         task = None
 
         async def cancel():
@@ -25,24 +25,24 @@ class FromIterable(AsyncObservable, Generic[T]):
         async def async_worker() -> None:
             async for value in self.iterable:
                 try:
-                    await sink.asend(value)
+                    await observer.asend(value)
                 except Exception as ex:
-                    await sink.athrow(ex)
+                    await observer.athrow(ex)
                     return
 
-            await sink.aclose()
+            await observer.aclose()
 
         async def sync_worker() -> None:
             log.debug("sync_worker()")
             for value in self.iterable:
                 try:
                     log.debug("sync_worker. asending: %s" % value)
-                    await sink.asend(value)
+                    await observer.asend(value)
                 except Exception as ex:
-                    await sink.athrow(ex)
+                    await observer.athrow(ex)
                     return
 
-            await sink.aclose()
+            await observer.aclose()
 
         if hasattr(self.iterable, "__aiter__"):
             worker = async_worker
@@ -55,7 +55,7 @@ class FromIterable(AsyncObservable, Generic[T]):
             task = asyncio.ensure_future(worker())
         except Exception as ex:
             log.debug("FromIterable:worker(), Exception: %s" % ex)
-            await sink.athrow(ex)
+            await observer.athrow(ex)
         return sub
 
 

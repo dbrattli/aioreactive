@@ -74,12 +74,13 @@ async def test_withlatestfrom_done():
 
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
-    sub = await subscribe(zs, AsyncAnonymousObserver(asend))
-    await xs.asend(1)
-    await ys.asend(2)
-    await xs.asend(3)
-    await xs.aclose()
-    await sub
+    obv = AsyncAnonymousObserver(asend)
+    async with subscribe(zs, obv):
+        await xs.asend(1)
+        await ys.asend(2)
+        await xs.asend(3)
+        await xs.aclose()
+        await obv
 
     assert result == [5]
 

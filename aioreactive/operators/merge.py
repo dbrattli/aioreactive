@@ -4,8 +4,8 @@ from typing import Dict, TypeVar
 import logging
 
 from aioreactive.core.utils import noopobserver
-from aioreactive.core import AsyncSingleStream
-from aioreactive.core import AsyncObservable, AsyncObserver, chain, chain_future
+from aioreactive.core import AsyncSingleStream, AsyncDisposable, AsyncCompositeDisposable
+from aioreactive.core import AsyncObservable, AsyncObserver, chain
 
 T = TypeVar('T')
 log = logging.getLogger(__name__)
@@ -17,14 +17,14 @@ class Merge(AsyncObservable):
         self._source = source
         self.max_concurrent = max_concurrent
 
-    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncSingleStream:
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         log.debug("Merge:__asubscribe__()")
-        merge_stream = await chain(Merge.Stream(self, self.max_concurrent), sink)
-        stream = await chain(self._source, merge_stream)
-        chain_future(stream, merge_stream)
-        return stream
+        sink = Merge.Sink(self, self.max_concurrent)
+        down = await chain(sink, observer)
+        up = await chain(self._source, sink)
+        return AsyncCompositeDisposable(up, down)
 
-    class Stream(AsyncSingleStream):
+    class Sink(AsyncSingleStream):
 
         def __init__(self, source: AsyncObservable, max_concurrent: int) -> None:
             super().__init__()
@@ -43,7 +43,7 @@ class Merge(AsyncObservable):
                     stream.cancel()
             self._inner_streams = {}
 
-        async def asend(self, stream: AsyncObservable) -> None:
+        async def asend_core(self, stream: AsyncObservable) -> None:
             log.debug("Merge.Stream:send(%s)" % stream)
 
             inner_stream = await chain(Merge.Stream.InnerStream(), self._observer)  # type: AsyncObserver
@@ -63,7 +63,7 @@ class Merge(AsyncObservable):
             inner_stream.add_done_callback(done)
             self._inner_streams[inner_stream] = await chain(stream, inner_stream)
 
-        async def aclose(self) -> None:
+        async def aclose_core(self) -> None:
             log.debug("Merge.Stream:aclose()")
             if len(self._inner_streams):
                 self._is_closed = True
@@ -74,10 +74,10 @@ class Merge(AsyncObservable):
 
         class InnerStream(AsyncSingleStream):
 
-            async def aclose(self) -> None:
+            async def aclose_core(self) -> None:
                 log.debug("Merge.Stream.InnerStream:aclose()")
 
-                # Unlink sink to avoid forwarding the close. This will
+                # Unlink observer to avoid forwarding the close. This will
                 # make the inner_stream complete, and the done callback
                 # will take care of any cleanup.
                 self._observer = noopobserver

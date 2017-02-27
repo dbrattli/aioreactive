@@ -23,14 +23,14 @@ async def test_delay_done():
     xs = AsyncStream()
 
     ys = delay(0.5, xs)
-    lis = AsyncAnonymousObserver()
-    sub = await subscribe(ys, lis)
-    await xs.asend_later(0, 10)
-    await xs.asend_later(1, 20)
-    await xs.aclose_later(1)
-    await sub
+    obv = AsyncAnonymousObserver()
+    async with subscribe(ys, obv):
+        await xs.asend_later(0, 10)
+        await xs.asend_later(1, 20)
+        await xs.aclose_later(1)
+        await obv
 
-    assert lis.values == [
+    assert obv.values == [
         (0.5, 10),
         (1.5, 20),
         (2.5,)

@@ -1,9 +1,9 @@
-from aioreactive.core import AsyncObserver, AsyncObservable, AsyncSingleStream
+from aioreactive.core import AsyncObserver, AsyncObservable, AsyncDisposable
 
 
 class Never(AsyncObservable):
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncSingleStream:
-        return AsyncSingleStream()
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        return AsyncDisposable()
 
 
 def never() -> AsyncObservable:

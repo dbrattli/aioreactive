@@ -3,6 +3,7 @@ from typing import Callable, Awaitable, Union, TypeVar, Generic
 
 from aioreactive.core import AsyncObserver, AsyncObservable
 from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
 
 T = TypeVar('T')
 
@@ -12,9 +13,12 @@ class Max(AsyncObservable):
     def __init__(self, source: AsyncObservable) -> None:
         self._source = source
 
-    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncSingleStream:
-        _observer = await chain(Max.Stream(self), sink)  # type: AsyncSingleStream
-        return await chain(self._source, _observer)
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        sink = Max.Stream(self)
+        down = await chain(sink, observer)
+        up = await chain(self._source, down)
+
+        return AsyncCompositeDisposable(up, down)
 
     class Stream(AsyncSingleStream, Generic[T]):
 
@@ -22,13 +26,13 @@ class Max(AsyncObservable):
             super().__init__()
             self._max = None
 
-        async def asend(self, value: T) -> None:
+        async def asend_core(self, value: T) -> None:
             if value > self._max:
                 self._max = value
 
-        async def close(self):
-            await super().asend(self._max)
-            await super().aclose()
+        async def close_core(self):
+            await super().asend_core(self._max)
+            await super().aclose_core()
 
 
 def max(source: AsyncObservable) -> AsyncObservable:
@@ -43,4 +47,4 @@ def max(source: AsyncObservable) -> AsyncObservable:
     maximum value from the source stream.
     """
 
-    return Map(selector, source)
+    return Max(source)

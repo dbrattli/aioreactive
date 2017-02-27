@@ -3,7 +3,8 @@ from typing import Callable, Awaitable, TypeVar, Generic
 
 from aioreactive.core.utils import noopobserver
 from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain, chain_future
+from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
 
 T = TypeVar('T')
 TT = TypeVar('TT')
@@ -16,13 +17,14 @@ class WithLatestFrom(AsyncObservable):
         self._other = other
         self._source = source
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncSingleStream:
-        _observer = await chain(WithLatestFrom.SourceStream(self), observer)
-        sub = await chain(self._source, _observer)
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        sink = WithLatestFrom.SourceStream(self)
+        down_source = await chain(sink, observer)
+        up_source = await chain(self._source, sink)
 
-        _other = WithLatestFrom.OtherStream(self, _observer)
-        sub_other = await chain(self._other, _other)
-        return chain_future(sub, sub_other)
+        sink_other = WithLatestFrom.OtherStream(self, sink)
+        up_other = await chain(self._other, sink_other)
+        return AsyncCompositeDisposable(up_source, up_other, down_source)
 
     class SourceStream(AsyncSingleStream, Generic[TT]):
 
@@ -32,7 +34,7 @@ class WithLatestFrom(AsyncObservable):
             self._latest = None  # type: TT
             self._has_latest = False
 
-        async def asend(self, value: T) -> None:
+        async def asend_core(self, value: T) -> None:
             if not self._has_latest:
                 return
 
@@ -59,10 +61,10 @@ class WithLatestFrom(AsyncObservable):
             self._source = source
             self._observer = observer
 
-        async def asend(self, value: T) -> None:
+        async def asend_core(self, value: T) -> None:
             self._observer.latest = value
 
-        async def aclose(self) -> None:
+        async def aclose_core(self) -> None:
             # Close must be ignored
             self.observer = noopobserver
 
