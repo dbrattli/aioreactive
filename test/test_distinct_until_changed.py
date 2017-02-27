@@ -4,7 +4,7 @@ import asyncio
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.operators.distinct_until_changed import distinct_until_changed
-from aioreactive.core import run, subscribe, AnonymousAsyncObserver
+from aioreactive.core import run, subscribe, AsyncAnonymousObserver
 
 
 class MyException(Exception):
@@ -28,7 +28,7 @@ async def test_distinct_until_changed_different():
 
     ys = distinct_until_changed(xs)
 
-    await run(ys, AnonymousAsyncObserver(asend))
+    await run(ys, AsyncAnonymousObserver(asend))
     assert result == [1, 2, 3]
 
 
@@ -42,5 +42,5 @@ async def test_distinct_until_changed_changed():
 
     ys = distinct_until_changed(xs)
 
-    await run(ys, AnonymousAsyncObserver(asend))
+    await run(ys, AsyncAnonymousObserver(asend))
     assert result == [1, 2, 1, 3, 1, 2]

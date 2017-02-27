@@ -3,7 +3,7 @@ import logging
 from asyncio import Future, CancelledError
 
 from aioreactive.operators.take import take
-from aioreactive.core import AsyncObservable, run, subscribe, AnonymousAsyncObserver
+from aioreactive.core import AsyncObservable, run, subscribe, AsyncAnonymousObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -20,7 +20,7 @@ async def test_take_zero() -> None:
     ys = take(0, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, AnonymousAsyncObserver(asend))
+        await run(ys, AsyncAnonymousObserver(asend))
 
     assert values == []
 
@@ -36,7 +36,7 @@ async def test_take_empty() -> None:
     ys = take(42, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, AnonymousAsyncObserver(asend))
+        await run(ys, AsyncAnonymousObserver(asend))
 
     assert values == []
 
@@ -63,7 +63,7 @@ async def test_take_normal() -> None:
 
     ys = take(2, xs)
 
-    result = await run(ys, AnonymousAsyncObserver(asend))
+    result = await run(ys, AsyncAnonymousObserver(asend))
 
     assert result == 2
     assert values == [1, 2]

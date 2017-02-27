@@ -5,7 +5,7 @@ from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.operators.flat_map import flat_map
 from aioreactive.operators.unit import unit
-from aioreactive.core import AsyncStream, AnonymousAsyncObserver, subscribe, run
+from aioreactive.core import AsyncStream, AsyncAnonymousObserver, subscribe, run
 
 
 @pytest.yield_fixture()
@@ -28,7 +28,7 @@ async def test_flap_map_done():
         return from_iterable([value])
 
     ys = flat_map(mapper, xs)
-    await subscribe(ys, AnonymousAsyncObserver(asend))
+    await subscribe(ys, AsyncAnonymousObserver(asend))
     await xs.asend(10)
     await xs.asend(20)
 

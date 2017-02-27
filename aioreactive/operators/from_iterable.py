@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream
+from aioreactive.core import AsyncSingleStream, AsyncDisposable
 
 log = logging.getLogger(__name__)
 T = TypeVar('T')
@@ -14,14 +14,13 @@ class FromIterable(AsyncObservable, Generic[T]):
     def __init__(self, iterable) -> None:
         self.iterable = iterable
 
-    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncSingleStream:
+    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncDisposable:
         task = None
 
-        def cancel(sub):
+        async def cancel():
             task.cancel()
 
-        sub = AsyncSingleStream()
-        sub.add_done_callback(cancel)
+        sub = AsyncDisposable(cancel)
 
         async def async_worker() -> None:
             async for value in self.iterable:

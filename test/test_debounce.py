@@ -4,7 +4,7 @@ import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.debounce import debounce
-from aioreactive.core import subscribe, AnonymousAsyncObserver, AsyncStream
+from aioreactive.core import subscribe, AsyncAnonymousObserver, AsyncStream
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -28,7 +28,7 @@ async def test_debounce():
         result.append(value)
 
     ys = debounce(0.5, xs)
-    sub = await subscribe(ys, AnonymousAsyncObserver(asend))
+    sub = await subscribe(ys, AsyncAnonymousObserver(asend))
     await xs.asend(1)
     await asyncio.sleep(0.6)
     await xs.asend(2)
@@ -50,7 +50,7 @@ async def test_debounce_filter():
         result.append(value)
 
     ys = debounce(0.5, xs)
-    sub = await subscribe(ys, AnonymousAsyncObserver(asend))
+    sub = await subscribe(ys, AsyncAnonymousObserver(asend))
     await xs.asend(1)
     await asyncio.sleep(0.3)
     await xs.asend(2)

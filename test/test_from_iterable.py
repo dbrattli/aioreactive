@@ -3,7 +3,7 @@ import asyncio
 from asyncio import Future
 
 from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.core import run, subscribe, AnonymousAsyncObserver
+from aioreactive.core import run, subscribe, AsyncAnonymousObserver
 
 
 @pytest.mark.asyncio
@@ -14,7 +14,7 @@ async def test_from_iterable_happy():
     async def asend(value):
         result.append(value)
 
-    await run(xs, AnonymousAsyncObserver(asend))
+    await run(xs, AsyncAnonymousObserver(asend))
     assert result == [1, 2, 3]
 
 
@@ -27,7 +27,7 @@ async def test_from_iterable_observer_throws():
         result.append(value)
         raise Exception()
 
-    sub = await subscribe(xs, AnonymousAsyncObserver(asend))
+    sub = await subscribe(xs, AsyncAnonymousObserver(asend))
 
     try:
         await sub
@@ -47,7 +47,7 @@ async def test_from_iterable_close():
         sub.cancel()
         await asyncio.sleep(0)
 
-    sub = await subscribe(xs, AnonymousAsyncObserver(asend))
+    sub = await subscribe(xs, AsyncAnonymousObserver(asend))
 
     try:
         await sub

@@ -1,6 +1,7 @@
 from typing import TypeVar
 
 from aioreactive.core import AsyncSingleStream
+from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
 from aioreactive.core import AsyncObserver, AsyncObservable, chain
 
 T = TypeVar('T')
@@ -12,9 +13,12 @@ class Skip(AsyncObservable):
         self._source = source
         self._count = count
 
-    async def __asubscribe__(self, observer: AsyncObserver):
-        _observer = await chain(Skip.Sink(self), observer)
-        return await chain(self._source, _observer)
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        sink = Skip.Sink(self)
+        down = await chain(sink, observer)
+        up = await chain(self._source, sink)
+
+        return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
 
@@ -22,7 +26,7 @@ class Skip(AsyncObservable):
             super().__init__()
             self._count = source._count
 
-        async def asend(self, value: T):
+        async def asend_core(self, value: T):
             if self._count <= 0:
                 await self._observer.asend(value)
             else:

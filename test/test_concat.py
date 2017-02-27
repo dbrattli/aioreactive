@@ -2,7 +2,7 @@ import pytest
 import asyncio
 import logging
 
-from aioreactive.core import AsyncObservable, run, AnonymousAsyncObserver
+from aioreactive.core import AsyncObservable, run, AsyncAnonymousObserver
 from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.operators.concat import concat
 
@@ -22,7 +22,7 @@ async def test_concat_happy():
 
     zs = concat(xs, ys)
 
-    await run(zs, AnonymousAsyncObserver(asend))
+    await run(zs, AsyncAnonymousObserver(asend))
     assert result == list(range(10))
 
 
@@ -38,7 +38,7 @@ async def test_concat_special_add():
 
     zs = xs + ys
 
-    await run(zs, AnonymousAsyncObserver(asend))
+    await run(zs, AsyncAnonymousObserver(asend))
     assert result == list(range(10))
 
 
@@ -54,7 +54,7 @@ async def test_concat_special_iadd():
 
     xs += ys
 
-    await run(xs, AnonymousAsyncObserver(asend))
+    await run(xs, AsyncAnonymousObserver(asend))
     assert result == list(range(10))
 
 if __name__ == '__main__':

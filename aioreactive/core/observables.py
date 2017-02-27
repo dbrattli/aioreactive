@@ -1,7 +1,6 @@
 from typing import Callable, TypeVar, Generic, Iterable
 
-from .observers import AsyncObserver
-from .typing import AsyncObservable as AsyncObservableGeneric
+from .typing import AsyncObserver, AsyncObservable as AsyncObservableGeneric
 
 T = TypeVar('T')
 T2 = TypeVar('T2')
@@ -18,8 +17,8 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
     def __init__(self, source: 'AsyncObservable' = None) -> None:
         self._source = source
 
-    async def __asubscribe__(self, sink: AsyncObserver[T]) -> 'AsyncSingleStream':
-        return await self._source.__asubscribe__(sink)
+    async def __asubscribe__(self, observer: AsyncObserver[T]) -> 'AsyncDisposable':
+        return await self._source.__asubscribe__(observer)
 
     def __or__(self, other: Callable[['AsyncObservable[T]'], 'AsyncObservable[T2]']) -> 'AsyncObservable[T2]':
         """Forward pipe.

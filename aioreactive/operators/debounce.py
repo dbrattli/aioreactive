@@ -6,9 +6,9 @@ from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, 
 T = TypeVar("T")
 
 
-class Debounce(AsyncObservable, Generic[T]):
+class Debounce(AsyncObservable[T], Generic[T]):
 
-    def __init__(self, source: AsyncObservable, seconds: float) -> None:
+    def __init__(self, source: AsyncObservable[T], seconds: float) -> None:
         self._seconds = seconds
         self._source = source
 
@@ -26,7 +26,7 @@ class Debounce(AsyncObservable, Generic[T]):
         sub.add_done_callback(cancel)
         return sub
 
-    class Stream(Generic[T], AsyncSingleStream):
+    class Stream(AsyncSingleStream[T]):
 
         def __init__(self, source: 'Debounce[T]', tasks: List[asyncio.Task]) -> None:
             super().__init__()
@@ -61,7 +61,7 @@ class Debounce(AsyncObservable, Generic[T]):
             await self._observer.aclose()
 
 
-def debounce(seconds: float, source: AsyncObservable) -> AsyncObservable:
+def debounce(seconds: float, source: AsyncObservable[T]) -> AsyncObservable[T]:
     """Debounce source stream.
 
     Ignores values from a source stream which are followed by

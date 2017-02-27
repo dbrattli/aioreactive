@@ -1,8 +1,9 @@
 from asyncio import iscoroutinefunction
 from typing import Callable, Awaitable, Union, TypeVar, Generic, cast
 
+from aioreactive.abc import AsyncDisposable
 from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncSingleStream, chain, AsyncCompositeDisposable
 
 T1 = TypeVar('T1')
 T2 = TypeVar('T2')
@@ -14,22 +15,26 @@ class Map(AsyncObservable[T2]):
         self._source = source
         self._mapper = mapper
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncSingleStream:
-        _observer = await chain(Map.Stream(self), observer)  # type: AsyncSingleStream
-        return await chain(self._source, _observer)
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        sink = Map.Sink(self)
+        down = await chain(sink, observer)  # type: AsyncDisposable
+        up = await chain(self._source, sink)   # type: AsyncDisposable
 
-    class Stream(AsyncSingleStream):
+        return AsyncCompositeDisposable(up, down)
+
+    class Sink(AsyncSingleStream):
 
         def __init__(self, source: "Map") -> None:
             super().__init__()
             self._mapper = source._mapper
 
-        async def asend(self, value: T1) -> None:
+        async def asend_core(self, value: T1) -> None:
             try:
                 result = self._mapper(value)
             except Exception as err:
                 await self._observer.athrow(err)
             else:
+                print("send", result)
                 await self._observer.asend(result)
 
 

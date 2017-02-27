@@ -5,7 +5,7 @@ from asyncio import Future
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.core import run, subscribe, AnonymousAsyncObserver, AsyncStream
+from aioreactive.core import run, subscribe, AsyncAnonymousObserver, AsyncStream
 from aioreactive.operators import pipe as op
 
 
@@ -29,7 +29,7 @@ async def test_map_happy():
 
     ys = xs | op.map(mapper)
 
-    result = await run(ys, AnonymousAsyncObserver(asend))
+    result = await run(ys, AsyncAnonymousObserver(asend))
 
     assert result == 30
     assert values == [10, 20, 30]
@@ -54,7 +54,7 @@ async def test_map_mapper_throws():
     ys = xs | op.map(mapper)
 
     try:
-        await run(ys, AnonymousAsyncObserver(asend, athrow))
+        await run(ys, AsyncAnonymousObserver(asend, athrow))
     except Exception as ex:
         assert ex == error
 
@@ -76,10 +76,10 @@ async def test_map_subscription_cancel():
 
     async def asend(value):
         result.append(value)
-        sub.dispose()
+        await sub.adispose()
         await asyncio.sleep(0)
 
-    async with subscribe(ys, AnonymousAsyncObserver(asend)) as sub:
+    async with subscribe(ys, AsyncAnonymousObserver(asend)) as sub:
 
         await xs.asend(10)
         await asyncio.sleep(0)

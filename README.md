@@ -73,10 +73,10 @@ The subscription returned by `subscribe()` is cancellable, iterable, and chainab
 async def asend(value):
     print(value)
 
-subscription = await subscribe(source, AnonymousAsyncObserver(asend))
+subscription = await subscribe(source, AsyncAnonymousObserver(asend))
 ```
 
-`AnonymousAsyncObserver` is an anonymous observer that constructs an `AsyncObserver` out of plain async functions, so you don't have to implement a new named observer every time you need one.
+`AsyncAnonymousObserver` is an anonymous observer that constructs an `AsyncObserver` out of plain async functions, so you don't have to implement a new named observer every time you need one.
 
 To unsubscribe you need to call the `dispose()` method on the subscription.
 
@@ -84,16 +84,16 @@ To unsubscribe you need to call the `dispose()` method on the subscription.
 subscription.dispose()
 ```
 
-A subscription may also be awaited. The await will resolve when the subscription ends, either normally or with an error. The returned value will be the last value received through the subscriptiion. If no value has been received when the subscription ends, then await will throw `CancelledError`.
+A subscription may also be awaited. The await will resolve when the subscription ends, either normally or with an error. The returned value will be the last value received through the subscription. If no value has been received when the subscription ends, then await will throw `CancelledError`.
 
 ```python
-value = await (await subscribe(source, AnonymousAsyncObserver(asend)))
+value = await (await subscribe(source, AsyncAnonymousObserver(asend)))
 ```
 
 The double await can be replaced by the better looking function `run()` which basically does the same thing. This will run the subscription to completion before returning:
 
 ```python
-value = await run(ys, AnonymousAsyncObserver(asend))
+value = await run(ys, AsyncAnonymousObserver(asend))
 ```
 
 ## Subscriptions may be iterated asynchronously
@@ -128,7 +128,7 @@ Aioreactive also lets you create streams explicitly.
 ```python
 stream = AsyncStream()  # Alias for AsyncMultiStream
 
-sink = AnonymousAsyncObserver()
+sink = AsyncAnonymousObserver()
 await subscribe(stream, sink)
 await stream.asend(42)
 ```
@@ -207,7 +207,7 @@ async def test_slice_special():
 
     ys = xs[1:-1]
 
-    result = await run(ys, AnonymousAsyncObserver(asend))
+    result = await run(ys, AsyncAnonymousObserver(asend))
 
     assert result == 4
     assert values == [2, 3, 4]
@@ -238,7 +238,7 @@ async def test_observable_simple_pipe():
     async def on_next(value):
         result.append(value)
 
-    subscription = await ys.subscribe(AsyncAnonymousAsyncObserver(on_next))
+    subscription = await ys.subscribe(AsyncAsyncAnonymousObserver(on_next))
     await subsubscription
     assert result == [20, 30]
 ```
@@ -271,7 +271,7 @@ async def test_call_later():
     assert result == [2, 3, 1]
 ```
 
-The `aioreactive.testing` module provides a test `AsyncStream` that may delay sending values, and test `AnonymousAsyncObserver` that records all events. These two classes helps you with testing in virtual time.
+The `aioreactive.testing` module provides a test `AsyncStream` that may delay sending values, and test `AsyncAnonymousObserver` that records all events. These two classes helps you with testing in virtual time.
 
 ```python
 @pytest.yield_fixture()
@@ -288,7 +288,7 @@ async def test_delay_done():
         return value * 10
 
     ys = delay(0.5, xs)
-    lis = AnonymousAsyncObserver()  # Test AnonymousAsyncObserver
+    lis = AsyncAnonymousObserver()  # Test AsyncAnonymousObserver
     sub = await subscribe(ys, lis)
     await xs.asend_later(0, 10)
     await xs.asend_later(1, 20)

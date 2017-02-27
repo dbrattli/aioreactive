@@ -5,7 +5,7 @@ import logging
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.delay import delay
 from aioreactive.core import subscribe
-from aioreactive.testing import AsyncStream, AnonymousAsyncObserver
+from aioreactive.testing import AsyncStream, AsyncAnonymousObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -23,7 +23,7 @@ async def test_delay_done():
     xs = AsyncStream()
 
     ys = delay(0.5, xs)
-    lis = AnonymousAsyncObserver()
+    lis = AsyncAnonymousObserver()
     sub = await subscribe(ys, lis)
     await xs.asend_later(0, 10)
     await xs.asend_later(1, 20)
@@ -48,7 +48,7 @@ async def test_delay_cancel_before_done():
         result.append(value)
 
     ys = delay(0.3, xs)
-    async with subscribe(ys, AnonymousAsyncObserver(asend)):
+    async with subscribe(ys, AsyncAnonymousObserver(asend)):
         await xs.asend(10)
         await asyncio.sleep(1.5)
         await xs.asend(20)
@@ -68,7 +68,7 @@ async def test_delay_throw():
         result.append(value)
 
     ys = delay(0.3, xs)
-    await subscribe(ys, AnonymousAsyncObserver(asend))
+    await subscribe(ys, AsyncAnonymousObserver(asend))
     await xs.asend(10)
     await asyncio.sleep(1.5)
     await xs.asend(20)

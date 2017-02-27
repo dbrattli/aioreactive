@@ -5,35 +5,17 @@ from typing import AsyncIterable, AsyncIterator
 from abc import abstractmethod
 
 from .typing import AsyncObserver
-from .futures import AsyncMultiFuture, chain_future
-from .observers import AsyncIteratorObserver
 from .observables import AsyncObservable
 from .utils import noopobserver
+from .disposables import AsyncDisposable
+from .bases import AsyncObserverBase
 
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
 
-class AsyncStreamIterable(AsyncIterable):
-    async def __aiter__(self) -> AsyncIterator:
-        """Iterate asynchronously.
-
-        Transforms the async source to an async iterable. The source
-        will await for the iterator to pick up the value before
-        continuing to avoid queuing values.
-        """
-
-        _observer = AsyncIteratorObserver()
-        await self.__asubscribe__(_observer)
-        return _observer
-
-    @abstractmethod
-    async def __asubscribe__(self, sink: AsyncObserver):
-        return NotImplemented
-
-
-class AsyncSingleStream(AsyncMultiFuture[T], AsyncObservable[T], AsyncStreamIterable):
+class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposable):
 
     """An stream with a single sink.
 
@@ -50,13 +32,8 @@ class AsyncSingleStream(AsyncMultiFuture[T], AsyncObservable[T], AsyncStreamIter
         self._wait = Future()  # type: Future
         self._observer = None  # type: AsyncObserver
 
-    async def asend(self, value: T):
+    async def asend_core(self, value: T):
         log.debug("AsyncSingleStream:asend(%s)", value)
-
-        if self.done():
-            return
-
-        await super().asend(value)
 
         # AsyncSingleStreams are cold and will await a sink.
         if self._observer is None:
@@ -66,24 +43,14 @@ class AsyncSingleStream(AsyncMultiFuture[T], AsyncObservable[T], AsyncStreamIter
 
         await self._observer.asend(value)
 
-    async def athrow(self, ex: Exception) -> None:
-        if self.done():
-            return
+    async def athrow_core(self, ex: Exception) -> None:
+        log.debug("AsyncSingleStream:athrow()")
 
-        await super().athrow(ex)
-
-        if self._observer is None:
-            log.debug("athrow:AsyncSingleStream:awaiting start")
-            await self._wait
-
+        await self.await_subscriber()
         await self._observer.athrow(ex)
 
-    async def aclose(self) -> None:
+    async def aclose_core(self) -> None:
         log.debug("AsyncSingleStream:aclose()")
-        if self.done():
-            return
-
-        await super().aclose()
 
         if self._observer is None:
             log.debug("AsyncSingleStream:aclose:awaiting start")
@@ -91,16 +58,28 @@ class AsyncSingleStream(AsyncMultiFuture[T], AsyncObservable[T], AsyncStreamIter
 
         await self._observer.aclose()
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> "AsyncSingleStream":
+    async def await_subscriber(self):
+        while self._observer is None:
+            log.debug("AsyncSingleStream:await_subscriber()")
+            await self._wait
+
+    async def adispose(self):
+        self._observer = None
+        self._is_stopped = True
+        self.cancel()
+
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         """Start streaming."""
 
         self._observer = observer
+
         if not self._wait.done():
             self._wait.set_result(True)
-        return self
+
+        return AsyncDisposable(self.adispose)
 
 
-class AsyncMultiStream(AsyncMultiFuture[T], AsyncObservable[T]):
+class AsyncMultiStream(AsyncObserverBase[T], AsyncObservable[T]):
     """An stream with a multiple observers.
 
     Both an async multi future and async iterable. Thus you may
@@ -112,57 +91,34 @@ class AsyncMultiStream(AsyncMultiFuture[T], AsyncObservable[T]):
 
     def __init__(self) -> None:
         super().__init__()
-        self._observers = {}  # type: Dict[AsyncObserver, AsyncSingleStream]
+        self._observers = []  # type: List[AsyncObserver]
 
-    async def asend(self, value: T) -> None:
-        if self.done():
-            return
+    async def asend_core(self, value: T) -> None:
+        for obv in list(self._observers):
+            await obv.asend(value)
 
-        await super().asend(value)
+    async def athrow_core(self, ex: Exception) -> None:
+        for obv in list(self._observers):
+            await obv.athrow(ex)
 
-        for stream in list(self._observers):
-            await stream.asend(value)
-        else:
-            log.info("AsyncMultiStream.asend, dropped value")
+    async def aclose_core(self) -> None:
+        for obv in list(self._observers):
+            await obv.aclose()
 
-    async def athrow(self, ex: Exception) -> None:
-        if self.done():
-            return
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        """Subscribe."""
 
-        await super().athrow(ex)
+        log.debug("AsyncMultiStream:subscribe")
 
-        for stream in list(self._observers):
-            await stream.athrow(ex)
-        else:
-            log.info("AsyncMultiStream.athrow, dropped exception: ", ex)
+        self._observers.append(observer)
 
-    async def aclose(self) -> None:
-        if self.done():
-            return
+        async def dispose() -> None:
+            log.debug("AsyncMultiStream:dispose()")
+            if observer in self._observers:
+                print("Remove")
+                self._observers.remove(observer)
 
-        await super().aclose()
-
-        for stream in list(self._observers):
-            await stream.aclose()
-        else:
-            log.info("AsyncMultiStream.aclose, dropped close")
-
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncSingleStream:
-        """Start streaming."""
-
-        if isinstance(observer, AsyncSingleStream):
-            stream = observer
-        else:
-            stream = await AsyncSingleStream().__asubscribe__(observer)
-        self._observers[observer] = stream
-
-        def done(sub: Future) -> None:
-            log.debug("AsyncMultiFuture:done()")
-            if stream in self._observers:
-                del self._observers[stream]
-
-        stream.add_done_callback(done)
-        return stream
+        return AsyncDisposable(dispose)
 
 
 # Alias

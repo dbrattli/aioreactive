@@ -1,14 +1,13 @@
-import asyncio
 from typing import TypeVar
 
-from aioreactive.core import AsyncObserver
+from aioreactive.core.bases import AsyncObserverBase
 from aioreactive.core.utils import anoop
 
 T = TypeVar('T')
 
 
-class AnonymousAsyncObserver(AsyncObserver):
-    """A test AnonymousAsyncObserver.
+class AsyncAnonymousObserver(AsyncObserverBase):
+    """A test AsyncAnonymousObserver.
 
     Records all values and events that happens and makes them available
     through the values property:
@@ -25,26 +24,25 @@ class AnonymousAsyncObserver(AsyncObserver):
 
     def __init__(self, send=anoop, throw=anoop, close=anoop):
         super().__init__()
-        self._loop = asyncio.get_event_loop()
         self._values = []
 
         self._send = send
         self._throw = throw
         self._close = close
 
-    async def asend(self, value: T):
+    async def asend_core(self, value: T):
         time = self._loop.time()
         self._values.append((time, value))
 
         await self._send(value)
 
-    async def athrow(self, err: Exception):
+    async def athrow_core(self, err: Exception):
         time = self._loop.time()
         self._values.append((time, err))
 
         await self._throw(err)
 
-    async def aclose(self):
+    async def aclose_core(self):
         time = self._loop.time()
         self._values.append((time,))
 

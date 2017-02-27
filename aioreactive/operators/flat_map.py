@@ -3,6 +3,7 @@ from asyncio import iscoroutinefunction
 
 from aioreactive.core import AsyncObserver, AsyncObservable
 from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
 
 from .switch_latest import switch_latest
 from .merge import merge
@@ -19,17 +20,20 @@ class FlatMap(AsyncObservable[T2]):
         self._source = source
         self._mapper = mapper
 
-    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncSingleStream:
-        _observer = await chain(FlatMap.Stream(self), sink)  # type: AsyncSingleStream
-        return await chain(self._source, _observer)
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        sink = FlatMap.Sink(self)
+        down = await chain(sink, observer)  # type: AsyncSingleStream
+        up = await chain(self._source, sink)
 
-    class Stream(AsyncSingleStream):
+        return AsyncCompositeDisposable(up, down)
+
+    class Sink(AsyncSingleStream):
 
         def __init__(self, source: 'FlatMap') -> None:
             super().__init__()
             self._mapper = source._mapper
 
-        async def asend(self, value: T1) -> None:
+        async def asend_core(self, value: T1) -> None:
             try:
                 result = await self._mapper(value)
             except Exception as err:

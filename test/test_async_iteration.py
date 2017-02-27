@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AnonymousAsyncObserver
+from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver, AsyncIterableObserver
 from aioreactive.operators.pipe import pipe
 from aioreactive.operators import pipe as op
 
@@ -23,10 +23,10 @@ async def test_async_iteration() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
-    stream = await subscribe(xs)
-    async for x in stream:
-        result.append(x)
-    stream.cancel()
+    obv = AsyncIterableObserver()
+    async with subscribe(xs, obv):
+        async for x in obv:
+            result.append(x)
 
     assert result == [1, 2, 3]
 
@@ -35,8 +35,9 @@ async def test_async_iteration() -> None:
 async def test_async_comprehension() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3])
 
-    async with subscribe(xs) as stream:
-        result = [x async for x in stream]
+    obv = AsyncIterableObserver()
+    async with subscribe(xs, obv):
+        result = [x async for x in obv]
 
         assert result == [1, 2, 3]
 
@@ -46,8 +47,9 @@ async def test_async_iteration_aync_with() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
-    async with subscribe(xs) as stream:
-        async for x in stream:
+    obv = AsyncIterableObserver()
+    async with subscribe(xs, obv):
+        async for x in obv:
             result.append(x)
 
     assert result == [1, 2, 3]
@@ -56,12 +58,14 @@ async def test_async_iteration_aync_with() -> None:
 @pytest.mark.asyncio
 async def test_async_iteration_inception() -> None:
     # iterable to async source to async iterator to async source
-    ys = await subscribe(AsyncObservable.from_iterable([1, 2, 3]))
-    xs = AsyncObservable.from_iterable(ys)
+    obv = AsyncIterableObserver()
+    await subscribe(AsyncObservable.from_iterable([1, 2, 3]), obv)
+    xs = AsyncObservable.from_iterable(obv)
     result = []
 
-    async with subscribe(xs) as stream:
-        async for x in stream:
+    obv = AsyncIterableObserver()
+    async with subscribe(xs, obv):
+        async for x in obv:
             result.append(x)
 
     assert result == [1, 2, 3]

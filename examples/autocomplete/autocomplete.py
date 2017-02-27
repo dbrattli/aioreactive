@@ -18,7 +18,7 @@ import jinja2
 import aiohttp_jinja2
 from aiohttp import web
 
-from aioreactive.core import AnonymousAsyncObserver, subscribe
+from aioreactive.core import AsyncAnonymousObserver, subscribe
 from aioreactive.core import AsyncObservable, AsyncStream
 from aioreactive.operators import pipe as op
 
@@ -62,7 +62,7 @@ async def websocket_handler(request):
     async def athrow(ex):
         print(ex)
 
-    await subscribe(xs, AnonymousAsyncObserver(asend, athrow))
+    await subscribe(xs, AsyncAnonymousObserver(asend, athrow))
 
     async for msg in ws:
         if msg.type == aiohttp.WSMsgType.TEXT:

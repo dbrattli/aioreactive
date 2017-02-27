@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AnonymousAsyncObserver
+from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver
 from aioreactive.operators.pipe import pipe
 from aioreactive.operators import pipe as op
 
@@ -31,7 +31,7 @@ async def test_pipe_map():
     async def asend(value):
         result.append(value)
 
-    await run(ys, AnonymousAsyncObserver(asend))
+    await run(ys, AsyncAnonymousObserver(asend))
     assert result == [10, 20, 30]
 
 
@@ -55,7 +55,7 @@ async def test_pipe_simple_pipe():
     async def asend(value):
         result.append(value)
 
-    await run(ys, AnonymousAsyncObserver(asend))
+    await run(ys, AsyncAnonymousObserver(asend))
     assert result == [20, 30]
 
 

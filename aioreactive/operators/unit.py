@@ -1,8 +1,8 @@
 import asyncio
 import logging
 
-from aioreactive.core import AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain_future
+from aioreactive.core import AsyncObservable, AsyncDisposable
+from aioreactive.core import AsyncSingleStream
 
 log = logging.getLogger(__name__)
 
@@ -49,17 +49,21 @@ class Unit(AsyncObservable):
         def done_callback(fut):
             asyncio.ensure_future(done())
 
-        fut = AsyncSingleStream()
+        async def dispose():
+            if hasattr(self._value, "remove_done_callback"):
+                self._value.remove_done_callback(done_callback)
+
+        disposable = AsyncDisposable(dispose)
 
         # Check if plain value or Future (async value)
         if hasattr(self._value, "add_done_callback"):
             self._value.add_done_callback(done_callback)
-            return chain_future(fut, self._value)
+
         else:
             asyncio.ensure_future(worker(self._value))
 
         log.debug("Unit:done")
-        return fut
+        return disposable
 
 
 def unit(value) -> AsyncObservable:

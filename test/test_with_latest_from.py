@@ -3,7 +3,7 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import AsyncStream, run, AnonymousAsyncObserver, subscribe
+from aioreactive.core import AsyncStream, run, AsyncAnonymousObserver, subscribe
 from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.operators.with_latest_from import with_latest_from
 from aioreactive.operators.never import never
@@ -33,7 +33,7 @@ async def test_withlatestfrom_never_never():
 
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
-    await subscribe(zs, AnonymousAsyncObserver(asend))
+    await subscribe(zs, AsyncAnonymousObserver(asend))
     await asyncio.sleep(1)
 
     assert result == []
@@ -54,7 +54,7 @@ async def test_withlatestfrom_never_empty():
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
     try:
-        await run(zs, AnonymousAsyncObserver(asend))
+        await run(zs, AsyncAnonymousObserver(asend))
     except asyncio.CancelledError:
         pass
     assert result == []
@@ -74,7 +74,7 @@ async def test_withlatestfrom_done():
 
     zs = with_latest_from(lambda x, y: x + y, ys, xs)
 
-    sub = await subscribe(zs, AnonymousAsyncObserver(asend))
+    sub = await subscribe(zs, AsyncAnonymousObserver(asend))
     await xs.asend(1)
     await ys.asend(2)
     await xs.asend(3)

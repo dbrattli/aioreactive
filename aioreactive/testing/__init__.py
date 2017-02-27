@@ -1,3 +1,3 @@
 from .eventloop import VirtualTimeEventLoop
 from .streams import AsyncStream, AsyncSingleStream
-from .observer import AnonymousAsyncObserver
+from .observer import AsyncAnonymousObserver

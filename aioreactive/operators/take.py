@@ -1,7 +1,7 @@
 from typing import TypeVar
 
 from aioreactive.core import AsyncObserver, AsyncObservable, AsyncSingleStream
-from aioreactive.core import chain
+from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable, chain
 
 from .empty import empty
 
@@ -14,9 +14,12 @@ class Take(AsyncObservable):
         self._source = source
         self._count = count
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncSingleStream:
-        _observer = await chain(Take.Sink(self), observer)
-        return await chain(self._source, _observer)
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        sink = Take.Sink(self)
+        down = await chain(sink, observer)
+        up = await chain(self._source, sink)
+
+        return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
 

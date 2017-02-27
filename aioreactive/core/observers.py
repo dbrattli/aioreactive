@@ -1,9 +1,8 @@
 from asyncio import Future, iscoroutinefunction
-from asyncio.locks import Event
-from typing import TypeVar, AsyncIterator
+from typing import TypeVar, AsyncIterator, AsyncIterable
 import logging
 
-from .typing import AsyncObserver
+from .bases import AsyncObserverBase
 from .utils import anoop
 
 log = logging.getLogger(__name__)
@@ -11,42 +10,41 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class AsyncIteratorObserver(AsyncIterator, AsyncObserver):
-    """AsyncIterator that is also an AsyncObserver.
-
-    Uses for listening to an async source using an async iterator."""
+class AsyncIterableObserver(AsyncObserverBase, AsyncIterable):
 
     def __init__(self) -> None:
         super().__init__()
+
         self._push = Future()  # type: Future
         self._pull = Future()  # type: Future
 
         self._awaiters = []  # type: List[Future]
         self._busy = False
 
-    async def asend(self, value) -> None:
+    async def asend_core(self, value) -> None:
         log.debug("AsyncIteratorObserver:asend(%d)", value)
-        #assert not self._push.done()
 
         await self._serialize_access()
 
         self._push.set_result(value)
         await self._wait_for_pull()
 
-    async def athrow(self, err) -> None:
+    async def athrow_core(self, err) -> None:
         await self._serialize_access()
 
         self._push.set_exception(err)
         await self._wait_for_pull()
 
-    async def aclose(self) -> None:
+    async def aclose_core(self) -> None:
         await self._serialize_access()
 
         self._push.set_exception(StopAsyncIteration)
         await self._wait_for_pull()
 
-    async def __anext__(self):
-        return await self._wait_for_push()
+    async def _wait_for_pull(self) -> None:
+        await self._pull
+        self._pull = Future()
+        self._busy = False
 
     async def _serialize_access(self):
         # Serialize producer event to the iterator
@@ -58,23 +56,42 @@ class AsyncIteratorObserver(AsyncIterator, AsyncObserver):
 
         self._busy = True
 
-    async def _wait_for_push(self):
-        value = await self._push
-        self._push = Future()
-        self._pull.set_result(True)
+    async def wait_for_push(self):
+            value = await self._push
+            self._push = Future()
+            self._pull.set_result(True)
 
-        # Wake up any awaiters
-        for awaiter in self._awaiters[:1]:
-            awaiter.set_result(True)
-        return value
+            # Wake up any awaiters
+            for awaiter in self._awaiters[:1]:
+                awaiter.set_result(True)
+            return value
 
-    async def _wait_for_pull(self) -> None:
-        await self._pull
-        self._pull = Future()
-        self._busy = False
+    async def __aiter__(self) -> AsyncIterator:
+        """Iterate asynchronously.
+
+        Transforms the async source stream to an async iterable. The source
+        will await for the iterator to pick up the value before
+        continuing to avoid queuing values.
+        """
+
+        _observer = AsyncIterableObserver._(self)
+        await self.__asubscribe__(_observer)
+        return _observer
+
+    class _(AsyncIterator):
+        """AsyncIterator.
+
+        Used for listening to an async source using an async iterator.
+        """
+
+        def __init__(self, parent) -> None:
+            self._parent = parent
+
+        async def __anext__(self):
+            return await self._parent.wait_for_push()
 
 
-class AnonymousAsyncObserver(AsyncObserver):
+class AsyncAnonymousObserver(AsyncObserverBase):
     """An anonymous AsyncObserver.
 
     Creates as sink where the implementation is provided by three
@@ -93,11 +110,11 @@ class AnonymousAsyncObserver(AsyncObserver):
         assert iscoroutinefunction(aclose)
         self._close = aclose
 
-    async def asend(self, value: T):
+    async def asend_core(self, value: T) -> None:
         await self._send(value)
 
-    async def athrow(self, ex: Exception):
+    async def athrow_core(self, ex: Exception) -> None:
         await self._throw(ex)
 
-    async def aclose(self):
+    async def aclose_core(self) -> None:
         await self._close()

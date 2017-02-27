@@ -2,7 +2,7 @@ from asyncio import iscoroutinefunction
 from typing import Awaitable, Union, Callable, TypeVar
 
 from aioreactive.core import AsyncObservable, AsyncObserver, chain
-from aioreactive.core import AsyncSingleStream
+from aioreactive.core import AsyncSingleStream, AsyncCompositeDisposable
 
 T = TypeVar('T')
 
@@ -17,9 +17,12 @@ class Filter(AsyncObservable):
         self._predicate = predicate
         self._is_awaitable = iscoroutinefunction(predicate)
 
-    async def __asubscribe__(self, sink: AsyncObserver):
-        _observer = await chain(Filter.Sink(self), sink)
-        return await chain(self._source, _observer)
+    async def __asubscribe__(self, observer: AsyncObserver):
+        sink = Filter.Sink(self)
+        down = await chain(sink, observer)
+        up = await chain(self._source, sink)
+
+        return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
 
@@ -28,7 +31,7 @@ class Filter(AsyncObservable):
             self._predicate = source._predicate
             self._is_awaitable = source._is_awaitable
 
-        async def asend(self, value: T) -> None:
+        async def asend_core(self, value: T) -> None:
             try:
                 should_run = await self._predicate(value) if self._is_awaitable else self._predicate(value)
             except Exception as ex:

@@ -72,11 +72,7 @@ class AsyncStreamBase(core.AsyncObserver):
 
 
 class AsyncMultipleStream(core.AsyncStream, AsyncStreamBase):
-
-    def __init__(self):
-        super().__init__()
-        #self._loop = asyncio.get_event_loop()
-
+    pass
 
 AsyncStream = AsyncMultipleStream
 

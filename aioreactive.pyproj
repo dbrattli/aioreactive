@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{56490620-d90a-40a6-b4d8-6afb18ea4b39}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>setup.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>{2af0f10d-7135-4994-9156-5d01c9c11b7e}</InterpreterId>
+    <InterpreterVersion>3.5</InterpreterVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+    <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="examples\autocomplete\index.html" />
+    <Content Include="examples\autocomplete\static\autocomplete.js" />
+    <Content Include="LICENSE.txt" />
+    <Content Include="mypy.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="aioreactive\core\abc\cancellable.py" />
+    <Compile Include="aioreactive\core\abc\sink.py" />
+    <Compile Include="aioreactive\core\abc\source.py" />
+    <Compile Include="aioreactive\core\abc\__init__.py" />
+    <Compile Include="aioreactive\core\futures.py" />
+    <Compile Include="aioreactive\core\listen.py" />
+    <Compile Include="aioreactive\core\sinks.py" />
+    <Compile Include="aioreactive\core\operators\concat.py" />
+    <Compile Include="aioreactive\core\operators\debounce.py" />
+    <Compile Include="aioreactive\core\operators\delay.py" />
+    <Compile Include="aioreactive\core\operators\distinct_until_changed.py" />
+    <Compile Include="aioreactive\core\operators\empty.py" />
+    <Compile Include="aioreactive\core\operators\filter.py" />
+    <Compile Include="aioreactive\core\operators\filteri.py" />
+    <Compile Include="aioreactive\core\operators\flat_map.py" />
+    <Compile Include="aioreactive\core\operators\from_iterable.py" />
+    <Compile Include="aioreactive\core\operators\map.py" />
+    <Compile Include="aioreactive\core\operators\merge.py" />
+    <Compile Include="aioreactive\core\operators\never.py" />
+    <Compile Include="aioreactive\core\operators\skip.py" />
+    <Compile Include="aioreactive\core\operators\skip_last.py" />
+    <Compile Include="aioreactive\core\operators\slice.py" />
+    <Compile Include="aioreactive\core\operators\switch_latest.py" />
+    <Compile Include="aioreactive\core\operators\take.py" />
+    <Compile Include="aioreactive\core\operators\take_last.py" />
+    <Compile Include="aioreactive\core\operators\unit.py" />
+    <Compile Include="aioreactive\core\operators\with_latest_from.py" />
+    <Compile Include="aioreactive\core\operators\__init__.py" />
+    <Compile Include="aioreactive\core\streams.py" />
+    <Compile Include="aioreactive\core\typing.py" />
+    <Compile Include="aioreactive\core\utils.py" />
+    <Compile Include="aioreactive\core\__init__.py" />
+    <Compile Include="aioreactive\observable\observable.py" />
+    <Compile Include="aioreactive\observable\observer.py" />
+    <Compile Include="aioreactive\observable\subject.py" />
+    <Compile Include="aioreactive\observable\__init__.py" />
+    <Compile Include="aioreactive\producer\operators.py" />
+    <Compile Include="aioreactive\producer\producer.py" />
+    <Compile Include="aioreactive\producer\__init__.py" />
+    <Compile Include="aioreactive\testing\eventloop.py" />
+    <Compile Include="aioreactive\testing\sink.py" />
+    <Compile Include="aioreactive\testing\streams.py" />
+    <Compile Include="aioreactive\testing\__init__.py" />
+    <Compile Include="aioreactive\__init__.py" />
+    <Compile Include="examples\autocomplete\autocomplete.py" />
+    <Compile Include="examples\timeflies\timeflies.py" />
+    <Compile Include="playground\main.py" />
+    <Compile Include="setup.py" />
+    <Compile Include="test\test_concat.py" />
+    <Compile Include="test\test_debounce.py" />
+    <Compile Include="test\test_delay.py" />
+    <Compile Include="test\test_distinct_until_changed.py" />
+    <Compile Include="test\test_eventloop.py" />
+    <Compile Include="test\test_filter.py" />
+    <Compile Include="test\test_flat_map.py" />
+    <Compile Include="test\test_from_iterable.py" />
+    <Compile Include="test\test_map.py" />
+    <Compile Include="test\test_merge.py" />
+    <Compile Include="test\test_observable.py" />
+    <Compile Include="test\test_producer.py" />
+    <Compile Include="test\test_slice.py" />
+    <Compile Include="test\test_stream.py" />
+    <Compile Include="test\test_take.py" />
+    <Compile Include="test\test_unit.py" />
+    <Compile Include="test\test_with_latest_from.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="aioreactive" />
+    <Folder Include="aioreactive\core" />
+    <Folder Include="aioreactive\core\abc" />
+    <Folder Include="aioreactive\core\operators" />
+    <Folder Include="aioreactive\observable" />
+    <Folder Include="aioreactive\producer" />
+    <Folder Include="aioreactive\testing" />
+    <Folder Include="examples\" />
+    <Folder Include="examples\autocomplete" />
+    <Folder Include="examples\autocomplete\static" />
+    <Folder Include="examples\timeflies" />
+    <Folder Include="playground" />
+    <Folder Include="test" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\3.5" />
+  </ItemGroup>
+  <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
+</Project>
