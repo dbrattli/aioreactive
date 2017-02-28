@@ -28,13 +28,15 @@ async def test_debounce():
         result.append(value)
 
     ys = debounce(0.5, xs)
-    sub = await subscribe(ys, AsyncAnonymousObserver(asend))
+
+    obv = AsyncAnonymousObserver(asend)
+    sub = await subscribe(ys, obv)
     await xs.asend(1)
     await asyncio.sleep(0.6)
     await xs.asend(2)
     await xs.aclose()
     await asyncio.sleep(0.6)
-    await sub
+    await obv
 
     assert result == [1, 2]
 
@@ -50,12 +52,13 @@ async def test_debounce_filter():
         result.append(value)
 
     ys = debounce(0.5, xs)
-    sub = await subscribe(ys, AsyncAnonymousObserver(asend))
+    obv = AsyncAnonymousObserver(asend)
+    sub = await subscribe(ys, obv)
     await xs.asend(1)
     await asyncio.sleep(0.3)
     await xs.asend(2)
     await xs.aclose()
     await asyncio.sleep(0.6)
-    await sub
+    await obv
 
     assert result == [2]

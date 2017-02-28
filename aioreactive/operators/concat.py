@@ -4,6 +4,7 @@ import logging
 
 from aioreactive.core import AsyncObservable, AsyncObserver
 from aioreactive.core import chain, AsyncSingleStream
+from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
 
 log = logging.getLogger(__name__)
 
@@ -15,39 +16,37 @@ class Concat(AsyncObservable):
         self._subscription = None  # type: asyncio.Future
         self._task = None  # type: asyncio.Task
 
-    async def worker(self, sink: AsyncObserver) -> None:
+    async def worker(self, observer: AsyncObserver) -> None:
         def recurse(fut) -> None:
-            self._task = asyncio.ensure_future(self.worker(sink))
+            self._task = asyncio.ensure_future(self.worker(observer))
 
         try:
             source = next(self._operators)
         except StopIteration:
-            await sink.aclose()
+            await observer.aclose()
         except Exception as ex:
-            await sink.athrow(ex)
+            await observer.athrow(ex)
         else:
-            _observer = await chain(Concat.Stream(), sink)  # type: AsyncSingleStream
-            _observer.add_done_callback(recurse)
+            sink = Concat.Stream()
+            down = await chain(sink, observer)  # type: AsyncSingleStream
+            sink.add_done_callback(recurse)
+            up = await chain(source, sink)
+            self._subscription = AsyncCompositeDisposable(up, down)
 
-            self._subscription = await chain(source, _observer)
-
-    async def __asubscribe__(self, sink: AsyncObserver) -> AsyncSingleStream:
-        stream = AsyncSingleStream()
-
-        def cancel(sub):
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+        async def cancel():
             if self._subscription is not None:
-                self._subscription.cancel()
+                await self._subscription.adispose()
 
             if self._task is not None:
                 self._task.cancel()
-        stream.add_done_callback(cancel)
 
-        self._task = asyncio.ensure_future(self.worker(sink))
-        return stream
+        self._task = asyncio.ensure_future(self.worker(observer))
+        return AsyncDisposable(cancel)
 
     class Stream(AsyncSingleStream):
 
-        async def aclose(self) -> None:
+        async def aclose_core(self) -> None:
             log.debug("Concat._:close()")
             self.cancel()
 

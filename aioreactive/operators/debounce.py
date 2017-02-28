@@ -2,6 +2,7 @@ import asyncio
 from typing import TypeVar, Generic, List
 
 from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, chain
+from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
 
 T = TypeVar("T")
 
@@ -12,19 +13,20 @@ class Debounce(AsyncObservable[T], Generic[T]):
         self._seconds = seconds
         self._source = source
 
-    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncSingleStream:
+    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncDisposable:
         """Start streaming."""
 
         tasks = []  # type: List[asyncio.Task]
 
-        _observer = await chain(Debounce.Stream(self, tasks), observer)
-        sub = await chain(self._source, _observer)
+        sink = Debounce.Stream(self, tasks)
+        down = await chain(sink, observer)
+        up = await chain(self._source, sink)
 
         def cancel(sub: asyncio.Future):
             for task in tasks:
                 task.cancel()
-        sub.add_done_callback(cancel)
-        return sub
+        sink.add_done_callback(cancel)
+        return AsyncCompositeDisposable(up, down)
 
     class Stream(AsyncSingleStream[T]):
 
@@ -38,7 +40,7 @@ class Debounce(AsyncObservable[T], Generic[T]):
             self._has_value = False
             self._index = 0
 
-        async def asend(self, value: T) -> None:
+        async def asend_core(self, value: T) -> None:
             self._has_value = True
             self._value = value
             self._index += 1
@@ -54,7 +56,7 @@ class Debounce(AsyncObservable[T], Generic[T]):
             task = asyncio.ensure_future(_debouncer(value, self._index))
             self._tasks.append(task)
 
-        async def aclose(self) -> None:
+        async def aclose_core(self) -> None:
             if self._has_value:
                 self._has_value = False
                 await self._observer.asend(self._value)
