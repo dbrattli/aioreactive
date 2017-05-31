@@ -5,7 +5,8 @@ from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.operators.flat_map import flat_map
 from aioreactive.operators.unit import unit
-from aioreactive.core import AsyncStream, AsyncAnonymousObserver, subscribe, run
+from aioreactive.core import AsyncStream, subscribe, run
+from aioreactive.testing import AsyncAnonymousObserver
 
 
 @pytest.yield_fixture()
@@ -28,13 +29,19 @@ async def test_flap_map_done():
         return from_iterable([value])
 
     ys = flat_map(mapper, xs)
-    await subscribe(ys, AsyncAnonymousObserver(asend))
+
+    obv = AsyncAnonymousObserver()
+    await subscribe(ys, obv)
     await xs.asend(10)
     await xs.asend(20)
+    await xs.aclose()
 
-    await asyncio.sleep(0.6)
+    await obv
 
-    assert result == [10, 20]
+    assert obv.values == [
+        (0, 10),
+        (0, 20),
+        (0, )]
 
 
 @pytest.mark.asyncio
@@ -94,7 +101,9 @@ async def test_flat_map_monad_law_associativity():
     async def h(x):
         return flat_map(g, await f(x))
 
-    a = await run(flat_map(g, flat_map(f, m)))
+    zs = flat_map(f, m)
+    a = await run(flat_map(g, zs))
+
     b = await run(flat_map(h, m))
 
     assert a == b

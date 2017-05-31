@@ -17,6 +17,8 @@ class FromIterable(AsyncObservable, Generic[T]):
     async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         task = None
 
+        assert isinstance(observer, AsyncObserver)
+
         async def cancel():
             task.cancel()
 

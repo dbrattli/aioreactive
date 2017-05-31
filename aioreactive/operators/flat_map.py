@@ -22,7 +22,7 @@ class FlatMap(AsyncObservable[T2]):
 
     async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         sink = FlatMap.Sink(self)
-        down = await chain(sink, observer)  # type: AsyncSingleStream
+        down = await chain(sink, observer)  # type: AsyncDisposable
         up = await chain(self._source, sink)
 
         return AsyncCompositeDisposable(up, down)

@@ -31,6 +31,7 @@ class AsyncAnonymousObserver(AsyncObserverBase):
         self._close = close
 
     async def asend_core(self, value: T):
+        print("AsyncAnonymousObserver:asend_core(%d)" % value)
         time = self._loop.time()
         self._values.append((time, value))
 

@@ -31,7 +31,7 @@ class AsyncObserverBase(Future, AsyncObserver[T], Disposable, Generic[T]):
         log.debug("AsyncObserverBase:asend(%s)", value)
 
         if self._is_stopped:
-            log.debug("Stopped!!")
+            log.debug("Closed!!")
             return
 
         self._last_value = value
@@ -49,8 +49,10 @@ class AsyncObserverBase(Future, AsyncObserver[T], Disposable, Generic[T]):
         await self.athrow_core(ex)
 
     async def aclose(self) -> None:
+        log.debug("AsyncObserverBase:aclose")
+
         if self._is_stopped:
-            log.debug("Stopped!!")
+            log.debug("Closed!!")
             return
 
         self._is_stopped = True

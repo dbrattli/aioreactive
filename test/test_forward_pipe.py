@@ -6,6 +6,7 @@ from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver
 from aioreactive.operators.pipe import pipe
 from aioreactive.operators import pipe as op
+from aioreactive.operators.to_async_iterable import to_async_iterable
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -77,8 +78,7 @@ async def test_forward_pipe_complex_pipe() -> None:
           | op.flat_map(long_running)
           )
 
-    async with subscribe(ys) as stream:
-        async for value in stream:
-            result.append(value)
+    async for value in to_async_iterable(ys):
+        result.append(value)
 
     assert result == [20, 30]

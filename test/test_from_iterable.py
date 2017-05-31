@@ -27,11 +27,12 @@ async def test_from_iterable_observer_throws():
         result.append(value)
         raise Exception()
 
-    sub = await subscribe(xs, AsyncAnonymousObserver(asend))
+    obv = AsyncAnonymousObserver(asend)
+    await subscribe(xs, obv)
 
     try:
-        await sub
-    except:
+        await obv
+    except Exception:
         pass
     assert result == [1]
 
@@ -44,13 +45,14 @@ async def test_from_iterable_close():
 
     async def asend(value):
         result.append(value)
-        sub.cancel()
+        await sub.adispose()
         await asyncio.sleep(0)
 
-    sub = await subscribe(xs, AsyncAnonymousObserver(asend))
+    obv = AsyncAnonymousObserver(asend)
+    sub = await subscribe(xs, obv)
 
     try:
-        await sub
+        await obv
     except asyncio.CancelledError:
         pass
 

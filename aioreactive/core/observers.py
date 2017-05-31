@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class AsyncIterableObserver(AsyncObserverBase, AsyncIterable):
+class AsyncIteratorObserver(AsyncObserverBase, AsyncIterator):
 
     def __init__(self) -> None:
         super().__init__()
@@ -66,29 +66,8 @@ class AsyncIterableObserver(AsyncObserverBase, AsyncIterable):
                 awaiter.set_result(True)
             return value
 
-    async def __aiter__(self) -> AsyncIterator:
-        """Iterate asynchronously.
-
-        Transforms the async source stream to an async iterable. The source
-        will await for the iterator to pick up the value before
-        continuing to avoid queuing values.
-        """
-
-        _observer = AsyncIterableObserver._(self)
-        await self.__asubscribe__(_observer)
-        return _observer
-
-    class _(AsyncIterator):
-        """AsyncIterator.
-
-        Used for listening to an async source using an async iterator.
-        """
-
-        def __init__(self, parent) -> None:
-            self._parent = parent
-
-        async def __anext__(self):
-            return await self._parent.wait_for_push()
+    async def __anext__(self):
+        return await self.wait_for_push()
 
 
 class AsyncAnonymousObserver(AsyncObserverBase):

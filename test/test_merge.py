@@ -23,14 +23,14 @@ async def test_merge_done():
 
     ys = merge(xs)
 
-    sink = AsyncAnonymousObserver()
-    sub = await subscribe(ys, sink)
+    obv = AsyncAnonymousObserver()
+    await subscribe(ys, obv)
     await xs.asend(from_iterable([10]))
     await xs.asend(from_iterable([20]))
     await xs.aclose()
-    await sub
+    await obv
 
-    assert sink.values == [
+    assert obv.values == [
         (0, 10),
         (0, 20),
         (0,)
@@ -44,8 +44,8 @@ async def test_merge_streams():
 
     ys = merge(xs)
 
-    sink = AsyncAnonymousObserver()
-    sub = await subscribe(ys, sink)
+    obv = AsyncAnonymousObserver()
+    await subscribe(ys, obv)
     await xs.asend(s1)
     await xs.asend(s2)
 
@@ -60,9 +60,9 @@ async def test_merge_streams():
     await s2.aclose_at(6)
 
     await xs.aclose()
-    await sub
+    await obv
 
-    assert sink.values == [
+    assert obv.values == [
         (0, 40),
         (1, 10),
         (2, 20),
@@ -82,17 +82,17 @@ async def test_merge_streams_concat():
 
     ys = merge(xs, 1)
 
-    sink = AsyncAnonymousObserver()
-    sub = await subscribe(ys, sink)
+    obv = AsyncAnonymousObserver()
+    await subscribe(ys, obv)
 
     await s1.asend_at(1, 10)
     await s1.asend_at(2, 20)
     await s1.asend_at(4, 30)
     await s1.aclose_at(6)
 
-    await sub
+    await obv
 
-    assert sink.values == [
+    assert obv.values == [
         (1, 10),
         (2, 20),
         (4, 30),

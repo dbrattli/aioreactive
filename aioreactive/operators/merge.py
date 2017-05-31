@@ -16,72 +16,76 @@ class Merge(AsyncObservable):
     def __init__(self, source: AsyncObservable, max_concurrent: int) -> None:
         self._source = source
         self.max_concurrent = max_concurrent
+        print("Merge:__init__()")
 
     async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         log.debug("Merge:__asubscribe__()")
         sink = Merge.Sink(self, self.max_concurrent)
         down = await chain(sink, observer)
         up = await chain(self._source, sink)
+
         return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
 
         def __init__(self, source: AsyncObservable, max_concurrent: int) -> None:
             super().__init__()
-            self._inner_streams = {}  # type: Dict[AsyncObserver[T], AsyncSingleStream]
+            self._inner_subs = {}  # type: Dict[AsyncObserver[T], AsyncSingleStream]
             self._sem = BoundedSemaphore(max_concurrent)
             self._is_closed = False
 
-        def cancel(self, sub=None) -> None:
-            log.debug("Merge.Stream:cancel()")
+        async def adispose(self, sub=None) -> None:
+            log.debug("Merge.Sink:adispose()")
             super().cancel()
 
             # Use .values() so that no one modifies the dict while we
             # cancel the inner streams.
-            for stream in self._inner_streams.values():
-                if stream is not None:
-                    stream.cancel()
-            self._inner_streams = {}
+            for sub in self._inner_subs.values():
+                if sub is not None:
+                    await sub.adispose()
+            self._inner_subs = {}
 
         async def asend_core(self, stream: AsyncObservable) -> None:
-            log.debug("Merge.Stream:send(%s)" % stream)
+            log.debug("Merge.Sink:asend_core(%s)" % stream)
 
-            inner_stream = await chain(Merge.Stream.InnerStream(), self._observer)  # type: AsyncObserver
+            inner_stream = Merge.Sink.InnerStream()
+            inner_sub = await chain(inner_stream, self._observer)  # type: AsyncDisposable
 
             # Allocate entry to make sure no-one closes the merge before
             # we get to aquire the semaphore.
-            self._inner_streams[inner_stream] = None
+            self._inner_subs[inner_sub] = None
             await self._sem.acquire()
 
-            def done(fut):
-                self._inner_streams.pop(inner_stream, None)
+            def done(sub):
+                self._inner_subs.pop(inner_sub, None)
                 self._sem.release()
 
-                if self._is_closed:
-                    asyncio.ensure_future(self.aclose())
+                if self._is_closed and not len(self._inner_subs):
+                    asyncio.ensure_future(self._observer.aclose())
 
             inner_stream.add_done_callback(done)
-            self._inner_streams[inner_stream] = await chain(stream, inner_stream)
+            sub = self._inner_subs[inner_sub] = await chain(stream, inner_stream)
+            return sub
 
         async def aclose_core(self) -> None:
-            log.debug("Merge.Stream:aclose()")
-            if len(self._inner_streams):
+            log.debug("Merge.Sink:aclose_core()")
+
+            if len(self._inner_subs):
                 self._is_closed = True
                 return
 
             log.debug("Closing merge ...")
-            await super().aclose()
+            await self._observer.aclose()
 
         class InnerStream(AsyncSingleStream):
 
             async def aclose_core(self) -> None:
-                log.debug("Merge.Stream.InnerStream:aclose()")
+                log.debug("Merge.Sink.InnerStream:aclose()")
 
                 # Unlink observer to avoid forwarding the close. This will
                 # make the inner_stream complete, and the done callback
                 # will take care of any cleanup.
                 self._observer = noopobserver
-                await super().aclose()
 
 
 def merge(source: AsyncObservable, max_concurrent: int=42) -> AsyncObservable:

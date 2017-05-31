@@ -3,9 +3,10 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver, AsyncIterableObserver
+from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver, AsyncIteratorObserver
 from aioreactive.operators.pipe import pipe
 from aioreactive.operators import pipe as op
+from aioreactive.operators.to_async_iterable import to_async_iterable
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -23,10 +24,8 @@ async def test_async_iteration() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
-    obv = AsyncIterableObserver()
-    async with subscribe(xs, obv):
-        async for x in obv:
-            result.append(x)
+    async for x in to_async_iterable(xs):
+        result.append(x)
 
     assert result == [1, 2, 3]
 
@@ -35,11 +34,9 @@ async def test_async_iteration() -> None:
 async def test_async_comprehension() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3])
 
-    obv = AsyncIterableObserver()
-    async with subscribe(xs, obv):
-        result = [x async for x in obv]
+    result = [x async for x in to_async_iterable(xs)]
 
-        assert result == [1, 2, 3]
+    assert result == [1, 2, 3]
 
 
 @pytest.mark.asyncio
@@ -47,7 +44,7 @@ async def test_async_iteration_aync_with() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
-    obv = AsyncIterableObserver()
+    obv = AsyncIteratorObserver()
     async with subscribe(xs, obv):
         async for x in obv:
             result.append(x)
@@ -58,15 +55,13 @@ async def test_async_iteration_aync_with() -> None:
 @pytest.mark.asyncio
 async def test_async_iteration_inception() -> None:
     # iterable to async source to async iterator to async source
-    obv = AsyncIterableObserver()
+    obv = AsyncIteratorObserver()
     await subscribe(AsyncObservable.from_iterable([1, 2, 3]), obv)
     xs = AsyncObservable.from_iterable(obv)
     result = []
 
-    obv = AsyncIterableObserver()
-    async with subscribe(xs, obv):
-        async for x in obv:
-            result.append(x)
+    async for x in to_async_iterable(xs):
+        result.append(x)
 
     assert result == [1, 2, 3]
 
