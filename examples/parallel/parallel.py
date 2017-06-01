@@ -28,10 +28,9 @@ async def main():
         fut = executor.submit(long_running, value)
         return AsyncObservable.unit(wrap_future(fut))
 
-    ys = xs | op.flat_map(mapper)
-    async with subscribe(ys) as stream:
-        async for x in stream:
-            print(x)
+    ys = xs | op.flat_map(mapper) | op.to_async_iterable()
+    async for x in ys:
+        print(x)
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

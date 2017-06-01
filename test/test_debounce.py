@@ -3,8 +3,8 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.debounce import debounce
 from aioreactive.core import subscribe, AsyncAnonymousObserver, AsyncStream
+from aioreactive.operators import debounce
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)

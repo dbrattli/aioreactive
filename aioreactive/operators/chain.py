@@ -13,12 +13,12 @@ class ChainedAsyncObservable(AsyncObservable):
     All methods are lazy imported.
     """
 
-    def __init__(self, source: AsyncObservable = None):
+    def __init__(self, source: AsyncObservable = None) -> None:
         super().__init__()
         self._source = source
 
-    async def subscribe(self, obv: AsyncObserver):
-        return await subscribe(self, obv)
+    def subscribe(self, obv: AsyncObserver):
+        return subscribe(self, obv)
 
     def __getitem__(self, key) -> 'ChainedAsyncObservable':
         """Slices the given source stream using Python slice notation.

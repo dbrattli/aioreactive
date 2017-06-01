@@ -3,8 +3,8 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.delay import delay
 from aioreactive.core import subscribe
+from aioreactive.operators import delay
 from aioreactive.testing import AsyncStream, AsyncAnonymousObserver
 
 log = logging.getLogger(__name__)
@@ -43,7 +43,6 @@ async def test_delay_cancel_before_done():
     result = []
 
     async def asend(value):
-        print("Send: %d" % value)
         nonlocal result
         result.append(value)
 
@@ -63,7 +62,6 @@ async def test_delay_throw():
     result = []
 
     async def asend(value):
-        print("Send: %d" % value)
         nonlocal result
         result.append(value)
 

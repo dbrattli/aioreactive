@@ -3,8 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.core import AsyncObservable, run, AsyncAnonymousObserver
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.concat import concat
+from aioreactive.operators import from_iterable, concat
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

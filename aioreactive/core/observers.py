@@ -74,8 +74,8 @@ class AsyncAnonymousObserver(AsyncObserverBase):
     """An anonymous AsyncObserver.
 
     Creates as sink where the implementation is provided by three
-    optional and anonymous functions, send, throw and close. Used for
-    listening to asource."""
+    optional and anonymous functions, asend, athrow and aclose. Used for
+    listening to a source."""
 
     def __init__(self, asend=anoop, athrow=anoop, aclose=anoop) -> None:
         super().__init__()
@@ -97,3 +97,10 @@ class AsyncAnonymousObserver(AsyncObserverBase):
 
     async def aclose_core(self) -> None:
         await self._close()
+
+
+class AsyncNoopObserver(AsyncAnonymousObserver):
+    """An no operation Async Observer."""
+
+    def __init__(self, asend=anoop, athrow=anoop, aclose=anoop) -> None:
+        super().__init__(asend, athrow, aclose)

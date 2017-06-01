@@ -30,7 +30,7 @@ class Max(AsyncObservable):
             if value > self._max:
                 self._max = value
 
-        async def close_core(self):
+        async def aclose_core(self) -> None:
             await super().asend_core(self._max)
             await super().aclose_core()
 

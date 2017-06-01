@@ -15,7 +15,7 @@ class AsyncObserverBase(Future, AsyncObserver[T], Disposable, Generic[T]):
 
     """An async observer abstract base class.
 
-    Both a future and async  observer. The future resolves with the last
+    Both a future and async observer. The future resolves with the last
     value before the observer is closed. A close without any values sent
     is the same as cancelling the future."""
 

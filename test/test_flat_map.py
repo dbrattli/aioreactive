@@ -2,9 +2,7 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.flat_map import flat_map
-from aioreactive.operators.unit import unit
+from aioreactive.operators import from_iterable, flat_map, unit
 from aioreactive.core import AsyncStream, subscribe, run
 from aioreactive.testing import AsyncAnonymousObserver
 

@@ -5,7 +5,7 @@ import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.map import map
+from aioreactive.operators import map
 from aioreactive.core import run, subscribe, chain
 from aioreactive.testing import AsyncStream, AsyncAnonymousObserver
 
@@ -25,7 +25,7 @@ def event_loop():
 
 
 @pytest.mark.asyncio
-async def test_stream_happy():
+async def test_stream_happy() -> None:
     xs = AsyncStream()
 
     obv = AsyncAnonymousObserver()
@@ -42,18 +42,20 @@ async def test_stream_happy():
 
 
 @pytest.mark.asyncio
-async def test_stream_throws():
+async def test_stream_throws() -> None:
     ex = MyException("ex")
     xs = AsyncStream()
 
     obv = AsyncAnonymousObserver()
     with pytest.raises(MyException):
-        sub = await subscribe(xs, obv)
+        await (xs > obv)
+
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
         await xs.asend_later(1, 30)
         await xs.athrow_later(1, ex)
         await xs.asend_later(1, 40)
+
         await obv
 
     assert obv.values == [
@@ -65,11 +67,12 @@ async def test_stream_throws():
 
 
 @pytest.mark.asyncio
-async def test_stream_send_after_close():
+async def test_stream_send_after_close() -> None:
     xs = AsyncStream()
 
     obv = AsyncAnonymousObserver()
     await subscribe(xs, obv)
+
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
@@ -85,11 +88,11 @@ async def test_stream_send_after_close():
 
 
 @pytest.mark.asyncio
-async def test_stream_cancel():
+async def test_stream_cancel() -> None:
     xs = AsyncStream()
     subscription = None
 
-    def mapper(value):
+    def mapper(value) -> int:
         return value * 10
 
     ys = map(mapper, xs)
@@ -104,21 +107,23 @@ async def test_stream_cancel():
 
 
 @pytest.mark.asyncio
-async def test_stream_cancel_asend():
+async def test_stream_cancel_asend() -> None:
     xs = AsyncStream()
     subscription = None
 
-    async def asend(value):
+    async def asend(value) -> None:
         await subscription.adispose()
         await asyncio.sleep(0)
 
-    def mapper(value):
+    def mapper(value) -> int:
         return value * 10
 
     ys = map(mapper, xs)
 
     obv = AsyncAnonymousObserver(asend)
-    async with subscribe(ys, obv) as subscription:
+    async with subscribe(ys, obv) as sub:
+        subscription = sub
+
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
 
@@ -132,7 +137,6 @@ async def test_stream_cancel_mapper():
 
     def mapper(value):
         asyncio.ensure_future(subscription.adispose())
-        print("**********", value)
         return value * 10
 
     ys = map(mapper, xs)

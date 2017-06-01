@@ -4,7 +4,7 @@ import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import AsyncStream, AsyncAnonymousObserver, AsyncObservable
-from aioreactive.operators.chain import chain
+from aioreactive.operators import chain
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -54,8 +54,9 @@ async def test_chain_simple_pipe():
         result.append(value)
 
     obv = AsyncAnonymousObserver(on_next)
-    sub = await ys.subscribe(obv)
-    await obv
+    async with ys.subscribe(obv):
+        await obv
+
     assert result == [20, 30]
 
 

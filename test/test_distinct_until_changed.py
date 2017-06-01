@@ -1,10 +1,8 @@
 import pytest
-import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.distinct_until_changed import distinct_until_changed
 from aioreactive.core import run, subscribe
+from aioreactive.operators import from_iterable, distinct_until_changed
 from aioreactive.testing import AsyncAnonymousObserver
 
 

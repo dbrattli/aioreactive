@@ -20,7 +20,7 @@ from aiohttp import web
 
 from aioreactive.core import AsyncAnonymousObserver, subscribe
 from aioreactive.core import AsyncObservable, AsyncStream
-from aioreactive.operators import pipe as op
+from aioreactive.operators import op
 
 
 async def search_wikipedia(term):
@@ -43,23 +43,21 @@ async def websocket_handler(request):
 
     stream = AsyncStream()
 
-    # Line break before binary operator is more readable. Disable W503
     xs = (stream
           | op.map(lambda x: x["term"])
           | op.filter(lambda text: len(text) > 2)
-          | op.debounce(0.75)
+          | op.debounce(0.5)
           | op.distinct_until_changed()
           | op.flat_map(search_wikipedia)
-          #| op.switch_latest()
           )
 
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    async def asend(value):
+    async def asend(value) -> None:
         ws.send_str(value)
 
-    async def athrow(ex):
+    async def athrow(ex) -> None:
         print(ex)
 
     await subscribe(xs, AsyncAnonymousObserver(asend, athrow))

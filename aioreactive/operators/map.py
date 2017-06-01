@@ -1,5 +1,5 @@
 from asyncio import iscoroutinefunction
-from typing import Callable, Awaitable, Union, TypeVar, Generic, cast
+from typing import Callable, TypeVar
 
 from aioreactive.abc import AsyncDisposable
 from aioreactive.core import AsyncObserver, AsyncObservable
@@ -34,7 +34,6 @@ class Map(AsyncObservable[T2]):
             except Exception as err:
                 await self._observer.athrow(err)
             else:
-                print("send", result)
                 await self._observer.asend(result)
 
 

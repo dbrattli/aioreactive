@@ -8,7 +8,7 @@ from aioreactive.abc import AsyncDisposable
 from .typing import AsyncObservable, AsyncObserver
 from .utils import noopobserver
 from .streams import AsyncSingleStream
-from .observers import AsyncAnonymousObserver
+from .observers import AsyncNoopObserver
 
 log = logging.getLogger(__name__)
 
@@ -42,8 +42,12 @@ class AsyncSubscriptionFactory(Awaitable, AsyncDisposable):
         await self._subscription.adispose()
 
     async def __aenter__(self) -> AsyncDisposable:
-        """Awaits stream creation."""
+        """Awaits subscription creation."""
         return await self.create()
+
+    async def __aexit__(self, type, value, traceback):
+        """Awaits unsubscription."""
+        await self._subscription.adispose()
 
     def __await__(self):
         """Await stream creation."""
@@ -59,7 +63,7 @@ async def chain(source, observer) -> AsyncDisposable:
     return await source.__asubscribe__(observer)
 
 
-def subscribe(source: AsyncObservable, observer: Optional[AsyncObserver]=None) -> AsyncSubscriptionFactory:
+def subscribe(source: AsyncObservable, observer: AsyncObserver) -> AsyncSubscriptionFactory:
     """Start streaming source into observer.
 
     Returns an AsyncStreamFactory that is lazy in the sense that it will
@@ -116,6 +120,6 @@ async def run(source: AsyncObservable[T], observer: Optional[AsyncObserver]=None
 
     # For run we need a noopobserver if no observer is specified to avoid
     # blocking the last single stream in the chain.
-    observer = observer or AsyncAnonymousObserver()
+    observer = observer or AsyncNoopObserver()
     await subscribe(source, observer)
     return await asyncio.wait_for(observer, timeout)

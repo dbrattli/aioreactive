@@ -1,4 +1,4 @@
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, AsyncIterable
 from functools import partial
 
 from aioreactive.core import AsyncObservable
@@ -65,6 +65,11 @@ def distinct_until_changed() -> Callable[[AsyncObservable], AsyncObservable]:
 def switch_latest() -> Callable[[AsyncObservable], AsyncObservable]:
     from .switch_latest import switch_latest
     return partial(switch_latest)
+
+
+def to_async_iterable() -> Callable[[AsyncObservable], AsyncIterable]:
+    from .to_async_iterable import to_async_iterable
+    return partial(to_async_iterable)
 
 
 def pipe(source: AsyncObservable, *args: Callable[[AsyncObservable], AsyncObservable]) -> AsyncObservable:

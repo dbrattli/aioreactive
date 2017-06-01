@@ -57,7 +57,7 @@ async def test_async_iteration_inception() -> None:
     # iterable to async source to async iterator to async source
     obv = AsyncIteratorObserver()
     await subscribe(AsyncObservable.from_iterable([1, 2, 3]), obv)
-    xs = AsyncObservable.from_iterable(obv)
+    xs = AsyncObservable.from_async_iterable(obv)
     result = []
 
     async for x in to_async_iterable(xs):

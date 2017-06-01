@@ -89,10 +89,19 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
         from aioreactive.operators.concat import concat
         return concat(self, other)
 
+    def __gt__(self, obv):
+        from .subscription import subscribe
+        return subscribe(self, obv)
+
     @classmethod
     def from_iterable(cls, iter: Iterable[T]) -> 'AsyncObservable[T]':
         from aioreactive.operators.from_iterable import from_iterable
         return from_iterable(iter)
+
+    @classmethod
+    def from_async_iterable(cls, iter: Iterable[T]) -> 'AsyncObservable[T]':
+        from aioreactive.operators.from_async_iterable import from_async_iterable
+        return from_async_iterable(iter)
 
     @classmethod
     def unit(cls, value: T) -> 'AsyncObservable[T]':

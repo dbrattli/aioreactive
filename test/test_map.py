@@ -6,7 +6,7 @@ from asyncio import Future
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.core import run, subscribe, AsyncAnonymousObserver, AsyncStream
-from aioreactive.operators import pipe as op
+from aioreactive.operators import op
 
 
 @pytest.yield_fixture()
@@ -70,8 +70,6 @@ async def test_map_subscription_cancel():
     def mapper(value):
         return value * 10
 
-    print("-----------------------")
-    print([xs, op.map])
     ys = xs | op.map(mapper)
 
     async def asend(value):

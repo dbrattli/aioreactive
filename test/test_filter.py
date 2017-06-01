@@ -3,8 +3,7 @@ import asyncio
 from typing import Generator
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.filter import filter
+from aioreactive.operators import from_iterable, filter
 from aioreactive.core import run, subscribe, AsyncAnonymousObserver, AsyncStream
 
 

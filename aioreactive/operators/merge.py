@@ -16,7 +16,6 @@ class Merge(AsyncObservable):
     def __init__(self, source: AsyncObservable, max_concurrent: int) -> None:
         self._source = source
         self.max_concurrent = max_concurrent
-        print("Merge:__init__()")
 
     async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         log.debug("Merge:__asubscribe__()")
@@ -34,7 +33,7 @@ class Merge(AsyncObservable):
             self._sem = BoundedSemaphore(max_concurrent)
             self._is_closed = False
 
-        async def adispose(self, sub=None) -> None:
+        async def cancel(self, sub=None) -> None:
             log.debug("Merge.Sink:adispose()")
             super().cancel()
 
