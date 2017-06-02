@@ -13,6 +13,8 @@ class Filter(AsyncObservable):
         """Filters the elements of the source sequence based on a
         predicate function."""
 
+        super().__init__()
+
         self._source = source
         self._predicate = predicate
         self._is_awaitable = iscoroutinefunction(predicate)

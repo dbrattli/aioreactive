@@ -14,17 +14,17 @@ logging.basicConfig(level=logging.INFO)
 executor = ThreadPoolExecutor(max_workers=10)
 
 
-def long_running(value):
+def long_running(value) -> int:
     print("Long running ({0}) on thread {1}".format(value, current_thread().name))
     time.sleep(3)
     print("Long running, done ({0}) on thread {1}".format(value, current_thread().name))
     return value
 
 
-async def main():
+async def main() -> None:
     xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
 
-    async def mapper(value):
+    async def mapper(value) -> AsyncObservable:
         fut = executor.submit(long_running, value)
         return AsyncObservable.unit(wrap_future(fut))
 

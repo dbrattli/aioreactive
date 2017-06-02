@@ -1,5 +1,6 @@
 from typing import Callable, TypeVar, Generic, Iterable
 
+from aioreactive.abc import AsyncDisposable
 from .typing import AsyncObserver, AsyncObservable as AsyncObservableGeneric
 
 T = TypeVar('T')
@@ -89,7 +90,7 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
         from aioreactive.operators.concat import concat
         return concat(self, other)
 
-    def __gt__(self, obv):
+    def __gt__(self, obv) -> AsyncDisposable:
         from .subscription import subscribe
         return subscribe(self, obv)
 
@@ -117,4 +118,3 @@ class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
     def never(cls) -> 'AsyncObservable[T]':
         from aioreactive.operators.never import never
         return never()
-

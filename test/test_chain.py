@@ -44,13 +44,13 @@ async def test_chain_simple_pipe():
     def mapper(value):
         return value * 10
 
-    async def predicate(value):
+    async def predicate(value) -> bool:
         await asyncio.sleep(0.1)
         return value > 1
 
     ys = chain(xs).where(predicate).select(mapper)
 
-    async def on_next(value):
+    async def on_next(value) -> None:
         result.append(value)
 
     obv = AsyncAnonymousObserver(on_next)
@@ -65,14 +65,14 @@ async def test_chain_complex_pipe():
     xs = AsyncObservable.from_iterable([1, 2, 3])
     result = []
 
-    def mapper(value):
+    def mapper(value) -> int:
         return value * 10
 
-    async def predicate(value):
+    async def predicate(value) -> bool:
         await asyncio.sleep(0.1)
         return value > 1
 
-    async def long_running(value):
+    async def long_running(value) -> AsyncObservable:
         return AsyncObservable.from_iterable([value])
 
     ys = (chain(xs)

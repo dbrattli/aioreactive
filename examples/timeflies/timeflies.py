@@ -21,7 +21,7 @@ async def main(loop) -> None:
         asyncio.ensure_future(move(event))
     frame.bind("<Motion>", call_move)
 
-    text = "HACKATHON 2017 - MAKE EPIC STUFF"
+    text = "TIME FLIES LIKE AN ARROW"
     labels = [Label(frame, text=c) for c in text]
 
     async def handle_label(i, label) -> None:
@@ -30,7 +30,9 @@ async def main(loop) -> None:
         async def asend(ev) -> None:
             label.place(x=ev.x + i * 12 + 15, y=ev.y)
 
-        await (mousemoves | delay(i / 10.0) > AsyncAnonymousObserver(asend))
+        obv = AsyncAnonymousObserver(asend)
+
+        await (mousemoves | delay(i / 10.0) > obv)
 
     for i, label in enumerate(labels):
         await handle_label(i, label)

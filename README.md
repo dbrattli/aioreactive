@@ -61,13 +61,11 @@ class AsyncObserver(AsyncObservable):
         return self
 ```
 
-Obsevers are also Observables. This is similar to how Iterators are also Iterables in Python. This enable us to chain observers together. While chaining observers is not normally done when using aioreactive, it's used extensively by the various operators when you subscribe them.
+Observers are also Observables. This is similar to how Iterators are also Iterables in Python. This enable us to chain observers together. While chaining observers is not normally done when using aioreactive, it's used extensively by the various operators when you subscribe them.
 
 ## Subscribing to observables
 
-An observable becomes hot and starts streaming items by using the `subscribe()` function. The `subscribe()` function takes an observable and an optional observer, and returns a subscription. If an observer is given it will receive all values that are passed through the observable. So the `subscribe()` function is used to attach a observer to the observable.
-
-The subscription returned by `subscribe()` is cancellable, iterable, and chainable. We will learn more about this later. Here is an example:
+An observable becomes hot and starts streaming items by using the `subscribe()` function. The `subscribe()` function takes an observable returns a disposable subscription. So the `subscribe()` function is used to attach a observer to the observable.
 
 ```python
 async def asend(value):
@@ -78,10 +76,10 @@ subscription = await subscribe(source, AsyncAnonymousObserver(asend))
 
 `AsyncAnonymousObserver` is an anonymous observer that constructs an `AsyncObserver` out of plain async functions, so you don't have to implement a new named observer every time you need one.
 
-To unsubscribe you need to call the `dispose()` method on the subscription.
+The subscription returned by `subscribe()` is disposable, so to unsubscribe you need to await the `adispose()` method on the subscription.
 
 ```python
-subscription.dispose()
+await subscription.adispose()
 ```
 
 A subscription may also be awaited. The await will resolve when the subscription ends, either normally or with an error. The returned value will be the last value received through the subscription. If no value has been received when the subscription ends, then await will throw `CancelledError`.

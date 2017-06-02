@@ -76,9 +76,10 @@ async def test_forward_pipe_complex_pipe() -> None:
           | op.filter(predicate)
           | op.map(mapper)
           | op.flat_map(long_running)
+          | op.to_async_iterable()
           )
 
-    async for value in to_async_iterable(ys):
+    async for value in ys:
         result.append(value)
 
     assert result == [20, 30]

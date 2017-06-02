@@ -5,7 +5,7 @@ import logging
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver, AsyncIteratorObserver
 from aioreactive.operators.pipe import pipe
-from aioreactive.operators import pipe as op
+from aioreactive.operators import op, from_async_iterable
 from aioreactive.operators.to_async_iterable import to_async_iterable
 
 log = logging.getLogger(__name__)
@@ -56,12 +56,14 @@ async def test_async_iteration_aync_with() -> None:
 async def test_async_iteration_inception() -> None:
     # iterable to async source to async iterator to async source
     obv = AsyncIteratorObserver()
-    await subscribe(AsyncObservable.from_iterable([1, 2, 3]), obv)
-    xs = AsyncObservable.from_async_iterable(obv)
+
+    xs = AsyncObservable.from_iterable([1, 2, 3])
+    await subscribe(xs, obv)
+    ys = from_async_iterable(obv)
     result = []
 
-    async for x in to_async_iterable(xs):
-        result.append(x)
+    async for y in to_async_iterable(ys):
+        result.append(y)
 
     assert result == [1, 2, 3]
 

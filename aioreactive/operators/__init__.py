@@ -8,6 +8,7 @@ from .distinct_until_changed import distinct_until_changed
 from .empty import empty
 from .filter import filter
 from .filteri import filteri
+from .from_async_iterable import from_async_iterable
 from .from_iterable import from_iterable
 from .flat_map import flat_map, flat_map_latest
 from .map import map
