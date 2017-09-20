@@ -20,9 +20,9 @@ class ToAsyncIterable(Generic[T], AsyncIterable[T]):
         continuing to avoid queuing values.
         """
 
-        _observer = AsyncIteratorObserver()
-        await self._source.__asubscribe__(_observer)
-        return _observer
+        obv = AsyncIteratorObserver()
+        await self._source.__asubscribe__(obv)
+        return obv
 
 
 def to_async_iterable(source: AsyncObservable) -> AsyncIterable:

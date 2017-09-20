@@ -64,7 +64,7 @@ class AsyncObserverBase(Future, AsyncObserver[T], Disposable, Generic[T]):
 
         await self.aclose_core()
 
-    def dispose(self):
+    def dispose(self) -> None:
         self._is_stopped = True
 
     @abstractmethod
@@ -72,9 +72,9 @@ class AsyncObserverBase(Future, AsyncObserver[T], Disposable, Generic[T]):
         return NotImplemented
 
     @abstractmethod
-    async def athrow_core(self, error):
+    async def athrow_core(self, error) -> None:
         return NotImplemented
 
     @abstractmethod
-    async def aclose_core(self):
+    async def aclose_core(self) -> None:
         return NotImplemented

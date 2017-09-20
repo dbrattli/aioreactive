@@ -35,7 +35,7 @@ from abc import ABCMeta, abstractmethod
 
 class AsyncObservable(metaclass=ABCMeta):
     @abstractmethod
-    async def __asubscribe__(self, sink):
+    async def __asubscribe__(self, observer):
         return NotImplemented
 ```
 
@@ -76,31 +76,20 @@ subscription = await subscribe(source, AsyncAnonymousObserver(asend))
 
 `AsyncAnonymousObserver` is an anonymous observer that constructs an `AsyncObserver` out of plain async functions, so you don't have to implement a new named observer every time you need one.
 
-The subscription returned by `subscribe()` is disposable, so to unsubscribe you need to await the `adispose()` method on the subscription.
+The subscription returned by `__asubscribe__()` is disposable, so to unsubscribe you need to await the `adispose()` method on the subscription.
 
 ```python
 await subscription.adispose()
 ```
 
-A subscription may also be awaited. The await will resolve when the subscription ends, either normally or with an error. The returned value will be the last value received through the subscription. If no value has been received when the subscription ends, then await will throw `CancelledError`.
+## Asynchronous iteration
+
+Even more interresting, with `to_async_iterable` you can flip around from `AsyncObservable` to an `AsyncIterable` and use `async-for` to consume the stream of events.
 
 ```python
-value = await (await subscribe(source, AsyncAnonymousObserver(asend)))
-```
-
-The double await can be replaced by the better looking function `run()` which basically does the same thing. This will run the subscription to completion before returning:
-
-```python
-value = await run(ys, AsyncAnonymousObserver(asend))
-```
-
-## Subscriptions may be iterated asynchronously
-
-Even more interresting, subscriptions are also async iterables so you can flip around from `AsyncObservable` to an `AsyncIterable` and use `async-for` to consume the stream of events.
-
-```python
-subscription = subscribe(source)
-async for x in subscription:
+obv = AsyncIteratorObserver()
+subscription = subscribe(source, obv)
+async for x in obv:
     print(x)
 ```
 
@@ -112,8 +101,9 @@ The for-loop may be wrapped with async-with to control the lifetime of the subsc
 xs = from_iterable([1, 2, 3])
 result = []
 
-async with subscribe(xs) as subscription:
-    async for x in subscription:
+obv = AsyncIteratorObserver()
+async with subscribe(xs, obv) as subscription:
+    async for x in obv:
         result.append(x)
 
 assert result == [1, 2, 3]
@@ -121,7 +111,7 @@ assert result == [1, 2, 3]
 
 ## Async streams
 
-Aioreactive also lets you create streams explicitly.
+An async stream is both an async observer and an async observable. Aioreactive lets you create streams explicitly.
 
 ```python
 stream = AsyncStream()  # Alias for AsyncMultiStream

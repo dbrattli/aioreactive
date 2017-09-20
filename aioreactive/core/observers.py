@@ -1,5 +1,5 @@
 from asyncio import Future, iscoroutinefunction
-from typing import TypeVar, AsyncIterator, AsyncIterable
+from typing import TypeVar, AsyncIterator, AsyncIterable, Generic
 import logging
 
 from .bases import AsyncObserverBase
@@ -10,7 +10,9 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class AsyncIteratorObserver(AsyncObserverBase, AsyncIterator):
+class AsyncIteratorObserver(AsyncObserverBase, AsyncIterable[T], Generic[T]):
+    """An async observer that might be iterated asynchronosly.
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -21,7 +23,7 @@ class AsyncIteratorObserver(AsyncObserverBase, AsyncIterator):
         self._awaiters = []  # type: List[Future]
         self._busy = False
 
-    async def asend_core(self, value) -> None:
+    async def asend_core(self, value: T) -> None:
         log.debug("AsyncIteratorObserver:asend(%d)", value)
 
         await self._serialize_access()
@@ -29,7 +31,7 @@ class AsyncIteratorObserver(AsyncObserverBase, AsyncIterator):
         self._push.set_result(value)
         await self._wait_for_pull()
 
-    async def athrow_core(self, err) -> None:
+    async def athrow_core(self, err: Exception) -> None:
         await self._serialize_access()
 
         self._push.set_exception(err)
@@ -46,17 +48,17 @@ class AsyncIteratorObserver(AsyncObserverBase, AsyncIterator):
         self._pull = Future()
         self._busy = False
 
-    async def _serialize_access(self):
+    async def _serialize_access(self) -> None:
         # Serialize producer event to the iterator
         while self._busy:
-            fut = Future()
+            fut = Future()  # type: Future
             self._awaiters.append(fut)
             await fut
             self._awaiters.remove(fut)
 
         self._busy = True
 
-    async def wait_for_push(self):
+    async def wait_for_push(self) -> T:
             value = await self._push
             self._push = Future()
             self._pull.set_result(True)
@@ -66,7 +68,10 @@ class AsyncIteratorObserver(AsyncObserverBase, AsyncIterator):
                 awaiter.set_result(True)
             return value
 
-    async def __anext__(self):
+    async def __aiter__(self) -> AsyncIterator:
+        return self
+
+    async def __anext__(self) -> T:
         return await self.wait_for_push()
 
 
