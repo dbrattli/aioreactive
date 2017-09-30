@@ -1,6 +1,5 @@
 from . import pipe as op
 
-from .chain import chain
 from .concat import concat
 from .debounce import debounce
 from .delay import delay

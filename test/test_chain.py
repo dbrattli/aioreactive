@@ -4,7 +4,6 @@ import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import AsyncStream, AsyncAnonymousObserver, AsyncObservable
-from aioreactive.operators import chain
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -25,7 +24,7 @@ async def test_chain_map():
     def mapper(value):
         return value * 10
 
-    ys = chain(xs).select(mapper)
+    ys = xs.select(mapper)
 
     async def on_next(value):
         result.append(value)
@@ -48,7 +47,7 @@ async def test_chain_simple_pipe():
         await asyncio.sleep(0.1)
         return value > 1
 
-    ys = chain(xs).where(predicate).select(mapper)
+    ys = xs.where(predicate).select(mapper)
 
     async def on_next(value) -> None:
         result.append(value)
@@ -75,7 +74,7 @@ async def test_chain_complex_pipe():
     async def long_running(value) -> AsyncObservable:
         return AsyncObservable.from_iterable([value])
 
-    ys = (chain(xs)
+    ys = (xs
           .where(predicate)
           .select(mapper)
           .select_many(long_running))

@@ -187,7 +187,7 @@ AsyncObservable also supports slicing using the Python slice notation.
 ```python
 @pytest.mark.asyncio
 async def test_slice_special():
-    xs = Producer.from_iterable([1, 2, 3, 4, 5])
+    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value):
@@ -205,7 +205,7 @@ async def test_slice_special():
 
 An alternative to pipelining is to use classic and fluent method chaining as we know from [ReactiveX](http://reactivex.io).
 
-Note the difference from RxPY, that we need to call the `chain()` function on an `AsyncObservable ` to get a `ChainedAsyncObservable`. Once we have a `ChainedAsyncObservable` we may use methods such as `.where()` and `.select()`.
+An `AsyncObservable` created from classmethods such as `AsyncObservable.from_iterable()` returns a `ChainedAsyncObservable`. where we may use methods such as `.where()` and `.select()`.
 
 ```python
 @pytest.mark.asyncio
@@ -221,7 +221,7 @@ async def test_observable_simple_pipe():
         await asyncio.sleep(0.1)
         return value > 1
 
-    ys = chain(xs).where(predicate).select(mapper)
+    ys = xs.where(predicate).select(mapper)
 
     async def on_next(value):
         result.append(value)
@@ -298,7 +298,7 @@ However, aioreactive makes it easy for you to flip-around to async iterable just
 
 # Will aioreactive replace RxPY?
 
-Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive however is an implementation of `AsyncObservable`.
+Aioreactive will not replace [RxPY](https://github.com/ReactiveX/RxPY). RxPY is an implementation of `Observable`. Aioreactive is an implementation of `AsyncObservable`.
 
 Rx and RxPY has hundreds of different query operators, and we currently have no plans to implementing all of them for aioreactive.
 
