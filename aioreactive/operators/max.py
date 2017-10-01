@@ -1,5 +1,4 @@
-from asyncio import iscoroutinefunction
-from typing import Callable, Awaitable, Union, TypeVar, Generic
+from typing import TypeVar, Generic
 
 from aioreactive.core import AsyncObserver, AsyncObservable
 from aioreactive.core import AsyncSingleStream, chain

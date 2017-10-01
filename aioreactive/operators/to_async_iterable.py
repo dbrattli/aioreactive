@@ -1,7 +1,6 @@
 from typing import TypeVar, AsyncIterable, AsyncIterator, Generic
 
-from aioreactive.core import AsyncSingleStream
-from aioreactive.core import AsyncObserver, AsyncObservable, chain
+from aioreactive.core import AsyncObservable
 from aioreactive.core import AsyncIteratorObserver
 
 T = TypeVar('T')

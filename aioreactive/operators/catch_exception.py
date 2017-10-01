@@ -2,6 +2,7 @@ from typing import Generic, TypeVar, Iterable
 import asyncio
 import logging
 
+from aioreactive.abc import AsyncDisposable
 from aioreactive.core import AsyncObserver, AsyncObservable
 from aioreactive.core import AsyncSingleStream, chain
 
@@ -14,7 +15,7 @@ class CatchException(AsyncObservable[T], Generic[T]):
     def __init__(self, iterable) -> None:
         self.iterable = iterable
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncSingleStream:
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         iterator = iter(self.iterable)
         current = None
         task = None

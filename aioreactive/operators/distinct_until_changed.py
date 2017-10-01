@@ -1,5 +1,6 @@
-from typing import Awaitable, Union, Callable, TypeVar
+from typing import TypeVar
 
+from aioreactive.abc import AsyncDisposable
 from aioreactive.core import AsyncObservable, AsyncObserver, chain
 from aioreactive.core import AsyncSingleStream, AsyncCompositeDisposable
 
@@ -17,15 +18,15 @@ class DistinctUntilChanged(AsyncObservable):
     def __init__(self, source: AsyncObservable) -> None:
         self.source = source
 
-    async def __asubscribe__(self, obv: AsyncObserver):
-        sink = DistinctUntilChanged.Sink(self)
+    async def __asubscribe__(self, obv: AsyncObserver) -> AsyncDisposable:
+        sink = DistinctUntilChanged.Sink()
         down = await chain(sink, obv)
         up = await chain(self.source, sink)
         return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
 
-        def __init__(self, source: "DistinctUntilChanged") -> None:
+        def __init__(self) -> None:
             super().__init__()
             self._latest = Different()
 

@@ -1,8 +1,10 @@
 import asyncio
 from typing import TypeVar, Generic, List
 
+from aioreactive.abc import AsyncDisposable
+
 from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, chain
-from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
+from aioreactive.core import AsyncCompositeDisposable
 
 T = TypeVar("T")
 

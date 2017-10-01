@@ -1,6 +1,6 @@
 from typing import TypeVar, List
 
-from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, chain
+from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, AsyncDisposable, chain
 
 T = TypeVar('T')
 
@@ -11,7 +11,7 @@ class TakeLast(AsyncObservable):
         self._source = source
         self._count = count
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncSingleStream:
+    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         return await chain(self._source, TakeLast._(observer, self))
 
     class _(AsyncSingleStream):

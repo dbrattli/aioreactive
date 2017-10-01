@@ -13,7 +13,7 @@ class Concat(AsyncObservable):
 
     def __init__(self, *operators: Tuple[AsyncObservable]) -> None:
         self._operators = iter(operators)
-        self._subscription = None  # type: asyncio.Future
+        self._subscription = None  # type: AsyncDisposable
         self._task = None  # type: asyncio.Task
 
     async def worker(self, observer: AsyncObserver) -> None:
@@ -28,13 +28,13 @@ class Concat(AsyncObservable):
             await observer.athrow(ex)
         else:
             sink = Concat.Stream()
-            down = await chain(sink, observer)  # type: AsyncSingleStream
+            down = await chain(sink, observer)  # type: AsyncDisposable
             sink.add_done_callback(recurse)
             up = await chain(source, sink)
             self._subscription = AsyncCompositeDisposable(up, down)
 
     async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
-        async def cancel():
+        async def cancel() -> None:
             if self._subscription is not None:
                 await self._subscription.adispose()
 

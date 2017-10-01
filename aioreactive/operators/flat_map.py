@@ -1,13 +1,14 @@
-from typing import Union, Awaitable, Callable, TypeVar
+from typing import Callable, TypeVar
 from asyncio import iscoroutinefunction
+
+from aioreactive.abc import AsyncDisposable
 
 from aioreactive.core import AsyncObserver, AsyncObservable
 from aioreactive.core import AsyncSingleStream, chain
-from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
+from aioreactive.core import AsyncCompositeDisposable
 
 from .switch_latest import switch_latest
 from .merge import merge
-from .map import map
 
 
 T1 = TypeVar('T1')

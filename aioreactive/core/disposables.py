@@ -14,7 +14,7 @@ class AsyncDisposable(abc.AsyncDisposable):
         await self._dispose()
 
 
-class AsyncCompositeDisposable(abc.AsyncDisposable):
+class AsyncCompositeDisposable(AsyncDisposable):
 
     def __init__(self, *disposables) -> None:
         self._disposables = disposables

@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, AsyncDisposable
+from aioreactive.core import AsyncDisposable
 
 log = logging.getLogger(__name__)
 T = TypeVar('T')

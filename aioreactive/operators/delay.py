@@ -2,7 +2,7 @@ import asyncio
 from typing import List
 
 from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, chain
-from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
+from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
 
 
 class Delay(AsyncObservable):
