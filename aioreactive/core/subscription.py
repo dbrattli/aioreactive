@@ -1,13 +1,11 @@
 import logging
 import asyncio
-from typing import TypeVar, Generic, Optional
+from typing import TypeVar, Optional
 from collections.abc import Awaitable
 
 from aioreactive.abc import AsyncDisposable
 
 from .typing import AsyncObservable, AsyncObserver
-from .utils import noopobserver
-from .streams import AsyncSingleStream
 from .observers import AsyncNoopObserver
 
 log = logging.getLogger(__name__)

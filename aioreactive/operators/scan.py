@@ -1,9 +1,11 @@
 from asyncio import iscoroutinefunction
 from typing import Callable, Awaitable, Union, TypeVar, Generic
 
+from aioreactive.abc import AsyncDisposable
+
 from aioreactive.core import AsyncObserver, AsyncObservable
 from aioreactive.core import AsyncSingleStream, chain
-from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
+from aioreactive.core import AsyncCompositeDisposable
 
 T = TypeVar('T')
 

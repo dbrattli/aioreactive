@@ -22,4 +22,3 @@ async def filter(predicate, source: AsyncIterable) -> AsyncIterable:
 async def map(func, source: AsyncIterable) -> AsyncIterable:
     async for value in source:
         yield func(value)
-

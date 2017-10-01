@@ -163,7 +163,7 @@ Longer pipelines may break lines as for binary operators:
 
 ```python
 from aioreactive.core import AsyncStream, subscribe
-from aioreactive.operators import pipe as op
+from aioreactive.core import Operators as op
 
 async def main():
     stream = AsyncStream()
@@ -205,7 +205,7 @@ async def test_slice_special():
 
 An alternative to pipelining is to use classic and fluent method chaining as we know from [ReactiveX](http://reactivex.io).
 
-An `AsyncObservable` created from classmethods such as `AsyncObservable.from_iterable()` returns a `ChainedAsyncObservable`. where we may use methods such as `.where()` and `.select()`.
+An `AsyncObservable` created from classmethods such as `AsyncObservable.from_iterable()` returns a `AsyncChainedObservable`. where we may use methods such as `.where()` and `.select()`.
 
 ```python
 @pytest.mark.asyncio

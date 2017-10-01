@@ -1,10 +1,11 @@
 from asyncio import iscoroutinefunction, Future
-from typing import Callable, Awaitable, TypeVar, Generic
+from typing import Callable, TypeVar, Generic
 
 from aioreactive.core.utils import noopobserver
 from aioreactive.core import AsyncObserver, AsyncObservable
 from aioreactive.core import AsyncSingleStream, chain
-from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
+from aioreactive.core import AsyncCompositeDisposable
+from aioreactive.abc import AsyncDisposable
 
 T = TypeVar('T')
 TT = TypeVar('TT')

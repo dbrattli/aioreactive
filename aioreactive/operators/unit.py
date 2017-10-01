@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 from aioreactive.core import AsyncObservable, AsyncDisposable
-from aioreactive.core import AsyncSingleStream
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +11,7 @@ class Unit(AsyncObservable):
     def __init__(self, value) -> None:
         self._value = value
 
-    async def __asubscribe__(self, observer) -> AsyncSingleStream:
+    async def __asubscribe__(self, observer) -> AsyncDisposable:
         """Start streaming."""
 
         async def worker(value) -> None:

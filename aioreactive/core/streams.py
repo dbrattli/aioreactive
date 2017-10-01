@@ -1,12 +1,9 @@
 import logging
 from asyncio import Future
-from typing import TypeVar, Generic
-from typing import AsyncIterable, AsyncIterator
-from abc import abstractmethod
+from typing import TypeVar
 
 from .typing import AsyncObserver
 from .observables import AsyncObservable
-from .utils import noopobserver
 from .disposables import AsyncDisposable
 from .bases import AsyncObserverBase
 

@@ -11,7 +11,7 @@ T = TypeVar("T")
 
 
 class AsyncIteratorObserver(AsyncObserverBase, AsyncIterable[T], Generic[T]):
-    """An async observer that might be iterated asynchronosly.
+    """An async observer that might be iterated asynchronously.
     """
 
     def __init__(self) -> None:
