@@ -167,6 +167,7 @@ from aioreactive.core import Operators as op
 
 async def main():
     stream = AsyncStream()
+    obv = AsyncIteratorObserver()
 
     xs = (stream
           | op.map(lambda x: x["term"])
@@ -177,7 +178,7 @@ async def main():
           | op.switch_latest()
           )
 
-    async with subscribe(xs) as ys
+    async with subscribe(xs, obv) as ys
         async for value in ys:
             print(value)
 ```
@@ -226,7 +227,7 @@ async def test_observable_simple_pipe():
     async def on_next(value):
         result.append(value)
 
-    subscription = await ys.subscribe(AsyncAsyncAnonymousObserver(on_next))
+    subscription = await ys.subscribe(AsyncAnonymousObserver(on_next))
     await subsubscription
     assert result == [20, 30]
 ```
