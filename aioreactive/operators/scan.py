@@ -1,5 +1,5 @@
 from asyncio import iscoroutinefunction
-from typing import Callable, Awaitable, Union, TypeVar, Generic
+from typing import Callable, Awaitable, TypeVar, Generic
 
 from aioreactive.abc import AsyncDisposable
 

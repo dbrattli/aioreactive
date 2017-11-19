@@ -7,22 +7,22 @@ from aioreactive.core import AsyncObserver, AsyncObservable, chain
 T = TypeVar('T')
 
 
-class Skip(AsyncObservable):
+class Skip(AsyncObservable[T]):
 
-    def __init__(self, count: int, source: AsyncObservable) -> None:
+    def __init__(self, count: int, source: AsyncObservable[T]) -> None:
         self._source = source
         self._count = count
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncDisposable:
         sink = Skip.Sink(self)
         down = await chain(sink, observer)
         up = await chain(self._source, sink)
 
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleStream[T]):
 
-        def __init__(self, source: "Skip") -> None:
+        def __init__(self, source: "Skip[T]") -> None:
             super().__init__()
             self._count = source._count
 
@@ -33,7 +33,7 @@ class Skip(AsyncObservable):
                 self._count -= 1
 
 
-def skip(count: int, source: AsyncObservable) -> AsyncObservable:
+def skip(count: int, source: AsyncObservable[T]) -> AsyncObservable[T]:
     """Skip the specified number of values.
 
     Keyword arguments:

@@ -5,7 +5,7 @@ from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, 
 T = TypeVar('T')
 
 
-class TakeLast(AsyncObservable):
+class TakeLast(AsyncObservable[T]):
 
     def __init__(self, count: int, source: AsyncObservable) -> None:
         self._source = source

@@ -8,20 +8,20 @@ from .empty import empty
 T = TypeVar('T')
 
 
-class Take(AsyncObservable):
+class Take(AsyncObservable[T]):
 
-    def __init__(self, count: int, source: AsyncObservable) -> None:
+    def __init__(self, count: int, source: AsyncObservable[T]) -> None:
         self._source = source
         self._count = count
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
-        sink = Take.Sink(self)
+    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncDisposable:
+        sink = Take.Sink(self)  # type: AsyncSingleStream[T]
         down = await chain(sink, observer)
         up = await chain(self._source, sink)
 
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleStream[T]):
 
         def __init__(self, source: "Take") -> None:
             super().__init__()
@@ -36,7 +36,7 @@ class Take(AsyncObservable):
                     await self._observer.aclose()
 
 
-def take(count: int, source: AsyncObservable) -> AsyncObservable:
+def take(count: int, source: AsyncObservable[T]) -> AsyncObservable[T]:
     """Returns a specified number of contiguous elements from the start
     of the source stream.
 
