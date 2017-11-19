@@ -3,8 +3,7 @@ import asyncio
 
 from aioreactive.core import subscribe, AsyncAnonymousObserver
 
-from aioreactive.core import AsyncObservable
-from aioreactive.operators import pipe as op
+from aioreactive.core import AsyncObservable, Operators as op
 
 
 async def main():
