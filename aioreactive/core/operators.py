@@ -9,10 +9,10 @@ T2 = TypeVar('T2')
 
 
 class Operators:
-    "A collection of partially appliable and lazy loaded operators."
+    """A collection of partially appliable and lazy loaded operators."""
 
     @staticmethod
-    def debounce(seconds: float) -> Callable[[AsyncObservable], AsyncObservable]:
+    def debounce(seconds: float) -> Callable[[AsyncObservable[T]], AsyncObservable[T]]:
         """Debounce source stream.
 
         Ignores values from a source stream which are followed by
@@ -31,12 +31,12 @@ class Operators:
         return partial(debounce, seconds)
 
     @staticmethod
-    def delay(seconds: float) -> Callable[[AsyncObservable], AsyncObservable]:
+    def delay(seconds: float) -> Callable[[AsyncObservable[T]], AsyncObservable[T]]:
         from aioreactive.operators.delay import delay
         return partial(delay, seconds)
 
     @staticmethod
-    def filter(predicate: Callable[[T], bool]) -> Callable[[AsyncObservable], AsyncObservable]:
+    def filter(predicate: Callable[[T], bool]) -> Callable[[AsyncObservable[T]], AsyncObservable[T]]:
         from aioreactive.operators.filter import filter
         return partial(filter, predicate)
 
@@ -46,7 +46,7 @@ class Operators:
         return partial(flat_map, fn)
 
     @staticmethod
-    def map(fn: Callable) -> Callable[[AsyncObservable], AsyncObservable]:
+    def map(fn: Callable) -> Callable[[AsyncObservable[T1]], AsyncObservable[T2]]:
         from aioreactive.operators.map import map as _map
         return partial(_map, fn)
 

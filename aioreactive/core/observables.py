@@ -1,5 +1,4 @@
-from typing import Callable, TypeVar, Generic, Iterable, AsyncIterable
-from functools import partial
+from typing import Callable, TypeVar, Generic, Iterable
 
 from aioreactive.abc import AsyncDisposable
 from .typing import AsyncObserver, AsyncObservable as AsyncObservableGeneric
@@ -9,7 +8,7 @@ T1 = TypeVar('T1')
 T2 = TypeVar('T2')
 
 
-class AsyncObservable(Generic[T], AsyncObservableGeneric[T]):
+class AsyncObservable(AsyncObservableGeneric[T]):
     """An AsyncObservable that works with Python special methods.
 
     This class supports python special methods including pipe-forward
@@ -138,7 +137,7 @@ class AsyncChainedObservable(AsyncObservable):
         self._source = source
 
     def subscribe(self, obv: AsyncObserver):
-        from . import subscribe
+        from .subscription import subscribe
         return subscribe(self, obv)
 
     def __getitem__(self, key) -> 'AsyncChainedObservable':
@@ -248,4 +247,3 @@ class AsyncChainedObservable(AsyncObservable):
 
 def as_chained(source: AsyncObservable) -> AsyncChainedObservable:
     return AsyncChainedObservable(source)
-

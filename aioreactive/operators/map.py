@@ -11,18 +11,18 @@ T2 = TypeVar('T2')
 
 class Map(AsyncObservable[T2]):
 
-    def __init__(self, mapper: Callable[[T1], T2], source: AsyncObservable[T2]) -> None:
+    def __init__(self, mapper: Callable[[T1], T2], source: AsyncObservable[T1]) -> None:
         self._source = source
         self._mapper = mapper
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
-        sink = Map.Sink(self)
-        down = await chain(sink, observer)  # type: AsyncDisposable
+    async def __asubscribe__(self, observer: AsyncObserver[T2]) -> AsyncDisposable:
+        sink = Map.Sink(self)  # type: AsyncSingleStream[T2]
+        down = await chain(sink, observer)
         up = await chain(self._source, sink)   # type: AsyncDisposable
 
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleStream[T2]):
 
         def __init__(self, source: "Map") -> None:
             super().__init__()

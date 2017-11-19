@@ -11,8 +11,7 @@ log = logging.getLogger(__name__)
 T = TypeVar('T')
 
 
-class AsyncObserverBase(Future, AsyncObserver[T], Disposable, Generic[T]):
-
+class AsyncObserverBase(Future, AsyncObserver[T], Disposable):
     """An async observer abstract base class.
 
     Both a future and async observer. The future resolves with the last

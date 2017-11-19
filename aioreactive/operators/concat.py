@@ -1,4 +1,3 @@
-from typing import Tuple
 import asyncio
 import logging
 
@@ -11,10 +10,10 @@ log = logging.getLogger(__name__)
 
 class Concat(AsyncObservable):
 
-    def __init__(self, *operators: Tuple[AsyncObservable]) -> None:
+    def __init__(self, *operators: AsyncObservable) -> None:
         self._operators = iter(operators)
         self._subscription = None  # type: AsyncDisposable
-        self._task = None  # type: asyncio.Task
+        self._task = None  # type: asyncio.Future
 
     async def worker(self, observer: AsyncObserver) -> None:
         def recurse(fut) -> None:
@@ -51,7 +50,7 @@ class Concat(AsyncObservable):
             self.cancel()
 
 
-def concat(*operators: Tuple[AsyncObservable]) -> AsyncObservable:
+def concat(*operators: AsyncObservable) -> AsyncObservable:
     """Concatenate two source streams.
 
     Returns concatenated source stream.

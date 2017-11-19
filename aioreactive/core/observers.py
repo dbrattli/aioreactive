@@ -1,5 +1,5 @@
 from asyncio import Future, iscoroutinefunction
-from typing import TypeVar, AsyncIterator, AsyncIterable, Generic
+from typing import TypeVar, AsyncIterator, AsyncIterable, Generic, List
 import logging
 
 from .bases import AsyncObserverBase
@@ -10,9 +10,8 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class AsyncIteratorObserver(AsyncObserverBase, AsyncIterable[T], Generic[T]):
-    """An async observer that might be iterated asynchronously.
-    """
+class AsyncIteratorObserver(AsyncObserverBase[T], AsyncIterable[T]):
+    """An async observer that might be iterated asynchronously."""
 
     def __init__(self) -> None:
         super().__init__()
