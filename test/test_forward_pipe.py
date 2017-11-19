@@ -3,9 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver, Operators as _
-from aioreactive.operators.pipe import pipe
-from aioreactive.operators.to_async_iterable import to_async_iterable
+from aioreactive.core import AsyncObservable, run, AsyncAnonymousObserver, Operators as _
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
