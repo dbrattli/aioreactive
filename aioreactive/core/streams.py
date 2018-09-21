@@ -30,7 +30,7 @@ class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposabl
         self._observer = None  # type: AsyncObserver
 
     async def asend_core(self, value: T):
-        log.debug("AsyncSingleStream:asend(%s)", value)
+        log.debug("AsyncSingleStream:asend(%s)", str(value))
 
         # AsyncSingleStreams are cold and will await a sink.
         if self._observer is None:

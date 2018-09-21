@@ -18,7 +18,7 @@ class Unit(AsyncObservable):
             """Task for sending value."""
 
             try:
-                log.debug("Unit:__asubscribe__:worker:sending: %s", value)
+                log.debug("Unit:__asubscribe__:worker:sending: %s", str(value))
                 await observer.asend(value)
             except Exception as ex:
                 try:
