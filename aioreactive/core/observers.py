@@ -23,7 +23,7 @@ class AsyncIteratorObserver(AsyncObserverBase[T], AsyncIterable[T]):
         self._busy = False
 
     async def asend_core(self, value: T) -> None:
-        log.debug("AsyncIteratorObserver:asend(%d)", value)
+        log.debug("AsyncIteratorObserver:asend(%s)", value)
 
         await self._serialize_access()
 
