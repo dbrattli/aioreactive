@@ -1,13 +1,12 @@
-from typing import TypeVar, List
+from typing import List, TypeVar
 
-from aioreactive.core import AsyncObserver, AsyncObservable, AsyncSingleStream
-from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable, chain
+from aioreactive.core import AsyncObservable, AsyncObserver, AsyncSingleSubject
+from fslash.system import AsyncCompositeDisposable, AsyncDisposable
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class SkipLast(AsyncObservable):
-
     def __init__(self, count: int, source: AsyncObservable) -> None:
         self._source = source
         self._count = count
@@ -19,8 +18,7 @@ class SkipLast(AsyncObservable):
 
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream):
-
+    class Sink(AsyncSingleSubject):
         def __init__(self, source: "SkipLast") -> None:
             super().__init__()
             self._count = source._count

@@ -1,3 +1,5 @@
 from .eventloop import VirtualTimeEventLoop
-from .streams import AsyncStream, AsyncSingleStream
 from .observer import AsyncAnonymousObserver
+from .subject import AsyncSingleSubject, AsyncSubject
+
+__all__ = ["VirtualTimeEventLoop", "AsyncAnonymousObserver", "AsyncSingleSubject", "AsyncSubject"]

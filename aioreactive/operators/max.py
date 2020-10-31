@@ -1,29 +1,26 @@
 from typing import TypeVar
 
-from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain
-from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
+from aioreactive.core import AsyncObservable, AsyncObserver, AsyncSingleSubject, chain
+from fslash.system import AsyncCompositeDisposable, AsyncDisposable
 
-T = TypeVar('T')
+TSource = TypeVar("TSource")
 
 
-class Max(AsyncObservable[T]):
-
+class Max(AsyncObservable[TSource]):
     def __init__(self, source: AsyncObservable) -> None:
         self._source = source
 
-    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncDisposable:
-        sink = Max.Stream()  # type: AsyncSingleStream[T]
+    async def __asubscribe__(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+        sink = Max.Stream()
         down = await chain(sink, observer)
         up = await chain(self._source, down)
 
         return AsyncCompositeDisposable(up, down)
 
-    class Stream(AsyncSingleStream[T]):
-
+    class Stream(AsyncSingleSubject[TSource]):
         def __init__(self) -> None:
             super().__init__()
-            self._max = None  # type: T
+            self._max: TSource = None
 
         async def asend_core(self, value: T) -> None:
             if value > self._max:
@@ -34,7 +31,7 @@ class Max(AsyncObservable[T]):
             await super().aclose_core()
 
 
-def max(source: AsyncObservable[T]) -> AsyncObservable[T]:
+def max(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
     """Project each item of the source stream.
 
     xs = max(source)

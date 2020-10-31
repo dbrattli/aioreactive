@@ -4,7 +4,7 @@ from typing import Dict, TypeVar
 import logging
 
 from aioreactive.core.utils import noopobserver
-from aioreactive.core import AsyncSingleStream, AsyncDisposable, AsyncCompositeDisposable
+from aioreactive.core import AsyncSingleSubject, AsyncDisposable, AsyncCompositeDisposable
 from aioreactive.core import AsyncObservable, AsyncObserver, chain
 
 T = TypeVar('T')
@@ -25,11 +25,11 @@ class Merge(AsyncObservable):
 
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleSubject):
 
         def __init__(self, source: AsyncObservable, max_concurrent: int) -> None:
             super().__init__()
-            self._inner_subs = {}  # type: Dict[AsyncObserver[T], AsyncSingleStream]
+            self._inner_subs = {}  # type: Dict[AsyncObserver[T], AsyncSingleSubject]
             self._sem = BoundedSemaphore(max_concurrent)
             self._is_closed = False
 
@@ -76,7 +76,7 @@ class Merge(AsyncObservable):
             log.debug("Closing merge ...")
             await self._observer.aclose()
 
-        class InnerStream(AsyncSingleStream):
+        class InnerStream(AsyncSingleSubject):
 
             async def aclose_core(self) -> None:
                 log.debug("Merge.Sink.InnerStream:aclose()")

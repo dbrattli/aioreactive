@@ -2,7 +2,7 @@ from typing import TypeVar
 
 from aioreactive.abc import AsyncDisposable
 from aioreactive.core import AsyncObservable, AsyncObserver, chain
-from aioreactive.core import AsyncSingleStream, AsyncCompositeDisposable
+from aioreactive.core import AsyncSingleSubject, AsyncCompositeDisposable
 
 T = TypeVar('T')
 
@@ -24,7 +24,7 @@ class DistinctUntilChanged(AsyncObservable):
         up = await chain(self.source, sink)
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleSubject):
 
         def __init__(self) -> None:
             super().__init__()

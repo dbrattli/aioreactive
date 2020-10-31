@@ -4,7 +4,7 @@ from asyncio import iscoroutinefunction
 from aioreactive.abc import AsyncDisposable
 
 from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncSingleSubject, chain
 from aioreactive.core import AsyncCompositeDisposable
 
 from .switch_latest import switch_latest
@@ -28,7 +28,7 @@ class FlatMap(AsyncObservable[T2]):
 
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleSubject):
 
         def __init__(self, source: 'FlatMap') -> None:
             super().__init__()

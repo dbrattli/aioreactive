@@ -1,7 +1,7 @@
 from asyncio import iscoroutinefunction
 from typing import Awaitable, Union, Callable, TypeVar
 
-from aioreactive.core import AsyncObservable, AsyncObserver, AsyncSingleStream
+from aioreactive.core import AsyncObservable, AsyncObserver, AsyncSingleSubject
 from aioreactive.core import chain, AsyncCompositeDisposable, AsyncDisposable
 
 T = TypeVar('T')
@@ -25,7 +25,7 @@ class FilterIndexed(AsyncObservable):
 
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleSubject):
 
         def __init__(self, source: "FilterIndexed") -> None:
             super().__init__()

@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from aioreactive.core import AsyncObservable, AsyncObserver
-from aioreactive.core import chain, AsyncSingleStream
+from aioreactive.core import chain, AsyncSingleSubject
 from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
 
 log = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class Concat(AsyncObservable):
         self._task = asyncio.ensure_future(self.worker(observer))
         return AsyncDisposable(cancel)
 
-    class Stream(AsyncSingleStream):
+    class Stream(AsyncSingleSubject):
 
         async def aclose_core(self) -> None:
             log.debug("Concat._:close()")

@@ -4,7 +4,7 @@ import logging
 
 from aioreactive.abc import AsyncDisposable
 from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncSingleSubject, chain
 
 log = logging.getLogger(__name__)
 T = TypeVar('T')
@@ -40,7 +40,7 @@ class CatchException(AsyncObservable[T], Generic[T]):
         task = asyncio.ensure_future(worker())
         return sub
 
-    class Stream(AsyncSingleStream, Generic[T]):
+    class Stream(AsyncSingleSubject, Generic[T]):
 
         def __init__(self, source: "CatchException", worker) -> None:
             super().__init__()

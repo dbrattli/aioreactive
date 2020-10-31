@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from aioreactive.core import AsyncSingleStream
+from aioreactive.core import AsyncSingleSubject
 from aioreactive.core import AsyncObservable, AsyncObserver, chain
 
 log = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ class SwitchLatest(AsyncObservable):
         sub.add_done_callback(_observer.done)
         return sub
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleSubject):
 
         def __init__(self, source: AsyncObservable) -> None:
             super().__init__()
@@ -48,7 +48,7 @@ class SwitchLatest(AsyncObservable):
                 self._is_stopped = True
                 await self._observer.aclose()
 
-        class Inner(AsyncSingleStream):
+        class Inner(AsyncSingleSubject):
 
             def __init__(self, observer) -> None:
                 super().__init__()

@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from aioreactive.core import AsyncSingleStream
+from aioreactive.core import AsyncSingleSubject
 from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
 from aioreactive.core import AsyncObserver, AsyncObservable, chain
 
@@ -20,7 +20,7 @@ class Skip(AsyncObservable[T]):
 
         return AsyncCompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream[T]):
+    class Sink(AsyncSingleSubject[T]):
 
         def __init__(self, source: "Skip[T]") -> None:
             super().__init__()

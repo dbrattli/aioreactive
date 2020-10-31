@@ -3,7 +3,7 @@ from typing import Callable, TypeVar, Generic
 
 from aioreactive.core.utils import noopobserver
 from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncSingleSubject, chain
 from aioreactive.core import AsyncCompositeDisposable
 from aioreactive.abc import AsyncDisposable
 
@@ -27,7 +27,7 @@ class WithLatestFrom(AsyncObservable):
         up_other = await chain(self._other, sink_other)
         return AsyncCompositeDisposable(up_source, up_other, down_source)
 
-    class SourceStream(AsyncSingleStream, Generic[TT]):
+    class SourceStream(AsyncSingleSubject, Generic[TT]):
 
         def __init__(self, source: "WithLatestFrom") -> None:
             super().__init__()
@@ -55,7 +55,7 @@ class WithLatestFrom(AsyncObservable):
             self._latest = value
             self._has_latest = True
 
-    class OtherStream(AsyncSingleStream):
+    class OtherStream(AsyncSingleSubject):
 
         def __init__(self, source: "WithLatestFrom", observer: "AsyncObserver") -> None:
             super().__init__()

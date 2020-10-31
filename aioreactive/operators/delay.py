@@ -1,7 +1,7 @@
 import asyncio
 from typing import List
 
-from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, chain
+from aioreactive.core import AsyncSingleSubject, AsyncObserver, AsyncObservable, chain
 from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
 
 
@@ -23,7 +23,7 @@ class Delay(AsyncObservable):
                 task.cancel()
         return AsyncCompositeDisposable(up, down, AsyncDisposable(cancel))
 
-    class Sink(AsyncSingleStream):
+    class Sink(AsyncSingleSubject):
 
         def __init__(self, source, tasks) -> None:
             super().__init__()

@@ -1,16 +1,15 @@
-from typing import Generic, TypeVar, AsyncIterable
 import asyncio
 import logging
+from typing import AsyncIterable, Generic, TypeVar
 
-from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncDisposable
+from aioreactive.core import AsyncObservable, AsyncObserver
+from fslash.system import AsyncDisposable
 
 log = logging.getLogger(__name__)
-T = TypeVar('T')
+TSource = TypeVar("TSource")
 
 
-class FromAsyncIterable(AsyncObservable, Generic[T]):
-
+class FromAsyncIterable(AsyncObservable, Generic[TSource]):
     def __init__(self, iterable) -> None:
         assert hasattr(iterable, "__aiter__")
         self.iterable = iterable
@@ -23,7 +22,7 @@ class FromAsyncIterable(AsyncObservable, Generic[T]):
         async def cancel():
             task.cancel()
 
-        sub = AsyncDisposable(cancel)
+        sub = AsyncDisposable.create(cancel)
 
         async def worker() -> None:
             async for value in self.iterable:
@@ -34,6 +33,7 @@ class FromAsyncIterable(AsyncObservable, Generic[T]):
                     return
 
             await observer.aclose()
+
         try:
             task = asyncio.ensure_future(worker())
         except Exception as ex:
@@ -42,7 +42,7 @@ class FromAsyncIterable(AsyncObservable, Generic[T]):
         return sub
 
 
-def from_async_iterable(iterable: AsyncIterable[T]) -> AsyncObservable[T]:
+def from_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
     """Convert an async iterable to a source stream.
 
     2 - xs = from_async_iterable(async_iterable)

@@ -4,7 +4,7 @@ from typing import Callable, Awaitable, TypeVar, Generic
 from aioreactive.abc import AsyncDisposable
 
 from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain
+from aioreactive.core import AsyncSingleSubject, chain
 from aioreactive.core import AsyncCompositeDisposable
 
 T = TypeVar('T')
@@ -23,7 +23,7 @@ class Scan(AsyncObservable):
         up = await chain(self._source, sink)
         return AsyncCompositeDisposable(up, down)
 
-    class Stream(AsyncSingleStream, Generic[T]):
+    class Stream(AsyncSingleSubject, Generic[T]):
 
         def __init__(self, source: "Scan") -> None:
             super().__init__()

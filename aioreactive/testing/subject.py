@@ -3,11 +3,11 @@ from typing import TypeVar
 
 from aioreactive import core
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
-class AsyncStreamBase(core.AsyncObserver):
-    """A stream base for testing.
+class AsyncSubjectBase(core.AsyncObserver):
+    """A subject base for testing.
 
     Provides methods for sending, throwing, and closing at a later
     time both relative and absolute.
@@ -30,6 +30,7 @@ class AsyncStreamBase(core.AsyncObserver):
         async def task() -> None:
             await asyncio.sleep(delay)
             await self.asend(value)
+
         asyncio.ensure_future(task())
 
     async def athrow_at(self, when: float, err: Exception) -> None:
@@ -49,6 +50,7 @@ class AsyncStreamBase(core.AsyncObserver):
         async def task():
             await asyncio.sleep(delay)
             await self.athrow(err)
+
         asyncio.ensure_future(task())
 
     async def aclose_at(self, when: float):
@@ -68,17 +70,18 @@ class AsyncStreamBase(core.AsyncObserver):
         async def task():
             await asyncio.sleep(delay)
             await self.aclose()
+
         asyncio.ensure_future(task())
 
 
-class AsyncMultipleStream(core.AsyncStream, AsyncStreamBase):
+class AsyncMultipleSubject(core.AsyncSubject, AsyncSubjectBase):
     pass
 
-AsyncStream = AsyncMultipleStream
+
+AsyncSubject = AsyncMultipleSubject
 
 
-class AsyncSingleStream(core.AsyncSingleStream, AsyncStreamBase):
-
+class AsyncSingleSubject(core.AsyncSingleSubject, AsyncSubjectBase):
     def __init__(self):
         super().__init__()
-        #self._loop = asyncio.get_event_loop()
+        self._loop = asyncio.get_event_loop()

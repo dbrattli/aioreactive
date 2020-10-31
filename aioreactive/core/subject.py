@@ -1,18 +1,19 @@
 import logging
 from asyncio import Future
-from typing import TypeVar
+from typing import List, Optional, TypeVar
 
-from .typing import AsyncObserver
-from .observables import AsyncObservable
-from .disposables import AsyncDisposable
+from fslash.system import AsyncDisposable
+
 from .bases import AsyncObserverBase
+from .observables import AsyncObservable
+from .types import AsyncObserver
 
 log = logging.getLogger(__name__)
 
-T = TypeVar("T")
+TSource = TypeVar("TSource")
 
 
-class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposable):
+class AsyncSingleSubject(AsyncObserverBase[TSource], AsyncObservable[TSource], AsyncDisposable):
 
     """An stream with a single sink.
 
@@ -26,10 +27,10 @@ class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposabl
     def __init__(self) -> None:
         super().__init__()
 
-        self._wait = Future()  # type: Future
-        self._observer = None  # type: AsyncObserver
+        self._wait = Future()
+        self._observer: Optional[AsyncObserver[TSource]] = None
 
-    async def asend_core(self, value: T):
+    async def asend_core(self, value: TSource):
         log.debug("AsyncSingleStream:asend(%s)", str(value))
 
         # AsyncSingleStreams are cold and will await a sink.
@@ -65,7 +66,7 @@ class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposabl
         self._is_stopped = True
         self.cancel()
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+    async def subscribe_async(self, observer: AsyncObserver) -> AsyncDisposable:
         """Start streaming."""
 
         self._observer = observer
@@ -73,10 +74,10 @@ class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposabl
         if not self._wait.done():
             self._wait.set_result(True)
 
-        return AsyncDisposable(self.adispose)
+        return AsyncDisposable.create(self.adispose)
 
 
-class AsyncMultiStream(AsyncObserverBase[T], AsyncObservable[T]):
+class AsyncMultiSubject(AsyncObserverBase[TSource], AsyncObservable[TSource]):
     """An stream with a multiple observers.
 
     Both an async multi future and async iterable. Thus you may
@@ -88,9 +89,9 @@ class AsyncMultiStream(AsyncObserverBase[T], AsyncObservable[T]):
 
     def __init__(self) -> None:
         super().__init__()
-        self._observers = []  # type: List[AsyncObserver]
+        self._observers: List[AsyncObserver[TSource]] = []
 
-    async def asend_core(self, value: T) -> None:
+    async def asend_core(self, value: TSource) -> None:
         for obv in list(self._observers):
             await obv.asend(value)
 
@@ -102,7 +103,7 @@ class AsyncMultiStream(AsyncObserverBase[T], AsyncObservable[T]):
         for obv in list(self._observers):
             await obv.aclose()
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+    async def subscribe_async(self, observer: AsyncObserver) -> AsyncDisposable:
         """Subscribe."""
 
         log.debug("AsyncMultiStream:subscribe")
@@ -115,8 +116,8 @@ class AsyncMultiStream(AsyncObserverBase[T], AsyncObservable[T]):
                 print("Remove")
                 self._observers.remove(observer)
 
-        return AsyncDisposable(dispose)
+        return AsyncDisposable.create(dispose)
 
 
 # Alias
-AsyncStream = AsyncMultiStream
+AsyncSubject = AsyncMultiSubject

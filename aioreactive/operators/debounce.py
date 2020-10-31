@@ -3,7 +3,7 @@ from typing import TypeVar, Generic, List
 
 from aioreactive.abc import AsyncDisposable
 
-from aioreactive.core import AsyncSingleStream, AsyncObserver, AsyncObservable, chain
+from aioreactive.core import AsyncSingleSubject, AsyncObserver, AsyncObservable, chain
 from aioreactive.core import AsyncCompositeDisposable
 
 T = TypeVar("T")
@@ -30,7 +30,7 @@ class Debounce(AsyncObservable[T], Generic[T]):
         sink.add_done_callback(cancel)
         return AsyncCompositeDisposable(up, down)
 
-    class Stream(AsyncSingleStream[T]):
+    class Stream(AsyncSingleSubject[T]):
 
         def __init__(self, source: 'Debounce[T]', tasks: List[asyncio.Task]) -> None:
             super().__init__()

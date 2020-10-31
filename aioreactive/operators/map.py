@@ -1,54 +1,30 @@
-from asyncio import iscoroutinefunction
-from typing import Callable, TypeVar
+from typing import Awaitable, Callable, TypeVar
 
-from aioreactive.abc import AsyncDisposable
-from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain, AsyncCompositeDisposable
+from aioreactive.core import Stream
 
-T1 = TypeVar('T1')
-T2 = TypeVar('T2')
+from .transform import transform
 
-
-class Map(AsyncObservable[T2]):
-
-    def __init__(self, mapper: Callable[[T1], T2], source: AsyncObservable[T1]) -> None:
-        self._source = source
-        self._mapper = mapper
-
-    async def __asubscribe__(self, observer: AsyncObserver[T2]) -> AsyncDisposable:
-        sink = Map.Sink(self)  # type: AsyncSingleStream[T2]
-        down = await chain(sink, observer)
-        up = await chain(self._source, sink)   # type: AsyncDisposable
-
-        return AsyncCompositeDisposable(up, down)
-
-    class Sink(AsyncSingleStream[T2]):
-
-        def __init__(self, source: "Map") -> None:
-            super().__init__()
-            self._mapper = source._mapper
-
-        async def asend_core(self, value: T1) -> None:
-            try:
-                result = self._mapper(value)
-            except Exception as err:
-                await self._observer.athrow(err)
-            else:
-                await self._observer.asend(result)
+TSource = TypeVar("TSource")
+TResult = TypeVar("TResult")
 
 
-def map(mapper: Callable[[T1], T2], source: AsyncObservable[T1]) -> AsyncObservable[T2]:
-    """Project each item of the source observable.
+def map_async(amapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+    """Returns an observable sequence whose elements are the result of
+    invoking the async mapper function on each element of the
+    source."""
 
-    xs = map(lambda value: value * value, source)
+    async def handler(next: Callable[[TResult], Awaitable[None]], x: TSource):
+        b = await amapper(x)
+        return await next(b)
 
-    Keyword arguments:
-    mapper: A transform function to apply to each source item.
+    return transform(handler)
 
-    Returns an observable sequence whose elements are the result of
-    invoking the mapper function on each element of source.
-    """
 
-    assert not iscoroutinefunction(mapper)
+def map(mapper: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
+    """Returns an observable sequence whose elements are the result of
+    invoking the mapper function on each element of the source."""
 
-    return Map(mapper, source)
+    def handler(next: Callable[[TResult], Awaitable[None]], x: TSource):
+        return next(mapper(x))
+
+    return transform(handler)

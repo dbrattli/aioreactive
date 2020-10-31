@@ -1,17 +1,18 @@
-
-from asyncio import Future
-from typing import TypeVar, Generic
-from abc import abstractmethod
 import logging
-from aioreactive.abc import Disposable
-from .typing import AsyncObserver
+from abc import abstractmethod
+from asyncio import Future
+from typing import Optional, TypeVar
+
+from fslash.system import Disposable
+
+from .types import AsyncObserver
 
 log = logging.getLogger(__name__)
 
-T = TypeVar('T')
+TSource = TypeVar("TSource")
 
 
-class AsyncObserverBase(Future, AsyncObserver[T], Disposable):
+class AsyncObserverBase(Future, AsyncObserver[TSource], Disposable):
     """An async observer abstract base class.
 
     Both a future and async observer. The future resolves with the last
@@ -22,11 +23,11 @@ class AsyncObserverBase(Future, AsyncObserver[T], Disposable):
         super().__init__()
 
         self._has_value = False
-        self._last_value = None  # type: T
+        self._last_value: Optional[TSource] = None
 
         self._is_stopped = False
 
-    async def asend(self, value: T) -> None:
+    async def asend(self, value: TSource) -> None:
         log.debug("AsyncObserverBase:asend(%s)", str(value))
 
         if self._is_stopped:
@@ -67,7 +68,7 @@ class AsyncObserverBase(Future, AsyncObserver[T], Disposable):
         self._is_stopped = True
 
     @abstractmethod
-    async def asend_core(self, value: T) -> None:
+    async def asend_core(self, value: TSource) -> None:
         return NotImplemented
 
     @abstractmethod

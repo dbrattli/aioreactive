@@ -1,12 +1,13 @@
-import logging
 import asyncio
-from typing import TypeVar, Optional
+import logging
 from collections.abc import Awaitable
+from typing import Callable, Optional, TypeVar
 
-from aioreactive.abc import AsyncDisposable
+from fslash.system import AsyncDisposable
+from fslash.system.disposable import Disposable
 
-from .typing import AsyncObservable, AsyncObserver
 from .observers import AsyncNoopObserver
+from .types import AsyncObservable, AsyncObserver
 
 log = logging.getLogger(__name__)
 
@@ -20,8 +21,8 @@ class AsyncSubscriptionFactory(Awaitable, AsyncDisposable):
     using await and async-with. You will most likely not use this class
     directly, but it will created when using subscribe()."""
 
-    def __init__(self, source, observer=None):
-        self._source = source
+    def __init__(self, subscribe, observer=None):
+        self._subscribe = subscribe
         self._observer = observer
 
         self._subscription = None
@@ -32,10 +33,10 @@ class AsyncSubscriptionFactory(Awaitable, AsyncDisposable):
         Awaits until stream has been created, and returns the new
         stream."""
 
-        self._subscription = await chain(self._source, self._observer)
+        self._subscription = await self._subscribe(self._observer)
         return self._subscription
 
-    async def adispose(self) -> None:
+    async def dispose_async(self) -> None:
         """Closes stream."""
         await self._subscription.adispose()
 
@@ -58,10 +59,12 @@ async def chain(source, observer) -> AsyncDisposable:
     Performs the chaining done internally by most operators. A much
     more light-weight version of subscribe()."""
 
-    return await source.__asubscribe__(observer)
+    return await source.subscribe_async(observer)
 
 
-def subscribe(source: AsyncObservable, observer: AsyncObserver) -> AsyncSubscriptionFactory:
+def subscription(
+    subscribe: Callable[[AsyncObserver], Awaitable[AsyncDisposable]], observer: AsyncObserver
+) -> AsyncSubscriptionFactory:
     """Start streaming source into observer.
 
     Returns an AsyncStreamFactory that is lazy in the sense that it will
@@ -97,27 +100,27 @@ def subscribe(source: AsyncObservable, observer: AsyncObserver) -> AsyncSubscrip
     Returns AsyncStreamFactory that may either be awaited or entered
     using async-for.
     """
-    return AsyncSubscriptionFactory(source, observer)
+    return AsyncSubscriptionFactory(subscribe, observer)
 
 
-async def run(source: AsyncObservable[T], observer: Optional[AsyncObserver]=None, timeout: int=2) -> T:
-    """Run the source with the given observer.
+# async def run(source: AsyncObservable[T], observer: Optional[AsyncObserver] = None, timeout: int = 2) -> T:
+#     """Run the source with the given observer.
 
-    Similar to subscribe() but also awaits until the stream closes and
-    returns the final value.
+#     Similar to subscribe() but also awaits until the stream closes and
+#     returns the final value.
 
-    Keyword arguments:
-    timeout -- Seconds before timing out in case source never closes.
+#     Keyword arguments:
+#     timeout -- Seconds before timing out in case source never closes.
 
-    Returns last event sent through the stream. If any values have been
-    sent through the stream it will return the last value. If the stream
-    is closed without any previous values it will throw
-    StopAsyncIteration. For any other errors it will throw the
-    exception.
-    """
+#     Returns last event sent through the stream. If any values have been
+#     sent through the stream it will return the last value. If the stream
+#     is closed without any previous values it will throw
+#     StopAsyncIteration. For any other errors it will throw the
+#     exception.
+#     """
 
-    # For run we need a noopobserver if no observer is specified to avoid
-    # blocking the last single stream in the chain.
-    observer = observer or AsyncNoopObserver()
-    await subscribe(source, observer)
-    return await asyncio.wait_for(observer, timeout)
+#     # For run we need a noopobserver if no observer is specified to avoid
+#     # blocking the last single stream in the chain.
+#     observer = observer or AsyncNoopObserver()
+#     await subscribe(source, observer)
+#     return await asyncio.wait_for(observer, timeout)

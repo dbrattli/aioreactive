@@ -1,21 +1,20 @@
-from typing import Generic, TypeVar, Iterable
 import asyncio
 import logging
+from typing import Generic, Iterable, TypeVar
 
-from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, AsyncDisposable
+from aioreactive.core import AsyncObservable, AsyncObserver, AsyncSingleSubject
+from fslash.system import AsyncDisposable
 
 log = logging.getLogger(__name__)
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class FromIterable(AsyncObservable, Generic[T]):
-
     def __init__(self, iterable) -> None:
         assert hasattr(iterable, "__iter__")
         self.iterable = iterable
 
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+    async def subscribe_async(self, observer: AsyncObserver) -> AsyncDisposable:
         task = None
 
         assert isinstance(observer, AsyncObserver)
@@ -23,7 +22,7 @@ class FromIterable(AsyncObservable, Generic[T]):
         async def cancel():
             task.cancel()
 
-        sub = AsyncDisposable(cancel)
+        sub = AsyncDisposable.create(cancel)
 
         async def worker() -> None:
             log.debug("sync_worker()")
