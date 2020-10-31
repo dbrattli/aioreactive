@@ -1,12 +1,12 @@
-from typing import TypeVar
+from typing import Awaitable, Callable, TypeVar
 
 from aioreactive.core.bases import AsyncObserverBase
 from aioreactive.core.utils import anoop
 
-T = TypeVar('T')
+TSource = TypeVar("TSource")
 
 
-class AsyncAnonymousObserver(AsyncObserverBase):
+class AsyncAnonymousObserver(AsyncObserverBase[TSource]):
     """A test AsyncAnonymousObserver.
 
     Records all values and events that happens and makes them available
@@ -22,26 +22,31 @@ class AsyncAnonymousObserver(AsyncObserverBase):
     decided to keep it this way for simplicity.
     """
 
-    def __init__(self, send=anoop, throw=anoop, close=anoop):
+    def __init__(
+        self,
+        asend: Callable[[TSource], Awaitable[None]] = anoop,
+        athrow: Callable[[Exception], Awaitable[None]] = anoop,
+        aclose: Callable[[], Awaitable[None]] = anoop,
+    ):
         super().__init__()
         self._values = []
 
-        self._send = send
-        self._throw = throw
-        self._close = close
+        self._send = asend
+        self._throw = athrow
+        self._close = aclose
 
-    async def asend_core(self, value: T):
+    async def asend_core(self, value: TSource):
         print("AsyncAnonymousObserver:asend_core(%s)" % value)
         time = self._loop.time()
         self._values.append((time, value))
 
         await self._send(value)
 
-    async def athrow_core(self, err: Exception):
+    async def athrow_core(self, error: Exception):
         time = self._loop.time()
-        self._values.append((time, err))
+        self._values.append((time, error))
 
-        await self._throw(err)
+        await self._throw(error)
 
     async def aclose_core(self):
         time = self._loop.time()

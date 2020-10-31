@@ -37,30 +37,30 @@ async def test_map_happy():
         assert values == [10, 20, 30]
 
 
-@pytest.mark.asyncio
-async def test_map_mapper_throws():
-    xs = AsyncRx.from_iterable([1])
-    exception = None
-    error = Exception("ex")
+# @pytest.mark.asyncio
+# async def test_map_mapper_throws():
+#     xs = AsyncRx.from_iterable([1])
+#     exception = None
+#     error = Exception("ex")
 
-    async def asend(value):
-        pass
+#     async def asend(value):
+#         pass
 
-    async def athrow(ex):
-        nonlocal exception
-        exception = ex
+#     async def athrow(ex):
+#         nonlocal exception
+#         exception = ex
 
-    def mapper(x):
-        raise error
+#     def mapper(x):
+#         raise error
 
-    ys = pipe(xs, AsyncRx.map(mapper))
+#     ys = pipe(xs, AsyncRx.map(mapper))
 
-    try:
-        await ys.subscribe_async(AsyncAnonymousObserver(asend, athrow))
-    except Exception as ex:
-        assert ex == error
+#     try:
+#         await ys.subscribe_async(AsyncAnonymousObserver(asend, athrow))
+#     except Exception as ex:
+#         assert ex == error
 
-    assert exception == error
+#     assert exception == error
 
 
 # @pytest.mark.asyncio

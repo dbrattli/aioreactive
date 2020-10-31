@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 TSource = TypeVar("TSource")
 
 
-class AsyncObserverBase(Future, AsyncObserver[TSource], Disposable):
+class AsyncObserverBase(Future[TSource], AsyncObserver[TSource], Disposable):
     """An async observer abstract base class.
 
     Both a future and async observer. The future resolves with the last
@@ -39,14 +39,14 @@ class AsyncObserverBase(Future, AsyncObserver[TSource], Disposable):
 
         await self.asend_core(value)
 
-    async def athrow(self, ex: Exception) -> None:
+    async def athrow(self, error: Exception) -> None:
         if self._is_stopped:
             return
 
         self._is_stopped = True
 
-        self.set_exception(ex)
-        await self.athrow_core(ex)
+        self.set_exception(error)
+        await self.athrow_core(error)
 
     async def aclose(self) -> None:
         log.debug("AsyncObserverBase:aclose")
@@ -72,7 +72,7 @@ class AsyncObserverBase(Future, AsyncObserver[TSource], Disposable):
         return NotImplemented
 
     @abstractmethod
-    async def athrow_core(self, error) -> None:
+    async def athrow_core(self, error: Exception) -> None:
         return NotImplemented
 
     @abstractmethod

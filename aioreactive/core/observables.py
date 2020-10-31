@@ -24,9 +24,9 @@ class AsyncAnonymousObservable(AsyncObservable[TSource]):
     def __init__(self, subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]]) -> None:
         self._subscribe = subscribe
 
-    def subscribe_async(self, obv: AsyncObserver[TSource]) -> Awaitable:
+    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
         print("AsyncAnonymousObservable:subscribe")
-        return subscription(self._subscribe, obv)
+        return subscription(self._subscribe, observer)
 
     def __getitem__(self, key) -> "AsyncObservable[TSource]":
         """Slices the given source stream using Python slice notation.
@@ -82,10 +82,10 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
         super().__init__()
         self._source = source
 
-    async def subscribe_async(self, obv: AsyncObserver) -> AsyncDisposable:
-        return await self._source.subscribe_async(obv)
+    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+        return await self._source.subscribe_async(observer)
 
-    def __getitem__(self, key) -> "AsyncChainedObservable":
+    def __getitem__(self, key) -> "AsyncChainedObservable[TSource]":
         """Slices the given source stream using Python slice notation.
          The arguments to slice is start, stop and step given within
          brackets [] and separated with the ':' character. It is
@@ -115,16 +115,22 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
         return AsyncChainedObservable(super(AsyncChainedObservable, self).__getitem__(key))
 
     @classmethod
-    def from_iterable(cls, iter):
-        return AsyncChainedObservable(AsyncObservable.from_iterable(iter))
+    def from_iterable(cls, iter: Iterable[TSource]) -> "AsyncChainedObservable[TSource]":
+        from .create import of_seq
+
+        return AsyncChainedObservable(of_seq(iter))
 
     @classmethod
-    def just(cls, value) -> "AsyncChainedObservable":
-        return AsyncChainedObservable(AsyncObservable.unit(value))
+    def single(cls, value: TSource) -> "AsyncChainedObservable[TSource]":
+        from .create import single
+
+        return AsyncChainedObservable(single(value))
 
     @classmethod
-    def empty(cls) -> "AsyncChainedObservable":
-        return AsyncChainedObservable(AsyncObservable.empty())
+    def empty(cls) -> "AsyncChainedObservable[TSource]":
+        from .create import empty
+
+        return AsyncChainedObservable(empty())
 
     def debounce(self, seconds: float) -> "AsyncChainedObservable":
         """Debounce observable source.
@@ -177,5 +183,5 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
         return AsyncChainedObservable(with_latest_from(mapper, other, self))
 
 
-def as_chained(source: AsyncObservable) -> AsyncChainedObservable:
+def as_chained(source: AsyncObservable[TSource]) -> AsyncChainedObservable[TSource]:
     return AsyncChainedObservable(source)

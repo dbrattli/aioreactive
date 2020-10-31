@@ -4,28 +4,31 @@ from collections.abc import Awaitable
 from typing import Callable, Optional, TypeVar
 
 from fslash.system import AsyncDisposable
-from fslash.system.disposable import Disposable
 
 from .observers import AsyncNoopObserver
 from .types import AsyncObservable, AsyncObserver
 
 log = logging.getLogger(__name__)
 
-T = TypeVar("T")
+TSource = TypeVar("TSource")
 
 
-class AsyncSubscriptionFactory(Awaitable, AsyncDisposable):
+class AsyncSubscriptionFactory(Awaitable[TSource], AsyncDisposable):
     """Async stream factory.
 
     A helper class that makes it possible to subscribe both
     using await and async-with. You will most likely not use this class
     directly, but it will created when using subscribe()."""
 
-    def __init__(self, subscribe, observer=None):
+    def __init__(
+        self,
+        subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]],
+        observer: AsyncObserver[TSource],
+    ):
         self._subscribe = subscribe
         self._observer = observer
 
-        self._subscription = None
+        self._subscription: Optional[AsyncDisposable] = None
 
     async def create(self) -> AsyncDisposable:
         """Awaits stream creation.
@@ -38,7 +41,8 @@ class AsyncSubscriptionFactory(Awaitable, AsyncDisposable):
 
     async def dispose_async(self) -> None:
         """Closes stream."""
-        await self._subscription.adispose()
+        if self._subscription is not None:
+            await self._subscription.dispose_async()
 
     async def __aenter__(self) -> AsyncDisposable:
         """Awaits subscription creation."""
@@ -46,14 +50,15 @@ class AsyncSubscriptionFactory(Awaitable, AsyncDisposable):
 
     async def __aexit__(self, type, value, traceback):
         """Awaits unsubscription."""
-        await self._subscription.adispose()
+        if self._subscription is not None:
+            await self._subscription.dispose_async()
 
     def __await__(self):
         """Await stream creation."""
         return self.create().__await__()
 
 
-async def chain(source, observer) -> AsyncDisposable:
+async def chain(source: AsyncObservable[TSource], observer: AsyncObserver[TSource]) -> AsyncDisposable:
     """Chains an async observer with an async observable.
 
     Performs the chaining done internally by most operators. A much
@@ -63,8 +68,8 @@ async def chain(source, observer) -> AsyncDisposable:
 
 
 def subscription(
-    subscribe: Callable[[AsyncObserver], Awaitable[AsyncDisposable]], observer: AsyncObserver
-) -> AsyncSubscriptionFactory:
+    subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]], observer: AsyncObserver[TSource]
+) -> AsyncSubscriptionFactory[TSource]:
     """Start streaming source into observer.
 
     Returns an AsyncStreamFactory that is lazy in the sense that it will

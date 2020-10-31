@@ -1,6 +1,7 @@
 from functools import partial
 from typing import AsyncIterable, Callable, Iterable, TypeVar
 
+from . import create as Create
 from .observables import AsyncObservable
 
 TSource = TypeVar("TSource")
@@ -50,9 +51,7 @@ class AsyncRx:
 
         Returns the source stream whose elements are pulled from the
         given (async) iterable sequence."""
-        from aioreactive.operators.from_iterable import from_iterable
-
-        return from_iterable(iterable)
+        return Create.of_seq(iterable)
 
     @staticmethod
     def flat_map(fn: Callable[[TSource], AsyncObservable]) -> Callable[[AsyncObservable], AsyncObservable]:
@@ -95,12 +94,6 @@ class AsyncRx:
         from aioreactive.operators.to_async_iterable import to_async_iterable
 
         return partial(to_async_iterable)
-
-    @staticmethod
-    def from_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
-        from aioreactive.operators.from_iterable import from_iterable
-
-        return from_iterable(iter)
 
     @staticmethod
     def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
