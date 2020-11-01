@@ -1,12 +1,12 @@
 from typing import Awaitable, Callable, TypeVar
 
-from aioreactive.bases import AsyncObserverBase
+from aioreactive.types import AsyncObserver
 from aioreactive.utils import anoop
 
 TSource = TypeVar("TSource")
 
 
-class AsyncTestObserver(AsyncObserverBase[TSource]):
+class AsyncTestObserver(AsyncObserver[TSource]):
     """A test AsyncAnonymousObserver.
 
     Records all values and events that happens and makes them available

@@ -1,6 +1,7 @@
+import logging
 from typing import Awaitable, Callable, Iterable, Tuple, TypeVar
 
-from fslash.core import Async
+from fslash.core import aio
 from fslash.system import AsyncDisposable, CancellationToken, CancellationTokenSource
 
 from .observables import AsyncAnonymousObservable
@@ -8,6 +9,8 @@ from .observers import AsyncObserver, safe_observer
 from .types import AsyncObservable
 
 TSource = TypeVar("TSource")
+
+log = logging.getLogger(__name__)
 
 
 def canceller() -> Tuple[AsyncDisposable, CancellationToken]:
@@ -31,14 +34,14 @@ def of_async_worker(
 ) -> AsyncObservable[TSource]:
     """Create async observable from async worker function"""
 
-    print("of_async_worker")
+    log.debug("of_async_worker()")
 
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
-        print("of_async_worker:subscribe_async-----------------")
+        log.debug("of_async_worker:subscribe_async()")
         disposable, token = canceller()
         safe_obv = safe_observer(aobv, disposable)
 
-        Async.start(worker(safe_obv, token), token)
+        aio.start(worker(safe_obv, token), token)
         return disposable
 
     return AsyncAnonymousObservable(subscribe_async)
@@ -104,13 +107,11 @@ def of_seq(xs: Iterable[TSource]) -> AsyncObservable[TSource]:
     """Returns the async observable sequence whose elements are pulled
     from the given enumerable sequence."""
 
-    print("of_seq")
-
     async def worker(obv: AsyncObserver[TSource], token: CancellationToken) -> None:
-        print("of_seq:worker()")
+        log.debug("of_seq:worker()")
         for x in xs:
             try:
-                print("of_seq:asend()")
+                log.debug("of_seq:asend(%s)", x)
                 await obv.asend(x)
             except Exception as ex:
                 await obv.athrow(ex)
@@ -143,7 +144,7 @@ def interval(msecs: int, period: int) -> AsyncObservable[int]:
         cancel, token = canceller()
 
         async def handler(msecs: int, next: TSource) -> None:
-            await Async.sleep(msecs)
+            await aio.sleep(msecs)
             await aobv.asend(next)
 
             if period > 0:
@@ -151,7 +152,7 @@ def interval(msecs: int, period: int) -> AsyncObservable[int]:
             else:
                 await aobv.aclose()
 
-        Async.start(handler(msecs, 0), token)
+        aio.start(handler(msecs, 0), token)
         return cancel
 
     return AsyncAnonymousObservable(subscribe_async)

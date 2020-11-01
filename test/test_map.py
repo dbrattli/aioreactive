@@ -3,6 +3,7 @@ import asyncio
 import pytest
 from aioreactive import AsyncRx
 from aioreactive.observables import AsyncObservable
+from aioreactive.observers import AsyncAwaitableObserver
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from aioreactive.types import AsyncObserver
 from fslash.core import pipe
@@ -27,37 +28,40 @@ async def test_map_happy():
 
     ys = pipe(xs, AsyncRx.map(mapper))
 
-    obv: AsyncObserver[int] = AsyncTestObserver(asend)
+    obv: AsyncObserver[int] = AsyncAwaitableObserver(asend)
     async with await ys.subscribe_async(obv):
         result = await obv
         assert result == 30
         assert values == [10, 20, 30]
 
 
-# @pytest.mark.asyncio
-# async def test_map_mapper_throws():
-#     xs = AsyncRx.from_iterable([1])
-#     exception = None
-#     error = Exception("ex")
+@pytest.mark.asyncio
+async def test_map_mapper_throws():
+    error = Exception("ex")
+    exception = None
 
-#     async def asend(value):
-#         pass
+    xs = AsyncRx.from_iterable([1])
 
-#     async def athrow(ex):
-#         nonlocal exception
-#         exception = ex
+    async def athrow(ex: Exception):
+        nonlocal exception
+        exception = ex
 
-#     def mapper(x):
-#         raise error
+    def mapper(x: int):
+        raise error
 
-#     ys = pipe(xs, AsyncRx.map(mapper))
+    ys = pipe(xs, AsyncRx.map(mapper))
 
-#     try:
-#         await ys.subscribe_async(AsyncAnonymousObserver(asend, athrow))
-#     except Exception as ex:
-#         assert ex == error
+    obv = AsyncAwaitableObserver(athrow=athrow)
 
-#     assert exception == error
+    await ys.subscribe_async(obv)
+
+    try:
+        await obv
+    except Exception as ex:
+        print("got here")
+        assert exception == ex
+    else:
+        assert False
 
 
 # @pytest.mark.asyncio

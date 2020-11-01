@@ -1,11 +1,10 @@
 import logging
 from asyncio import Future, iscoroutinefunction
-from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, TypeVar
+from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, TypeVar
 
 from fslash.core import MailboxProcessor
-from fslash.system import AsyncDisposable
+from fslash.system import AsyncDisposable, Disposable
 
-from .bases import AsyncObserverBase
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
 from .types import AsyncObserver
 from .utils import anoop
@@ -13,10 +12,9 @@ from .utils import anoop
 log = logging.getLogger(__name__)
 
 TSource = TypeVar("TSource")
-T = TypeVar("T")
 
 
-class AsyncIteratorObserver(AsyncObserverBase[TSource], AsyncIterable[TSource]):
+class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource]):
     """An async observer that might be iterated asynchronously."""
 
     def __init__(self) -> None:
@@ -28,7 +26,7 @@ class AsyncIteratorObserver(AsyncObserverBase[TSource], AsyncIterable[TSource]):
         self._awaiters: List[Future[TSource]] = []
         self._busy = False
 
-    async def asend_core(self, value: TSource) -> None:
+    async def asend(self, value: TSource) -> None:
         log.debug("AsyncIteratorObserver:asend(%s)", value)
 
         await self._serialize_access()
@@ -36,14 +34,14 @@ class AsyncIteratorObserver(AsyncObserverBase[TSource], AsyncIterable[TSource]):
         self._push.set_result(value)
         await self._wait_for_pull()
 
-    async def athrow_core(self, error: Exception) -> None:
-        print("AsyncIteratorObserver:athrow_core", error)
+    async def athrow(self, error: Exception) -> None:
+        log.debug("AsyncIteratorObserver:athrow()", error)
         await self._serialize_access()
 
         self._push.set_exception(error)
         await self._wait_for_pull()
 
-    async def aclose_core(self) -> None:
+    async def aclose(self) -> None:
         await self._serialize_access()
 
         self._push.set_exception(StopAsyncIteration)
@@ -75,15 +73,15 @@ class AsyncIteratorObserver(AsyncObserverBase[TSource], AsyncIterable[TSource]):
         return value
 
     async def __aiter__(self) -> AsyncIterator[TSource]:
-        print("AsyncIteratorObserver:__aiter__")
+        log.debug("AsyncIteratorObserver:__aiter__")
         return self
 
     async def __anext__(self) -> TSource:
-        print("AsyncIteratorObserver:__anext__")
+        log.debug("AsyncIteratorObserver:__anext__()")
         return await self.wait_for_push()
 
 
-class AsyncAnonymousObserver(AsyncObserverBase[TSource]):
+class AsyncAnonymousObserver(AsyncObserver[TSource]):
     """An anonymous AsyncObserver.
 
     Creates as sink where the implementation is provided by three
@@ -98,34 +96,26 @@ class AsyncAnonymousObserver(AsyncObserverBase[TSource]):
     ) -> None:
         super().__init__()
         assert iscoroutinefunction(asend)
-        self._send = asend
+        self._asend = asend
 
         assert iscoroutinefunction(athrow)
-        self._throw = athrow
+        self._athrow = athrow
 
         assert iscoroutinefunction(aclose)
-        self._close = aclose
+        self._aclose = aclose
 
-    async def asend_core(self, value: TSource) -> None:
-        await self._send(value)
+    async def asend(self, value: TSource) -> None:
+        await self._asend(value)
 
-    async def athrow_core(self, error: Exception) -> None:
-        await self._throw(error)
+    async def athrow(self, error: Exception) -> None:
+        await self._athrow(error)
 
-    async def aclose_core(self) -> None:
-        await self._close()
+    async def aclose(self) -> None:
+        await self._aclose()
 
 
-class AsyncNoopObserver(AsyncAnonymousObserver[TSource]):
-    """An no operation Async Observer."""
-
-    def __init__(
-        self,
-        asend: Callable[[TSource], Awaitable[None]] = anoop,
-        athrow: Callable[[Exception], Awaitable[None]] = anoop,
-        aclose: Callable[[], Awaitable[None]] = anoop,
-    ) -> None:
-        super().__init__(asend, athrow, aclose)
+def noop() -> AsyncObserver[TSource]:
+    return AsyncAnonymousObserver(anoop, anoop, anoop)
 
 
 def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> AsyncObserver[TSource]:
@@ -144,11 +134,11 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
 
     async def worker(inbox: MailboxProcessor[Notification]):
         async def message_loop(stopped: bool) -> None:
-            msg = await inbox.receive()
 
             if stopped:
-                return await message_loop(stopped)
+                return
 
+            msg = await inbox.receive()
             if msg.kind == MsgKind.ON_NEXT:
                 try:
                     await msg.accept_observer(obv)
@@ -180,3 +170,72 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
         agent.post(OnCompleted)
 
     return AsyncAnonymousObserver(asend, athrow, aclose)
+
+
+class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable):
+    """An async observer abstract base class.
+
+    Both a future and async observer. The future resolves with the last
+    value before the observer is closed. A close without any values sent
+    is the same as cancelling the future."""
+
+    def __init__(
+        self,
+        asend: Callable[[TSource], Awaitable[None]] = anoop,
+        athrow: Callable[[Exception], Awaitable[None]] = anoop,
+        aclose: Callable[[], Awaitable[None]] = anoop,
+    ) -> None:
+        super().__init__()
+        assert iscoroutinefunction(asend)
+        self._asend = asend
+
+        assert iscoroutinefunction(athrow)
+        self._athrow = athrow
+
+        assert iscoroutinefunction(aclose)
+        self._aclose = aclose
+
+        self._has_value = False
+        self._last_value: Optional[TSource] = None
+
+        self._is_stopped = False
+
+    async def asend(self, value: TSource) -> None:
+        log.debug("AsyncAwaitableObserver:asend(%s)", str(value))
+
+        if self._is_stopped:
+            log.debug("Closed!!")
+            return
+
+        self._last_value = value
+        self._has_value = True
+        await self._asend(value)
+
+    async def athrow(self, error: Exception) -> None:
+        log.debug("AsyncAwaitableObserver:athrow()")
+        if self._is_stopped:
+            log.debug("Closed!!")
+            return
+
+        self._is_stopped = True
+
+        self.set_exception(error)
+        await self._athrow(error)
+
+    async def aclose(self) -> None:
+        log.debug("AsyncAwaitableObserver:aclose")
+
+        if self._is_stopped:
+            log.debug("Closed!!")
+            return
+
+        self._is_stopped = True
+
+        if self._has_value:
+            self.set_result(self._last_value)
+        else:
+            self.cancel()
+        await self._aclose()
+
+    def dispose(self) -> None:
+        self._is_stopped = True

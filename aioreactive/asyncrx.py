@@ -101,19 +101,19 @@ def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
     return AsyncChainedObservable(from_async_iterable(iter))
 
 
-def unit(value: TSource) -> "AsyncObservable[TSource]":
-    from aioreactive.operators.unit import unit
+def single(value: TSource) -> "AsyncObservable[TSource]":
+    from .create import single
 
-    return AsyncChainedObservable(unit(value))
+    return single(value)
 
 
 def empty() -> "AsyncObservable[TSource]":
-    from aioreactive.operators.empty import empty
+    from .create import empty
 
     return empty()
 
 
 def never() -> "AsyncObservable[TSource]":
-    from aioreactive.operators.never import never
+    from .create import never
 
-    return AsyncChainedObservable(never())
+    return never()

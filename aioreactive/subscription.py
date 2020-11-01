@@ -6,6 +6,7 @@ from typing import Callable, Optional, Type, TypeVar
 
 from fslash.system import AsyncDisposable
 
+from .observers import noop
 from .types import AsyncObservable, AsyncObserver
 
 log = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class AsyncSubscription(Awaitable[TSource], AsyncDisposable):
         Awaits until stream has been created, and returns the new
         stream."""
 
-        print("AsyncSubscription:run()")
+        log.debug("AsyncSubscription:run()")
         self._subscription = await self._subscribe(self._observer)
         return self._subscription
 
@@ -59,7 +60,7 @@ class AsyncSubscription(Awaitable[TSource], AsyncDisposable):
     def __await__(self):
         """Await stream creation."""
 
-        print("AsyncSubscription:__await__()")
+        log.debug("AsyncSubscription:__await__()")
         return self.run().__await__()
 
 
@@ -69,7 +70,7 @@ async def chain(source: AsyncObservable[TSource], observer: AsyncObserver[TSourc
     Performs the chaining done internally by most operators. A much
     more light-weight version of subscribe()."""
 
-    print("AsyncSubscription:chain()")
+    log.debug("AsyncSubscription:chain()")
     return await source.subscribe_async(observer)
 
 
@@ -114,24 +115,26 @@ def subscription(
     return AsyncSubscription(subscribe, observer)
 
 
-# async def run(source: AsyncObservable[T], observer: Optional[AsyncObserver] = None, timeout: int = 2) -> T:
-#     """Run the source with the given observer.
+async def run(
+    source: AsyncObservable[TSource], observer: Optional[AsyncObserver[TSource]] = None, timeout: int = 2
+) -> TSource:
+    """Run the source with the given observer.
 
-#     Similar to subscribe() but also awaits until the stream closes and
-#     returns the final value.
+    Similar to subscribe() but also awaits until the stream closes and
+    returns the final value.
 
-#     Keyword arguments:
-#     timeout -- Seconds before timing out in case source never closes.
+    Keyword arguments:
+    timeout -- Seconds before timing out in case source never closes.
 
-#     Returns last event sent through the stream. If any values have been
-#     sent through the stream it will return the last value. If the stream
-#     is closed without any previous values it will throw
-#     StopAsyncIteration. For any other errors it will throw the
-#     exception.
-#     """
+    Returns last event sent through the stream. If any values have been
+    sent through the stream it will return the last value. If the stream
+    is closed without any previous values it will throw
+    StopAsyncIteration. For any other errors it will throw the
+    exception.
+    """
 
-#     # For run we need a noopobserver if no observer is specified to avoid
-#     # blocking the last single stream in the chain.
-#     observer = observer or AsyncNoopObserver()
-#     await subscribe(source, observer)
-#     return await asyncio.wait_for(observer, timeout)
+    # For run we need a noopobserver if no observer is specified to avoid
+    # blocking the last single stream in the chain.
+    observer_: AsyncObserver[TSource] = observer or noop()
+    await subscription(source.subscribe_async, observer_)
+    return await asyncio.wait_for(observer_, timeout)
