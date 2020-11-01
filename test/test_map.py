@@ -1,12 +1,14 @@
 import asyncio
+from typing import Optional
 
 import pytest
 from aioreactive import AsyncRx
 from aioreactive.observables import AsyncObservable
-from aioreactive.observers import AsyncAwaitableObserver
-from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.observers import AsyncAnonymousObserver, AsyncAwaitableObserver
+from aioreactive.testing import AsyncSubject, VirtualTimeEventLoop
 from aioreactive.types import AsyncObserver
 from fslash.core import pipe
+from fslash.system.disposable import AsyncDisposable
 
 # @pytest.yield_fixture()
 # def event_loop():
@@ -58,31 +60,31 @@ async def test_map_mapper_throws():
     try:
         await obv
     except Exception as ex:
-        print("got here")
         assert exception == ex
     else:
         assert False
 
 
-# @pytest.mark.asyncio
-# async def test_map_subscription_cancel():
-#     xs = AsyncSubject()
-#     result = []
-#     sub = None
+@pytest.mark.asyncio
+async def test_map_subscription_cancel():
+    xs: AsyncSubject[int] = AsyncSubject()
+    result = []
+    sub: Optional[AsyncDisposable] = None
 
-#     def mapper(value):
-#         return value * 10
+    def mapper(value: int) -> int:
+        return value * 10
 
-#     ys = pipe(xs, AsyncRx.map(mapper))
+    ys = pipe(xs, AsyncRx.map(mapper))
 
-#     async def asend(value):
-#         result.append(value)
-#         await sub.adispose()
-#         await asyncio.sleep(0)
+    async def asend(value: int) -> None:
+        result.append(value)
+        assert sub is not None
+        await sub.dispose_async()
+        await asyncio.sleep(0)
 
-#     async with ys.subscribe_async(AsyncAnonymousObserver(asend)) as sub:
-#         await xs.asend(10)
-#         await asyncio.sleep(0)
-#         await xs.asend(20)
+    async with await ys.subscribe_async(AsyncAnonymousObserver(asend)) as sub:
+        await xs.asend(10)
+        await asyncio.sleep(0)
+        await xs.asend(20)
 
-#     assert result == [100]
+    assert result == [100]

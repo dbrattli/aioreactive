@@ -1,3 +1,4 @@
+import asyncio
 from typing import Awaitable, Callable, TypeVar
 
 from aioreactive.types import AsyncObserver
@@ -7,7 +8,7 @@ TSource = TypeVar("TSource")
 
 
 class AsyncTestObserver(AsyncObserver[TSource]):
-    """A test AsyncAnonymousObserver.
+    """A recording AsyncAnonymousObserver.
 
     Records all values and events that happens and makes them available
     through the values property:
@@ -34,6 +35,8 @@ class AsyncTestObserver(AsyncObserver[TSource]):
         self._send = asend
         self._throw = athrow
         self._close = aclose
+
+        self._loop = asyncio.get_event_loop()
 
     async def asend_core(self, value: TSource):
         print("AsyncAnonymousObserver:asend_core(%s)" % value)

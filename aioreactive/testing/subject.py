@@ -14,6 +14,9 @@ class AsyncSubjectBase(AsyncObserver[TSource]):
     time both relative and absolute.
     """
 
+    def __init__(self):
+        self._loop = asyncio.get_event_loop()
+
     async def asend_at(self, when: float, value: TSource):
         async def task() -> None:
             await self.asend(value)
@@ -85,4 +88,3 @@ AsyncSubject = AsyncMultipleSubject
 class AsyncSingleSubject(AsyncSingleSubject[TSource], AsyncSubjectBase[TSource]):
     def __init__(self):
         super().__init__()
-        self._loop = asyncio.get_event_loop()

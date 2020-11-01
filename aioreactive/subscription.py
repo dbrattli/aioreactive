@@ -2,11 +2,11 @@ import asyncio
 import logging
 from collections.abc import Awaitable
 from types import TracebackType
-from typing import Callable, Optional, Type, TypeVar
+from typing import Any, Callable, Generator, Optional, Type, TypeVar
 
 from fslash.system import AsyncDisposable
 
-from .observers import noop
+from .observers import AsyncAwaitableObserver
 from .types import AsyncObservable, AsyncObserver
 
 log = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class AsyncSubscription(Awaitable[TSource], AsyncDisposable):
 
     A helper class that makes it possible to subscribe both
     using await and async-with. You will most likely not use this class
-    directly, but it will created when using subscribe()."""
+    directly, but it will created when using subscribe_async()."""
 
     def __init__(
         self,
@@ -57,7 +57,7 @@ class AsyncSubscription(Awaitable[TSource], AsyncDisposable):
         if self._subscription is not None:
             await self._subscription.dispose_async()
 
-    def __await__(self):
+    def __await__(self) -> Generator[Any, None, AsyncDisposable]:
         """Await stream creation."""
 
         log.debug("AsyncSubscription:__await__()")
@@ -76,7 +76,7 @@ async def chain(source: AsyncObservable[TSource], observer: AsyncObserver[TSourc
 
 def subscription(
     subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]], observer: AsyncObserver[TSource]
-) -> AsyncSubscription[TSource]:
+) -> AsyncSubscription:
     """Start streaming source into observer.
 
     Returns an AsyncSubscription that is lazy in the sense that it will
@@ -116,7 +116,7 @@ def subscription(
 
 
 async def run(
-    source: AsyncObservable[TSource], observer: Optional[AsyncObserver[TSource]] = None, timeout: int = 2
+    source: AsyncObservable[TSource], observer: Optional[AsyncAwaitableObserver[TSource]] = None, timeout: int = 2
 ) -> TSource:
     """Run the source with the given observer.
 
@@ -135,6 +135,6 @@ async def run(
 
     # For run we need a noopobserver if no observer is specified to avoid
     # blocking the last single stream in the chain.
-    observer_: AsyncObserver[TSource] = observer or noop()
+    observer_: AsyncObserver[TSource] = observer or AsyncAwaitableObserver()
     await subscription(source.subscribe_async, observer_)
     return await asyncio.wait_for(observer_, timeout)
