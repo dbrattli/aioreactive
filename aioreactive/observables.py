@@ -3,7 +3,6 @@ from typing import Awaitable, Callable, Iterable, TypeVar, Union
 
 from fslash.system import AsyncDisposable
 
-from .subscription import subscription
 from .types import AsyncObservable, AsyncObserver
 
 TSource = TypeVar("TSource")
@@ -29,7 +28,7 @@ class AsyncAnonymousObservable(AsyncObservable[TSource]):
 
     async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
         log.debug("AsyncAnonymousObservable:subscribe_async(%s)", self._subscribe)
-        return await subscription(self._subscribe, observer)
+        return await self._subscribe(observer)
 
     def __getitem__(self, key: Union[slice, int]) -> "AsyncObservable[TSource]":
         """Slices the given source stream using Python slice notation.

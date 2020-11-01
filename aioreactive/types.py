@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Callable, Generator, Generic, TypeVar
+from typing import Callable, Generic, TypeVar
 
 from fslash.system import AsyncDisposable
 

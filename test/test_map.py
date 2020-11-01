@@ -10,11 +10,12 @@ from aioreactive.types import AsyncObserver
 from fslash.core import pipe
 from fslash.system.disposable import AsyncDisposable
 
-# @pytest.yield_fixture()
-# def event_loop():
-#     loop = VirtualTimeEventLoop()
-#     yield loop
-#     loop.close()
+
+@pytest.yield_fixture()
+def event_loop():
+    loop = VirtualTimeEventLoop()
+    yield loop
+    loop.close()
 
 
 @pytest.mark.asyncio
