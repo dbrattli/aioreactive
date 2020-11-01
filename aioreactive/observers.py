@@ -1,6 +1,6 @@
 import logging
 from asyncio import Future, iscoroutinefunction
-from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, TypeVar
+from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar
 
 from fslash.core import MailboxProcessor
 from fslash.system import AsyncDisposable, Disposable
@@ -170,6 +170,52 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
         agent.post(OnCompleted)
 
     return AsyncAnonymousObserver(asend, athrow, aclose)
+
+
+class Msg:
+    pass
+
+
+class Disposable(Msg):
+    def __init__(self, disposable: AsyncDisposable) -> None:
+        self.disposable = disposable
+
+
+class Dispose(Msg):
+    pass
+
+
+def auto_detach_observer(
+    obv: AsyncObserver[TSource],
+) -> Tuple[AsyncObserver[TSource], Callable[[Awaitable[AsyncDisposable]], Awaitable[AsyncDisposable]]]:
+    async def worker(inbox: MailboxProcessor[Msg]):
+        async def message_loop(disposables: List[AsyncDisposable]):
+            cmd = await inbox.receive()
+            if isinstance(cmd, Disposable):
+                disposables.append(cmd.disposable)
+            else:
+                for disp in disposables:
+                    await disp.dispose_async()
+                return
+            await message_loop(disposables)
+
+        await message_loop([])
+
+    agent = MailboxProcessor.start(worker)
+
+    async def cancel():
+        agent.post(Dispose)
+
+    disp = AsyncDisposable.create(cancel)
+    safe_obv = safe_observer(obv, disp)
+
+    # Auto-detaches (disposes) the disposable when the observer completes with success or error.
+    async def auto_detach(disposable: Awaitable[AsyncDisposable]):
+        disp = await disposable
+        agent.post(Disposable(disp))
+        return disp
+
+    return safe_obv, auto_detach
 
 
 class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable):

@@ -1,7 +1,10 @@
-from typing import Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable, Tuple, TypeVar
 
+from fslash.collections import seq
+from fslash.core import compose
 from fslash.system import AsyncDisposable
 
+from .combine import zip_seq
 from .observables import AsyncAnonymousObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver
 from .types import AsyncObserver, Stream
@@ -59,3 +62,15 @@ def map(mapper: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
         return next(mapper(x))
 
     return transform(handler)
+
+
+def mapi_async(mapper: Callable[[Tuple[TSource, int]], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+    """Returns an observable sequence whose elements are the result of invoking the async mapper function by
+    incorporating the element's index on each element of the source."""
+    return compose(zip_seq(seq.infinite), map_async(mapper))
+
+
+def mapi(mapper: Callable[[Tuple[TSource, int]], TResult]) -> Stream[TSource, TResult]:
+    """Returns an observable sequence whose elements are the result of invoking the mapper function and incorporating
+    the element's index on each element of the source."""
+    return compose(zip_seq(seq.infinite), map(mapper))
