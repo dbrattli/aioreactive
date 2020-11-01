@@ -1,8 +1,8 @@
 import asyncio
-from typing import Optional
+from typing import Optional, Tuple
 
 import pytest
-from aioreactive import AsyncRx
+from aioreactive import asyncrx
 from aioreactive.observables import AsyncObservable
 from aioreactive.observers import AsyncAnonymousObserver, AsyncAwaitableObserver
 from aioreactive.testing import AsyncSubject, VirtualTimeEventLoop
@@ -19,8 +19,8 @@ def event_loop():
 
 
 @pytest.mark.asyncio
-async def test_map_happy():
-    xs: AsyncObservable[int] = AsyncRx.from_iterable([1, 2, 3])
+async def test_map_works():
+    xs: AsyncObservable[int] = asyncrx.from_iterable([1, 2, 3])
     values = []
 
     async def asend(value: int) -> None:
@@ -29,7 +29,7 @@ async def test_map_happy():
     def mapper(value: int) -> int:
         return value * 10
 
-    ys = pipe(xs, AsyncRx.map(mapper))
+    ys = pipe(xs, asyncrx.map(mapper))
 
     obv: AsyncObserver[int] = AsyncAwaitableObserver(asend)
     async with await ys.subscribe_async(obv):
@@ -43,7 +43,7 @@ async def test_map_mapper_throws():
     error = Exception("ex")
     exception = None
 
-    xs = AsyncRx.from_iterable([1])
+    xs = asyncrx.from_iterable([1])
 
     async def athrow(ex: Exception):
         nonlocal exception
@@ -52,7 +52,7 @@ async def test_map_mapper_throws():
     def mapper(x: int):
         raise error
 
-    ys = pipe(xs, AsyncRx.map(mapper))
+    ys = pipe(xs, asyncrx.map(mapper))
 
     obv = AsyncAwaitableObserver(athrow=athrow)
 
@@ -75,7 +75,7 @@ async def test_map_subscription_cancel():
     def mapper(value: int) -> int:
         return value * 10
 
-    ys = pipe(xs, AsyncRx.map(mapper))
+    ys = pipe(xs, asyncrx.map(mapper))
 
     async def asend(value: int) -> None:
         result.append(value)
@@ -89,3 +89,24 @@ async def test_map_subscription_cancel():
         await xs.asend(20)
 
     assert result == [100]
+
+
+@pytest.mark.asyncio
+async def test_mapi_works():
+    xs: AsyncObservable[int] = asyncrx.from_iterable([1, 2, 3])
+    values = []
+
+    async def asend(value: int) -> None:
+        values.append(value)
+
+    def mapper(value: Tuple[int, int]) -> int:
+        (a, i) = value
+        return a + i
+
+    ys = pipe(xs, asyncrx.mapi(mapper))
+
+    obv: AsyncObserver[int] = AsyncAwaitableObserver(asend)
+    async with await ys.subscribe_async(obv):
+        result = await obv
+        assert result == 5
+        assert values == [1, 3, 5]

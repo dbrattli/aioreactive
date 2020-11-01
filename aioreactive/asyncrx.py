@@ -1,9 +1,10 @@
 """A collection of partially applied and lazy loaded operators."""
 
 from functools import partial
-from typing import AsyncIterable, Callable, Iterable, TypeVar
+from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar
 
 from .observables import AsyncObservable
+from .types import Stream
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
@@ -53,16 +54,32 @@ def from_iterable(iterable: Iterable[TSource]) -> AsyncObservable[TSource]:
     return of_seq(iterable)
 
 
-def flat_map(fn: Callable[[TSource], AsyncObservable]) -> Callable[[AsyncObservable], AsyncObservable]:
+def flat_map(fn: Callable[[TSource], AsyncObservable]) -> Stream[TSource, TResult]:
     from aioreactive.operators.flat_map import flat_map
 
     return partial(flat_map, fn)
 
 
-def map(fn: Callable[[TSource], TResult]) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TResult]]:
+def map(fn: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
     from .transform import map as _map
 
     return _map(fn)
+
+
+def mapi_async(mapper: Callable[[Tuple[TSource, int]], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+    """Returns an observable sequence whose elements are the result of invoking the async mapper function by
+    incorporating the element's index on each element of the source."""
+    from .transform import map_async
+
+    return map_async(mapper)
+
+
+def mapi(mapper: Callable[[Tuple[TSource, int]], TResult]) -> Stream[TSource, TResult]:
+    """Returns an observable sequence whose elements are the result of invoking the mapper function and incorporating
+    the element's index on each element of the source."""
+    from .transform import mapi
+
+    return mapi(mapper)
 
 
 def merge(other: AsyncObservable) -> Callable[[AsyncObservable], AsyncObservable]:

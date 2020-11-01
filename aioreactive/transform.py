@@ -67,10 +67,10 @@ def map(mapper: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
 def mapi_async(mapper: Callable[[Tuple[TSource, int]], Awaitable[TResult]]) -> Stream[TSource, TResult]:
     """Returns an observable sequence whose elements are the result of invoking the async mapper function by
     incorporating the element's index on each element of the source."""
-    return compose(zip_seq(seq.infinite), map_async(mapper))
+    return compose(zip_seq(seq.infinite()), map_async(mapper))
 
 
 def mapi(mapper: Callable[[Tuple[TSource, int]], TResult]) -> Stream[TSource, TResult]:
     """Returns an observable sequence whose elements are the result of invoking the mapper function and incorporating
     the element's index on each element of the source."""
-    return compose(zip_seq(seq.infinite), map(mapper))
+    return compose(zip_seq(seq.infinite()), map(mapper))
