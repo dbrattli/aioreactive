@@ -1,7 +1,7 @@
 from typing import Awaitable, Callable, TypeVar
 
-from aioreactive.core.bases import AsyncObserverBase
-from aioreactive.core.utils import anoop
+from aioreactive.bases import AsyncObserverBase
+from aioreactive.utils import anoop
 
 TSource = TypeVar("TSource")
 

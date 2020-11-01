@@ -5,7 +5,6 @@ from typing import Callable, Optional, TypeVar
 
 from fslash.system import AsyncDisposable
 
-from .observers import AsyncNoopObserver
 from .types import AsyncObservable, AsyncObserver
 
 log = logging.getLogger(__name__)

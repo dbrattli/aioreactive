@@ -1,19 +1,20 @@
 import asyncio
 from typing import TypeVar
 
-from aioreactive import core
+from aioreactive import AsyncObserver
+from aioreactive.subject import AsyncSingleSubject, AsyncSubject
 
-T = TypeVar("T")
+TSource = TypeVar("TSource")
 
 
-class AsyncSubjectBase(core.AsyncObserver):
+class AsyncSubjectBase(AsyncObserver[TSource]):
     """A subject base for testing.
 
     Provides methods for sending, throwing, and closing at a later
     time both relative and absolute.
     """
 
-    async def asend_at(self, when: float, value: T):
+    async def asend_at(self, when: float, value: TSource):
         async def task() -> None:
             await self.asend(value)
 
@@ -22,11 +23,11 @@ class AsyncSubjectBase(core.AsyncObserver):
 
         self._loop.call_at(when, callback)
 
-    async def asend_later(self, delay: float, value: T) -> None:
+    async def asend_later(self, delay: float, value: TSource) -> None:
         await asyncio.sleep(delay)
         await self.asend(value)
 
-    async def asend_later_scheduled(self, delay: float, value: T) -> None:
+    async def asend_later_scheduled(self, delay: float, value: TSource) -> None:
         async def task() -> None:
             await asyncio.sleep(delay)
             await self.asend(value)
@@ -74,14 +75,14 @@ class AsyncSubjectBase(core.AsyncObserver):
         asyncio.ensure_future(task())
 
 
-class AsyncMultipleSubject(core.AsyncSubject, AsyncSubjectBase):
+class AsyncMultipleSubject(AsyncSubject[TSource], AsyncSubjectBase[TSource]):
     pass
 
 
 AsyncSubject = AsyncMultipleSubject
 
 
-class AsyncSingleSubject(core.AsyncSingleSubject, AsyncSubjectBase):
+class AsyncSingleSubject(AsyncSingleSubject[TSource], AsyncSubjectBase[TSource]):
     def __init__(self):
         super().__init__()
         self._loop = asyncio.get_event_loop()

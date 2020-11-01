@@ -2,18 +2,17 @@ import asyncio
 from inspect import iscoroutinefunction
 
 import pytest
-from aioreactive.core import AsyncRx
-from aioreactive.core.observables import AsyncObservable
-from aioreactive.core.types import AsyncObserver
-from aioreactive.testing import AsyncAnonymousObserver, AsyncSubject, VirtualTimeEventLoop
+from aioreactive import AsyncRx
+from aioreactive.observables import AsyncObservable
+from aioreactive.testing import AsyncAnonymousObserver, VirtualTimeEventLoop
+from aioreactive.types import AsyncObserver
 from fslash.core import pipe
 
-
-@pytest.yield_fixture()
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+# @pytest.yield_fixture()
+# def event_loop():
+#     loop = VirtualTimeEventLoop()
+#     yield loop
+#     loop.close()
 
 
 @pytest.mark.asyncio
@@ -21,7 +20,7 @@ async def test_map_happy():
     xs: AsyncObservable[int] = AsyncRx.from_iterable([1, 2, 3])
     values = []
 
-    async def asend(value):
+    async def asend(value: int) -> None:
         values.append(value)
 
     def mapper(value: int) -> int:

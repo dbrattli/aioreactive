@@ -2,12 +2,12 @@ import logging
 from asyncio import Future, iscoroutinefunction
 from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, TypeVar
 
-from aioreactive.core.types import AsyncObserver
 from fslash.core import MailboxProcessor
 from fslash.system import AsyncDisposable
 
 from .bases import AsyncObserverBase
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
+from .types import AsyncObserver
 from .utils import anoop
 
 log = logging.getLogger(__name__)

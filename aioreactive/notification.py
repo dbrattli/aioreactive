@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Awaitable, Callable, TypeVar
 
-from aioreactive.core.types import AsyncObserver
+from .types import AsyncObserver
 
 TSource = TypeVar("TSource")
 TMessage = TypeVar("TMessage")
