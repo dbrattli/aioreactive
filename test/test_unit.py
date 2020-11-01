@@ -5,7 +5,7 @@ import logging
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.unit import unit
 from aioreactive.core import run, subscribe
-from aioreactive.testing import AsyncAnonymousObserver
+from aioreactive.testing import AsyncTestObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -26,7 +26,7 @@ async def test_unit_happy():
     async def asend(value):
         result.append(value)
 
-    await run(xs, AsyncAnonymousObserver(asend))
+    await run(xs, AsyncTestObserver(asend))
     assert result == [42]
 
 
@@ -40,7 +40,7 @@ async def test_unit_observer_throws():
         result.append(value)
         raise error
 
-    obv = AsyncAnonymousObserver(asend)
+    obv = AsyncTestObserver(asend)
     await subscribe(xs, obv)
 
     try:
@@ -61,7 +61,7 @@ async def test_unit_close():
         await sub.adispose()
         await asyncio.sleep(0)
 
-    obv = AsyncAnonymousObserver(asend)
+    obv = AsyncTestObserver(asend)
     sub = await subscribe(xs, obv)
 
     try:
@@ -78,7 +78,7 @@ async def test_unit_happy_resolved_future():
     xs = unit(fut)
     fut.set_result(42)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     await run(xs, obv)
     assert obv.values == [(0, 42), (0, )]
 
@@ -88,7 +88,7 @@ async def test_unit_happy_future_resolve():
     fut = asyncio.Future()
     xs = unit(fut)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     async with subscribe(xs, obv):
         fut.set_result(42)
         await obv
@@ -102,7 +102,7 @@ async def test_unit_future_exception():
     ex = Exception("ex")
     xs = unit(fut)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     async with subscribe(xs, obv):
         fut.set_exception(ex)
         with pytest.raises(Exception):
@@ -115,7 +115,7 @@ async def test_unit_future_cancel():
     fut = asyncio.Future()
     xs = unit(fut)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     async with subscribe(xs, obv):
         fut.cancel()
         with pytest.raises(asyncio.CancelledError):

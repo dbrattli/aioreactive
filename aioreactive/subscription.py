@@ -1,7 +1,8 @@
 import asyncio
 import logging
 from collections.abc import Awaitable
-from typing import Callable, Optional, TypeVar
+from types import TracebackType
+from typing import Callable, Optional, Type, TypeVar
 
 from fslash.system import AsyncDisposable
 
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 TSource = TypeVar("TSource")
 
 
-class AsyncSubscriptionFactory(Awaitable[TSource], AsyncDisposable):
+class AsyncSubscription(Awaitable[TSource], AsyncDisposable):
     """Async stream factory.
 
     A helper class that makes it possible to subscribe both
@@ -29,12 +30,13 @@ class AsyncSubscriptionFactory(Awaitable[TSource], AsyncDisposable):
 
         self._subscription: Optional[AsyncDisposable] = None
 
-    async def create(self) -> AsyncDisposable:
+    async def run(self) -> AsyncDisposable:
         """Awaits stream creation.
 
         Awaits until stream has been created, and returns the new
         stream."""
 
+        print("AsyncSubscription:run()")
         self._subscription = await self._subscribe(self._observer)
         return self._subscription
 
@@ -45,16 +47,20 @@ class AsyncSubscriptionFactory(Awaitable[TSource], AsyncDisposable):
 
     async def __aenter__(self) -> AsyncDisposable:
         """Awaits subscription creation."""
-        return await self.create()
+        return await self.run()
 
-    async def __aexit__(self, type, value, traceback):
+    async def __aexit__(
+        self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
+    ):
         """Awaits unsubscription."""
         if self._subscription is not None:
             await self._subscription.dispose_async()
 
     def __await__(self):
         """Await stream creation."""
-        return self.create().__await__()
+
+        print("AsyncSubscription:__await__()")
+        return self.run().__await__()
 
 
 async def chain(source: AsyncObservable[TSource], observer: AsyncObserver[TSource]) -> AsyncDisposable:
@@ -63,15 +69,16 @@ async def chain(source: AsyncObservable[TSource], observer: AsyncObserver[TSourc
     Performs the chaining done internally by most operators. A much
     more light-weight version of subscribe()."""
 
+    print("AsyncSubscription:chain()")
     return await source.subscribe_async(observer)
 
 
 def subscription(
     subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]], observer: AsyncObserver[TSource]
-) -> AsyncSubscriptionFactory[TSource]:
+) -> AsyncSubscription[TSource]:
     """Start streaming source into observer.
 
-    Returns an AsyncStreamFactory that is lazy in the sense that it will
+    Returns an AsyncSubscription that is lazy in the sense that it will
     not start the source before it's either awaited or entered using
     async-with.
 
@@ -104,7 +111,7 @@ def subscription(
     Returns AsyncStreamFactory that may either be awaited or entered
     using async-for.
     """
-    return AsyncSubscriptionFactory(subscribe, observer)
+    return AsyncSubscription(subscribe, observer)
 
 
 # async def run(source: AsyncObservable[T], observer: Optional[AsyncObserver] = None, timeout: int = 2) -> T:

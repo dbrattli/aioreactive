@@ -7,7 +7,7 @@ from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.operators import map
 from aioreactive.core import run, subscribe, chain
-from aioreactive.testing import AsyncStream, AsyncAnonymousObserver
+from aioreactive.testing import AsyncStream, AsyncTestObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -28,7 +28,7 @@ def event_loop():
 async def test_stream_happy() -> None:
     xs = AsyncStream()
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     await subscribe(xs, obv)
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
@@ -46,7 +46,7 @@ async def test_stream_throws() -> None:
     ex = MyException("ex")
     xs = AsyncStream()
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     with pytest.raises(MyException):
         await (xs > obv)
 
@@ -70,7 +70,7 @@ async def test_stream_throws() -> None:
 async def test_stream_send_after_close() -> None:
     xs = AsyncStream()
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     await subscribe(xs, obv)
 
     await xs.asend_later(1, 10)
@@ -97,7 +97,7 @@ async def test_stream_cancel() -> None:
 
     ys = map(mapper, xs)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     subscription = await subscribe(ys, obv)
     await xs.asend_later(1, 10)
     await subscription.adispose()
@@ -120,7 +120,7 @@ async def test_stream_cancel_asend() -> None:
 
     ys = map(mapper, xs)
 
-    obv = AsyncAnonymousObserver(asend)
+    obv = AsyncTestObserver(asend)
     async with subscribe(ys, obv) as sub:
         subscription = sub
 
@@ -141,7 +141,7 @@ async def test_stream_cancel_mapper():
 
     ys = map(mapper, xs)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     async with subscribe(ys, obv) as subscription:
 
         await xs.asend_later(100, 10)
@@ -158,7 +158,7 @@ async def test_stream_cancel_mapper():
 async def test_stream_cancel_context():
     xs = AsyncStream()
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     async with subscribe(xs, obv):
         pass
 
@@ -172,7 +172,7 @@ async def test_stream_cancel_context():
 async def test_stream_chain_observer():
     xs = AsyncStream()
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     await chain(xs, obv)
 
     await xs.asend_later(1, 10)

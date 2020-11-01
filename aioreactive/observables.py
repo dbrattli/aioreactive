@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable, Iterable, TypeVar
+from typing import Awaitable, Callable, Iterable, TypeVar, Union
 
 from fslash.system import AsyncDisposable
 
@@ -25,10 +25,10 @@ class AsyncAnonymousObservable(AsyncObservable[TSource]):
         self._subscribe = subscribe
 
     async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
-        print("AsyncAnonymousObservable:subscribe")
-        return subscription(self._subscribe, observer)
+        print("AsyncAnonymousObservable:subscribe_async()", self._subscribe)
+        return await subscription(self._subscribe, observer)
 
-    def __getitem__(self, key) -> "AsyncObservable[TSource]":
+    def __getitem__(self, key: Union[slice, int]) -> "AsyncObservable[TSource]":
         """Slices the given source stream using Python slice notation.
          The arguments to slice is start, stop and step given within
          brackets [] and separated with the ':' character. It is
@@ -85,7 +85,7 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
     async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
         return await self._source.subscribe_async(observer)
 
-    def __getitem__(self, key) -> "AsyncChainedObservable[TSource]":
+    def __getitem__(self, key: Union[slice, int]) -> "AsyncChainedObservable[TSource]":
         """Slices the given source stream using Python slice notation.
          The arguments to slice is start, stop and step given within
          brackets [] and separated with the ':' character. It is

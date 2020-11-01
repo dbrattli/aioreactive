@@ -24,11 +24,15 @@ def transform(
 ) -> Stream[TSource, TResult]:
     def _(source: AsyncObservable[TSource]) -> AsyncObservable[TResult]:
         async def subscribe_async(aobv: AsyncObserver[TResult]) -> AsyncDisposable:
+            print("transform:subscribe_async")
+
             async def asend(value: TResult) -> None:
                 return await anext(aobv.asend, value)
 
             obv: AsyncObserver[TSource] = AsyncAnonymousObserver(asend, aobv.athrow, aobv.aclose)
-            return await source.subscribe_async(obv)
+            sub = await source.subscribe_async(obv)
+            print(sub)
+            return sub
 
         return AsyncAnonymousObservable(subscribe_async)
 
@@ -51,7 +55,7 @@ def map(mapper: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
     """Returns an observable sequence whose elements are the result of
     invoking the mapper function on each element of the source."""
 
-    def handler(next: Callable[[TResult], Awaitable[None]], x: TSource):
+    def handler(next: Callable[[TResult], Awaitable[None]], x: TSource) -> Awaitable[None]:
         return next(mapper(x))
 
     return transform(handler)

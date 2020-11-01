@@ -6,7 +6,7 @@ from aioreactive.utils import anoop
 TSource = TypeVar("TSource")
 
 
-class AsyncAnonymousObserver(AsyncObserverBase[TSource]):
+class AsyncTestObserver(AsyncObserverBase[TSource]):
     """A test AsyncAnonymousObserver.
 
     Records all values and events that happens and makes them available

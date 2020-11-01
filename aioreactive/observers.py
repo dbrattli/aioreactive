@@ -97,7 +97,6 @@ class AsyncAnonymousObserver(AsyncObserverBase[TSource]):
         aclose: Callable[[], Awaitable[None]] = anoop,
     ) -> None:
         super().__init__()
-        print(asend)
         assert iscoroutinefunction(asend)
         self._send = asend
 

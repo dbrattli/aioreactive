@@ -1,10 +1,9 @@
 import asyncio
-from inspect import iscoroutinefunction
 
 import pytest
 from aioreactive import AsyncRx
 from aioreactive.observables import AsyncObservable
-from aioreactive.testing import AsyncAnonymousObserver, VirtualTimeEventLoop
+from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from aioreactive.types import AsyncObserver
 from fslash.core import pipe
 
@@ -28,8 +27,7 @@ async def test_map_happy():
 
     ys = pipe(xs, AsyncRx.map(mapper))
 
-    assert iscoroutinefunction(asend)
-    obv: AsyncObserver[int] = AsyncAnonymousObserver(asend)
+    obv: AsyncObserver[int] = AsyncTestObserver(asend)
     async with await ys.subscribe_async(obv):
         result = await obv
         assert result == 30

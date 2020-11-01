@@ -31,7 +31,10 @@ def of_async_worker(
 ) -> AsyncObservable[TSource]:
     """Create async observable from async worker function"""
 
+    print("of_async_worker")
+
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+        print("of_async_worker:subscribe_async-----------------")
         disposable, token = canceller()
         safe_obv = safe_observer(aobv, disposable)
 
@@ -101,9 +104,13 @@ def of_seq(xs: Iterable[TSource]) -> AsyncObservable[TSource]:
     """Returns the async observable sequence whose elements are pulled
     from the given enumerable sequence."""
 
+    print("of_seq")
+
     async def worker(obv: AsyncObserver[TSource], token: CancellationToken) -> None:
+        print("of_seq:worker()")
         for x in xs:
             try:
+                print("of_seq:asend()")
                 await obv.asend(x)
             except Exception as ex:
                 await obv.athrow(ex)
