@@ -19,7 +19,7 @@ import jinja2
 from aiohttp import web
 from aioreactive.core import AsyncAnonymousObserver, AsyncObservable, AsyncStream, subscribe
 from aioreactive.operators import op
-from fslash.core import pipe
+from expression.core import pipe
 
 
 async def search_wikipedia(term):

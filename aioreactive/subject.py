@@ -2,7 +2,7 @@ import logging
 from asyncio import Future
 from typing import List, Optional, TypeVar
 
-from fslash.system import AsyncDisposable
+from expression.system import AsyncDisposable
 
 from .observables import AsyncObservable
 from .types import AsyncObserver

@@ -1,8 +1,8 @@
 import logging
 from typing import Awaitable, Callable, Iterable, Tuple, TypeVar
 
-from fslash.core import aio
-from fslash.system import AsyncDisposable, CancellationToken, CancellationTokenSource
+from expression.core import aio
+from expression.system import AsyncDisposable, CancellationToken, CancellationTokenSource
 
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncObserver, safe_observer

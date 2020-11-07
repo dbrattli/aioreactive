@@ -1,8 +1,9 @@
 # read the contents of your README file
 from os import path
 
-import versioneer
 from setuptools import find_packages, setup
+
+import versioneer
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
@@ -13,9 +14,8 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description="Async/await Reactive Tools for Python 3.6+",
-    long_description=(
-        "aioreactive is a library for asynchronous and reactive " "programming using asyncio, async and await"
-    ),
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="Børge Lanes & Dag Brattli",
     author_email="dag@brattli.net",
     license="MIT License",
@@ -35,7 +35,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires=">=3.8",
-    install_requires=["fslash"],
+    install_requires=["expression"],
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-asyncio", "pytest-cov", "hypothesis"],
     package_data={"aioreactive": ["py.typed"]},

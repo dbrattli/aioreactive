@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TypeVar
+from typing import Any, Optional, TypeVar
 
 from .types import AsyncObserver
 
@@ -8,7 +8,7 @@ TSource = TypeVar("TSource")
 log = logging.getLogger(__name__)
 
 
-def noop(*args, **kw) -> None:
+def noop(*args: Any, **kw: Any) -> None:
     """No operation. Returns nothing"""
     pass
 
@@ -18,13 +18,13 @@ async def anoop(value: Optional[TSource] = None):
     pass
 
 
-class NoopObserver(AsyncObserver):
-    async def asend(self, value) -> None:
+class NoopObserver(AsyncObserver[TSource]):
+    async def asend(self, value: TSource) -> None:
         log.debug("NoopSink:asend(%s)", str(value))
         pass
 
-    async def athrow(self, ex) -> None:
-        log.debug("NoopSink:athrow(%s)", ex)
+    async def athrow(self, error: Exception) -> None:
+        log.debug("NoopSink:athrow(%s)", error)
         pass
 
     async def aclose(self) -> None:

@@ -42,8 +42,8 @@ def get_config():
     cfg.VCS = "git"
     cfg.style = "pep440"
     cfg.tag_prefix = "v"
-    cfg.parentdir_prefix = "oslash"
-    cfg.versionfile_source = "fslash/_version.py"
+    cfg.parentdir_prefix = "aioreactive"
+    cfg.versionfile_source = "aioreactive/_version.py"
     cfg.verbose = False
     return cfg
 

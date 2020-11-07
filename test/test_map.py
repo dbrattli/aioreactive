@@ -7,8 +7,8 @@ from aioreactive.observables import AsyncObservable
 from aioreactive.observers import AsyncAnonymousObserver, AsyncAwaitableObserver
 from aioreactive.testing import AsyncSubject, VirtualTimeEventLoop
 from aioreactive.types import AsyncObserver
-from fslash.core import pipe
-from fslash.system.disposable import AsyncDisposable
+from expression.core import pipe
+from expression.system.disposable import AsyncDisposable
 
 
 @pytest.yield_fixture()

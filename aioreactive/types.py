@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Callable, Generic, TypeVar
 
-from fslash.system import AsyncDisposable
+from expression.system import AsyncDisposable
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")

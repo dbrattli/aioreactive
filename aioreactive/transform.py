@@ -1,8 +1,8 @@
 from typing import Awaitable, Callable, Tuple, TypeVar
 
-from fslash.collections import seq
-from fslash.core import compose
-from fslash.system import AsyncDisposable
+from expression.collections import seq
+from expression.core import compose
+from expression.system import AsyncDisposable
 
 from .combine import zip_seq
 from .observables import AsyncAnonymousObservable, AsyncObservable

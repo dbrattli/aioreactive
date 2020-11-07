@@ -1,7 +1,7 @@
 import logging
 from typing import Awaitable, Callable, Iterable, TypeVar, Union
 
-from fslash.system import AsyncDisposable
+from expression.system import AsyncDisposable
 
 from .types import AsyncObservable, AsyncObserver
 

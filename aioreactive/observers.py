@@ -2,8 +2,8 @@ import logging
 from asyncio import Future, iscoroutinefunction
 from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar
 
-from fslash.core import MailboxProcessor
-from fslash.system import AsyncDisposable, Disposable
+from expression.core import MailboxProcessor
+from expression.system import AsyncDisposable, Disposable
 
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
 from .types import AsyncObserver
