@@ -6,6 +6,7 @@ from expression.collections import FrozenList, Map, frozenlist, map
 from expression.core import MailboxProcessor
 from expression.system import AsyncDisposable
 
+from .msg import DisposeMsg_, InnerCompletedMsg, InnerObservableMsg, Msg, OuterCompletedMsg, OuterCompletedMsg_
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncAnonymousObserver, auto_detach_observer
 from .types import AsyncObservable, AsyncObserver
@@ -30,36 +31,17 @@ class Model(Generic[TSource]):
         return dataclasses.replace(self, **changes)
 
 
-class Msg:
-    pass
-
-
-@dataclass
-class InnerObservable(Msg, Generic[TSource]):
-    inner_observable: AsyncObservable[TSource]
-
-
-@dataclass
-class InnerCompleted(Msg):
-    key: Key
-
-
-@dataclass
-class OuterCompleted(Msg):
-    pass
-
-
-@dataclass
-class Dispose(Msg):
-    pass
-
-
 def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
     def _(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
-            initial_model = Model(subscriptions=map.empty, queue=frozenlist.empty, is_stopped=False, key=Key(0))
+            initial_model = Model(
+                subscriptions=map.empty,
+                queue=frozenlist.empty,
+                is_stopped=False,
+                key=Key(0),
+            )
 
             async def worker(inbox: MailboxProcessor[Msg]) -> None:
                 def obv(key: Key) -> AsyncObserver[TSource]:
@@ -70,13 +52,13 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                         await safe_obv.athrow(error)
 
                     async def aclose() -> None:
-                        inbox.post(InnerCompleted(key))
+                        inbox.post(InnerCompletedMsg(key))
 
                     return AsyncAnonymousObserver(asend, athrow, aclose)
 
                 async def update(msg: Msg, model: Model[TSource]) -> Model[TSource]:
-                    if isinstance(msg, InnerObservable):
-                        msg = cast(InnerObservable[TSource], msg)
+                    if isinstance(msg, InnerObservableMsg):
+                        msg = cast(InnerObservableMsg[TSource], msg)
                         xs: AsyncObservable[TSource] = msg.inner_observable
                         if max_concurrent == 0 and len(model.subscriptions) < max_concurrent:
                             inner = await xs.subscribe_async(obv(model.key))
@@ -86,8 +68,8 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                             )
                         else:
                             return model.replace(queue=model.queue.append(frozenlist.singleton(xs)))
-                    elif isinstance(msg, InnerCompleted):
-                        key = msg.key
+                    elif isinstance(msg, InnerCompletedMsg):
+                        key = Key(msg.key)
                         subscriptions = model.subscriptions.remove(key)
 
                         if len(model.queue):
@@ -105,7 +87,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                             if model.is_stopped:
                                 await safe_obv.aclose()
                             return model.replace(subscriptions=map.empty)
-                    elif isinstance(msg, OuterCompleted):
+                    elif isinstance(msg, OuterCompletedMsg):
                         if len(model.subscriptions):
                             await safe_obv.aclose()
                         return model.replace(is_stopped=True)
@@ -124,21 +106,21 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
             agent = MailboxProcessor.start(worker)
 
             async def asend(xs: TSource) -> None:
-                agent.post(InnerObservable(inner_observable=xs))
+                agent.post(InnerObservableMsg(inner_observable=xs))
 
             async def athrow(error: Exception) -> None:
                 await safe_obv.athrow(error)
-                agent.post(Dispose())
+                agent.post(DisposeMsg_)
 
             async def aclose() -> None:
-                agent.post(OuterCompleted())
+                agent.post(OuterCompletedMsg_)
 
             obv = AsyncAnonymousObserver(asend, athrow, aclose)
             dispose = await auto_detach(source.subscribe_async(obv))
 
             async def cancel() -> None:
                 await dispose.dispose_async()
-                agent.post(Dispose())
+                agent.post(DisposeMsg_)
 
             return AsyncDisposable.create(cancel)
 

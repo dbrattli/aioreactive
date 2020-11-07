@@ -9,13 +9,6 @@ T_co = TypeVar("T_co", covariant=True)  # Any type covariant containers.
 T_contra = TypeVar("T_contra", contravariant=True)  # Ditto contravariant.
 
 
-# class AsyncSubscription(AsyncDisposable):
-#     def __await__(self) -> Generator[Any, None, AsyncDisposable]:
-#         """Await stream creation."""
-
-#         raise NotImplementedError
-
-
 class AsyncObserver(Generic[T_contra]):
     """An asynchronous observable."""
 

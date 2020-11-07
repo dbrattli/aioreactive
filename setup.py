@@ -13,7 +13,7 @@ setup(
     name="aioreactive",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    description="Async/await Reactive Tools for Python 3.6+",
+    description="Async/await Reactive Tools for Python 3.7+",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Børge Lanes & Dag Brattli",

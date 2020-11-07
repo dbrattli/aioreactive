@@ -5,6 +5,7 @@ from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Opti
 from expression.core import MailboxProcessor
 from expression.system import AsyncDisposable, Disposable
 
+from .msg import DisposableMsg, DisposeMsg_, Msg
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
 from .types import AsyncObserver
 from .utils import anoop
@@ -172,26 +173,13 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
     return AsyncAnonymousObserver(asend, athrow, aclose)
 
 
-class Msg:
-    pass
-
-
-class Disposable(Msg):
-    def __init__(self, disposable: AsyncDisposable) -> None:
-        self.disposable = disposable
-
-
-class Dispose(Msg):
-    pass
-
-
 def auto_detach_observer(
     obv: AsyncObserver[TSource],
 ) -> Tuple[AsyncObserver[TSource], Callable[[Awaitable[AsyncDisposable]], Awaitable[AsyncDisposable]]]:
     async def worker(inbox: MailboxProcessor[Msg]):
         async def message_loop(disposables: List[AsyncDisposable]):
             cmd = await inbox.receive()
-            if isinstance(cmd, Disposable):
+            if isinstance(cmd, DisposableMsg):
                 disposables.append(cmd.disposable)
             else:
                 for disp in disposables:
@@ -204,7 +192,7 @@ def auto_detach_observer(
     agent = MailboxProcessor.start(worker)
 
     async def cancel():
-        agent.post(Dispose)
+        agent.post(DisposeMsg_)
 
     disp = AsyncDisposable.create(cancel)
     safe_obv = safe_observer(obv, disp)
@@ -212,7 +200,7 @@ def auto_detach_observer(
     # Auto-detaches (disposes) the disposable when the observer completes with success or error.
     async def auto_detach(disposable: Awaitable[AsyncDisposable]):
         disp = await disposable
-        agent.post(Disposable(disp))
+        agent.post(DisposableMsg(disp))
         return disp
 
     return safe_obv, auto_detach
