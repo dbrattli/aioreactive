@@ -30,6 +30,12 @@ def debounce(seconds: float) -> Callable[[AsyncObservable[TSource]], AsyncObserv
     return partial(debounce, seconds)
 
 
+def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TSource, TSource]:
+    from .transform import catch
+
+    return catch(handler)
+
+
 def delay(seconds: float) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
     from aioreactive.operators.delay import delay
 
@@ -54,10 +60,10 @@ def from_iterable(iterable: Iterable[TSource]) -> AsyncObservable[TSource]:
     return of_seq(iterable)
 
 
-def flat_map(fn: Callable[[TSource], AsyncObservable]) -> Stream[TSource, TResult]:
-    from aioreactive.operators.flat_map import flat_map
+def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+    from .transform import flat_map
 
-    return partial(flat_map, fn)
+    return flat_map(mapper)
 
 
 def map(fn: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
@@ -74,7 +80,7 @@ def mapi_async(mapper: Callable[[Tuple[TSource, int]], Awaitable[TResult]]) -> S
     return map_async(mapper)
 
 
-def mapi(mapper: Callable[[Tuple[TSource, int]], TResult]) -> Stream[TSource, TResult]:
+def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
     """Returns an observable sequence whose elements are the result of invoking the mapper function and incorporating
     the element's index on each element of the source."""
     from .transform import mapi
@@ -100,10 +106,16 @@ def distinct_until_changed() -> Callable[[AsyncObservable], AsyncObservable]:
     return partial(distinct_until_changed)
 
 
-def switch_latest() -> Callable[[AsyncObservable], AsyncObservable]:
-    from aioreactive.operators.switch_latest import switch_latest
+def retry(retry_count: int) -> Stream[TSource, TSource]:
+    from .transform import retry
 
-    return partial(switch_latest)
+    return retry(retry_count)
+
+
+def switch_latest() -> Stream[TSource, TSource]:
+    from .transform import switch_latest
+
+    return switch_latest
 
 
 def to_async_iterable() -> Callable[[AsyncObservable], AsyncIterable]:
@@ -114,6 +126,8 @@ def to_async_iterable() -> Callable[[AsyncObservable], AsyncIterable]:
 
 def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
     from aioreactive.operators.from_async_iterable import from_async_iterable
+
+    from .create import of
 
     return AsyncChainedObservable(from_async_iterable(iter))
 

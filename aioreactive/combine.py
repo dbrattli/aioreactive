@@ -3,10 +3,11 @@ from dataclasses import dataclass
 from typing import Any, Callable, Generic, Iterable, NewType, Tuple, TypeVar, cast
 
 from expression.collections import FrozenList, Map, frozenlist, map
-from expression.core import MailboxProcessor
+from expression.core import MailboxProcessor, pipe
 from expression.system import AsyncDisposable
 
-from .msg import DisposeMsg_, InnerCompletedMsg, InnerObservableMsg, Msg, OuterCompletedMsg, OuterCompletedMsg_
+from .create import of_seq
+from .msg import CompletedMsg, DisposeMsg_, InnerCompletedMsg, InnerObservableMsg, Msg
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncAnonymousObserver, auto_detach_observer
 from .types import AsyncObservable, AsyncObserver
@@ -43,7 +44,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                 key=Key(0),
             )
 
-            async def worker(inbox: MailboxProcessor[Msg]) -> None:
+            async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
                 def obv(key: Key) -> AsyncObserver[TSource]:
                     async def asend(value: TSource) -> None:
                         await safe_obv.asend(value)
@@ -56,7 +57,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
 
                     return AsyncAnonymousObserver(asend, athrow, aclose)
 
-                async def update(msg: Msg, model: Model[TSource]) -> Model[TSource]:
+                async def update(msg: Msg[TSource], model: Model[TSource]) -> Model[TSource]:
                     if isinstance(msg, InnerObservableMsg):
                         msg = cast(InnerObservableMsg[TSource], msg)
                         xs: AsyncObservable[TSource] = msg.inner_observable
@@ -87,7 +88,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                             if model.is_stopped:
                                 await safe_obv.aclose()
                             return model.replace(subscriptions=map.empty)
-                    elif isinstance(msg, OuterCompletedMsg):
+                    elif msg is CompletedMsg:
                         if len(model.subscriptions):
                             await safe_obv.aclose()
                         return model.replace(is_stopped=True)
@@ -113,7 +114,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                 agent.post(DisposeMsg_)
 
             async def aclose() -> None:
-                agent.post(OuterCompletedMsg_)
+                agent.post(CompletedMsg)
 
             obv = AsyncAnonymousObserver(asend, athrow, aclose)
             dispose = await auto_detach(source.subscribe_async(obv))
@@ -127,6 +128,16 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
         return AsyncAnonymousObservable(subscribe_async)
 
     return _
+
+
+def concat_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+    """Returns an observable sequence that contains the elements of each
+    given sequences, in sequential order."""
+
+    return pipe(
+        of_seq(sources),
+        merge_inner(1),
+    )
 
 
 def zip_seq(

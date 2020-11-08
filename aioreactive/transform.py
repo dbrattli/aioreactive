@@ -1,12 +1,14 @@
-from typing import Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable, TypeVar, cast
 
 from expression.collections import seq
-from expression.core import compose
+from expression.core import MailboxProcessor, Nothing, Option, Some, compose, pipe
 from expression.system import AsyncDisposable
 
 from .combine import merge_inner, zip_seq
+from .create import fail
+from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Msg
 from .observables import AsyncAnonymousObservable, AsyncObservable
-from .observers import AsyncAnonymousObserver
+from .observers import AsyncAnonymousObserver, auto_detach_observer
 from .types import AsyncObserver, Stream
 
 TSource = TypeVar("TSource")
@@ -201,3 +203,188 @@ def concat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[
         map(mapper),
         merge_inner(1),
     )
+
+
+def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+    """Switch latest observable.
+
+    Transforms an observable sequence of observable sequences into an
+    observable sequence producing values only from the most recent
+    observable sequence
+
+    Args:
+        source (AsyncObservable[AsyncObservable[TSource]]): [description]
+
+    Returns:
+        AsyncObservable[TSource]: [description]
+    """
+
+    async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+        safe_obv, auto_detach = auto_detach_observer(aobv)
+
+        def obv(mb: MailboxProcessor[Msg[TSource]], id: int):
+            async def asend(value: TSource) -> None:
+                await safe_obv.asend(value)
+
+            async def athrow(error: Exception) -> None:
+                await safe_obv.athrow(error)
+
+            async def aclose() -> None:
+                pipe(id, InnerCompletedMsg, mb.post)
+
+            return AsyncAnonymousObserver(asend, athrow, aclose)
+
+        async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
+            async def message_loop(current: Option[AsyncDisposable], is_stopped: bool, current_id: int) -> None:
+                cmd = await inbox.receive()
+
+                if isinstance(cmd, InnerObservableMsg):
+                    cmd = cast(InnerObservableMsg[TSource], cmd)
+                    xs = cmd.inner_observable
+
+                    next_id = current_id + 1
+                    for disp in current.to_list():
+                        await disp.dispose_async()
+                    inner = await xs.subscribe_async(obv(inbox, next_id))
+                    current, current_id = Some(inner), next_id
+                if isinstance(cmd, InnerCompletedMsg):
+                    idx = cmd.key
+                    if is_stopped and idx == current_id:
+                        await safe_obv.aclose()
+                        current, is_stopped = Nothing, True
+                if cmd is CompletedMsg:
+                    if current.is_none():
+                        await safe_obv.aclose()
+                if cmd is DisposeMsg:
+                    if current.is_some():
+                        await current.value.dispose_async()
+                    current, is_stopped = Nothing, True
+
+                return await message_loop(current, is_stopped, current_id)
+
+            message_loop(Nothing, False, 0)
+
+        inner_agent = MailboxProcessor.start(worker)
+
+        async def asend(xs: TSource) -> None:
+            pipe(xs, InnerObservableMsg, inner_agent.post)
+
+        async def athrow(error: Exception) -> None:
+            await safe_obv.athrow(error)
+
+        async def aclose() -> None:
+            inner_agent.post(CompletedMsg)
+
+        _obv = AsyncAnonymousObserver(asend, athrow, aclose)
+        dispose = await pipe(
+            _obv,
+            AsyncObserver,
+            source.subscribe_async,
+            auto_detach,
+        )
+
+        async def cancel() -> None:
+            await dispose.dispose_async()
+            inner_agent.post(DisposeMsg)
+
+        return AsyncDisposable.create(cancel)
+
+    return AsyncAnonymousObservable(subscribe_async)
+
+
+def flat_map_latest_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Stream[TSource, TResult]:
+    """Flat map latest async.
+
+    Asynchronosly transforms the items emitted by an source sequence
+    into observable streams, and mirror those items emitted by the
+    most-recently transformed observable sequence.
+
+    Args:
+        mapper (Callable[[TSource]): [description]
+        Awaitable ([type]): [description]
+
+    Returns:
+        Stream[TSource, TResult]: [description]
+    """
+    return compose(map_async(mapper), switch_latest)
+
+
+def flat_map_latest(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+    """Flat map latest.
+
+
+    Transforms the items emitted by an source sequence into observable
+    streams, and mirror those items emitted by the most-recently
+    transformed observable sequence.
+
+    Args:
+        mapper (Callable[[TSource, AsyncObservable[TResult]]): [description]
+
+    Returns:
+        Stream[TSource, TResult]: [description]
+    """
+    return compose(map(mapper), switch_latest)
+
+
+def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TSource, TResult]:
+    """Catch Exception.
+
+    Returns an observable sequence containing the first sequence's
+    elements, followed by the elements of the handler sequence in case
+    an exception occurred.
+
+    Args:
+        handler: Exception handler.
+
+    Returns:
+        A new stream that replaces the original one.
+    """
+
+    def _catch(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+        async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+            disposable = AsyncDisposable.empty()
+
+            async def action(source: AsyncObservable[TSource]) -> None:
+                nonlocal disposable
+
+                async def asend(value: TSource) -> None:
+                    await aobv.asend(value)
+
+                async def athrow(error: Exception) -> None:
+                    next_source = handler(error)
+                    action(next_source)
+
+                async def aclose() -> None:
+                    await aobv.aclose()
+
+                _obv = AsyncAnonymousObserver(asend, athrow, aclose)
+
+                await disposable.dispose_async()
+                subscription = await source.subscribe_async(_obv)
+                disposable = subscription
+
+            await action(source)
+
+            return AsyncDisposable.create(disposable.dispose_async)
+
+        return AsyncAnonymousObservable(subscribe_async)
+
+    return _catch
+
+
+def retry(retry_count: int) -> Stream[TSource, TResult]:
+    def _retry(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+        count = retry_count
+
+        def factory(exn: Exception) -> AsyncObservable[TSource]:
+            nonlocal count
+
+            if not count:
+                return fail(exn)
+            else:
+                count -= count
+                return source
+
+        return pipe(source, catch(factory))
+
+    return _retry

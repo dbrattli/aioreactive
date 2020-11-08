@@ -115,6 +115,22 @@ class AsyncAnonymousObserver(AsyncObserver[TSource]):
         await self._aclose()
 
 
+class AsyncNotificationObserver(AsyncObserver[TSource]):
+    """Observer created from an async notificaton processing function"""
+
+    def __init__(self, fn: Callable[[Notification], Awaitable[None]]) -> None:
+        self._fn = fn
+
+    async def asent(self, value: TSource) -> None:
+        await self._fn(OnNext(value))
+
+    async def athrow(self, error: Exception) -> None:
+        await self._fn(OnError(error))
+
+    async def aclose(self) -> None:
+        await self._fn(OnCompleted)
+
+
 def noop() -> AsyncObserver[TSource]:
     return AsyncAnonymousObserver(anoop, anoop, anoop)
 
@@ -176,7 +192,7 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
 def auto_detach_observer(
     obv: AsyncObserver[TSource],
 ) -> Tuple[AsyncObserver[TSource], Callable[[Awaitable[AsyncDisposable]], Awaitable[AsyncDisposable]]]:
-    async def worker(inbox: MailboxProcessor[Msg]):
+    async def worker(inbox: MailboxProcessor[Msg[TSource]]):
         async def message_loop(disposables: List[AsyncDisposable]):
             cmd = await inbox.receive()
             if isinstance(cmd, DisposableMsg):
