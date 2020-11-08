@@ -1,7 +1,6 @@
 import logging
 from asyncio import Future, iscoroutinefunction
-from typing import (AsyncIterable, AsyncIterator, Awaitable, Callable, List,
-                    Optional, Tuple, TypeVar)
+from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar
 
 from expression.core import MailboxProcessor
 from expression.system import AsyncDisposable, Disposable
@@ -151,28 +150,24 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
     """
 
     async def worker(inbox: MailboxProcessor[Notification]):
-        async def message_loop(stopped: bool) -> None:
+        async def message_loop(running: bool) -> None:
 
-            if stopped:
-                return
-
-            msg = await inbox.receive()
-            if msg.kind == MsgKind.ON_NEXT:
-                try:
+            while running:
+                msg = await inbox.receive()
+                if msg.kind == MsgKind.ON_NEXT:
+                    try:
+                        await msg.accept_observer(obv)
+                    except Exception as ex:
+                        await obv.athrow(ex)
+                        running = False
+                elif msg.kind == MsgKind.ON_ERROR:
+                    await disposable.dispose_async()
                     await msg.accept_observer(obv)
-                except Exception as ex:
-                    await obv.athrow(ex)
-                    stopped = True
-            elif msg.kind == MsgKind.ON_ERROR:
-                await disposable.dispose_async()
-                await msg.accept_observer(obv)
-                stopped = True
-            else:
-                await disposable.dispose_async()
-                await obv.aclose()
-                stopped = True
-
-            return await message_loop(stopped)
+                    running = False
+                else:
+                    await disposable.dispose_async()
+                    await obv.aclose()
+                    running = False
 
         await message_loop(False)
 

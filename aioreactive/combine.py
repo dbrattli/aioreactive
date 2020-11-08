@@ -98,9 +98,9 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                         return initial_model
 
                 async def message_loop(model: Model[TSource]) -> None:
-                    msg = await inbox.receive()
-                    new_model = await update(msg, model)
-                    return await message_loop(new_model)
+                    while True:
+                        msg = await inbox.receive()
+                        model = await update(msg, model)
 
                 await message_loop(initial_model)
 

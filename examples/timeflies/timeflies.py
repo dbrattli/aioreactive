@@ -1,28 +1,30 @@
+# type: ignore
 import asyncio
+import threading
 from tkinter import Event, Frame, Label, Tk
 
 from aioreactive import AsyncAnonymousObserver, AsyncSubject, asyncrx
-from expression.core import pipe
+from expression.core import MailboxProcessor, pipe
 
 
-async def main() -> None:
+async def main(loop) -> None:
     root = Tk()
     root.title("aioreactive")
 
     mousemoves: AsyncSubject[Event[Frame]] = AsyncSubject()
 
-    frame = Frame(root, width=800, height=600)
+    frame = Frame(root, width=800, height=600, bg="white")
 
-    async def move(event: Event) -> None:
-        await mousemoves.asend(event)
+    async def worker(mb: MailboxProcessor[Event]) -> None:
+        while True:
+            event = await mb.receive()
+            await mousemoves.asend(event)
 
-    def motion(event: Event) -> None:
-        asyncio.ensure_future(move(event))
-
-    frame.bind("<Motion>", motion)
+    agent = MailboxProcessor.start(worker)
+    frame.bind("<Motion>", agent.post)
 
     text = "TIME FLIES LIKE AN ARROW"
-    labels = [Label(frame, text=c) for c in text]
+    labels = [Label(frame, text=c, bg="white") for c in text]
 
     async def handle_label(i: int, label: Label) -> None:
         label.config(dict(borderwidth=0, padx=0, pady=0))
@@ -30,7 +32,10 @@ async def main() -> None:
         async def asend(ev: Event) -> None:
             label.place(x=ev.x + i * 12 + 15, y=ev.y)
 
-        obv = AsyncAnonymousObserver(asend)
+        async def athrow(ex: Exception):
+            print("Exception: ", ex)
+
+        obv = AsyncAnonymousObserver(asend, athrow)
         await pipe(mousemoves, asyncrx.delay(i / 10.0)).subscribe_async(obv)
 
     for i, label in enumerate(labels):
@@ -41,10 +46,10 @@ async def main() -> None:
     # A simple combined event loop
     while True:
         root.update()
-        await asyncio.sleep(0.005)
+        await asyncio.sleep(0.010)
 
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    loop.run_until_complete(main(loop))
     loop.close()

@@ -7,7 +7,7 @@ from expression.system import CancellationTokenSource
 
 from .notification import Notification, OnError, OnNext
 from .observables import AsyncAnonymousObservable
-from .observers import AsyncAnonymousObserver, AsyncNotificationObserver
+from .observers import AsyncNotificationObserver
 from .types import AsyncDisposable, AsyncObservable, AsyncObserver, Stream
 
 TSource = TypeVar("TSource")
@@ -31,7 +31,7 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
 
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             async def worker(inbox: MailboxProcessor[Tuple[Notification, datetime]]) -> None:
-                async def message_loop() -> None:
+                while True:
                     ns, due_time = await inbox.receive()
 
                     diff = due_time - datetime.utcnow()
@@ -47,10 +47,6 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
                         await aobv.athrow(err)
                     else:
                         await aobv.aclose()
-
-                    await message_loop()
-
-                await message_loop()
 
             agent = MailboxProcessor.start(worker, cts.token)
 
