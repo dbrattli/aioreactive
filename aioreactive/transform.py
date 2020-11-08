@@ -49,9 +49,9 @@ def map_async(amapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSourc
     invoking the async mapper function on each element of the
     source."""
 
-    async def handler(next: Callable[[TResult], Awaitable[None]], x: TSource):
+    async def handler(next: Callable[[TResult], Awaitable[None]], x: TSource) -> None:
         b = await amapper(x)
-        return await next(b)
+        await next(b)
 
     return transform(handler)
 
@@ -63,9 +63,9 @@ def starmap_async(amapper: Callable[..., Awaitable[TResult]]) -> Stream[TSource,
     invoking the async mapper function on each element of the
     source."""
 
-    async def handler(next: Callable[[TResult], Awaitable[None]], *args: TSource):
+    async def handler(next: Callable[[TResult], Awaitable[None]], *args: TSource) -> None:
         b = await amapper(*args)
-        return await next(b)
+        await next(b)
 
     return transform(handler)
 

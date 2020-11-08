@@ -3,11 +3,25 @@
 from functools import partial
 from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar
 
+from expression.core import Option
+
 from .observables import AsyncObservable
 from .types import Stream
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
+
+
+def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSource]:
+    from .filter import choose
+
+    return choose(chooser)
+
+
+def choose_async(chooser: Callable[[TSource], Awaitable[Option[TSource]]]) -> Stream[TSource, TSource]:
+    from .filter import choose_async
+
+    return choose_async(chooser)
 
 
 def debounce(seconds: float) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
@@ -43,9 +57,17 @@ def delay(seconds: float) -> Callable[[AsyncObservable[TSource]], AsyncObservabl
 
 
 def filter(predicate: Callable[[TSource], bool]) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
-    from aioreactive.operators.filter import filter
+    from .filter import filter
 
-    return partial(filter, predicate)
+    return filter(predicate)
+
+
+def filter_async(
+    predicate: Callable[[TSource], Awaitable[bool]]
+) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
+    from .filter import filter_async
+
+    return filter_async(predicate)
 
 
 def from_iterable(iterable: Iterable[TSource]) -> AsyncObservable[TSource]:
