@@ -169,7 +169,7 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
                     await obv.aclose()
                     running = False
 
-        await message_loop(False)
+        await message_loop(running=True)
 
     agent = MailboxProcessor.start(worker)
 

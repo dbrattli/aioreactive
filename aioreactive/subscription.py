@@ -1,6 +1,8 @@
 import asyncio
 import logging
-from typing import Optional, TypeVar
+from typing import Awaitable, Callable, Optional, TypeVar
+
+from expression.system.disposable import AsyncDisposable
 
 from .observers import AsyncAwaitableObserver
 from .types import AsyncObservable, AsyncObserver
@@ -34,3 +36,16 @@ async def run(
     await source.subscribe_async(observer_)
     log.debug("run(): waiting for observer ...")
     return await asyncio.wait_for(observer_, timeout)
+
+
+def subscribe_async(obv: AsyncObserver[TSource]) -> Callable[[AsyncObservable[TSource]], Awaitable[AsyncDisposable]]:
+    """A pipeable subscribe async.
+
+    Example:
+        >>> await pipe(xs, filter(predicate), subscribe_async)
+    """
+
+    def _subscribe(source: AsyncObservable[TSource]) -> Awaitable[AsyncDisposable]:
+        return source.subscribe_async(obv)
+
+    return _subscribe

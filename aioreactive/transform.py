@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable, TypeVar, cast
+from typing import Awaitable, Callable, Tuple, TypeVar, cast
 
 from expression.collections import seq
 from expression.core import MailboxProcessor, Nothing, Option, Some, compose, pipe
@@ -29,14 +29,11 @@ def transform(
 ) -> Stream[TSource, TResult]:
     def _(source: AsyncObservable[TSource]) -> AsyncObservable[TResult]:
         async def subscribe_async(aobv: AsyncObserver[TResult]) -> AsyncDisposable:
-            print("transform:subscribe_async")
-
             async def asend(value: TResult) -> None:
                 return await anext(aobv.asend, value)
 
             obv: AsyncObserver[TSource] = AsyncAnonymousObserver(asend, aobv.athrow, aobv.aclose)
             sub = await source.subscribe_async(obv)
-            print(sub)
             return sub
 
         return AsyncAnonymousObservable(subscribe_async)
@@ -63,7 +60,7 @@ def starmap_async(amapper: Callable[..., Awaitable[TResult]]) -> Stream[TSource,
     invoking the async mapper function on each element of the
     source."""
 
-    async def handler(next: Callable[[TResult], Awaitable[None]], *args: TSource) -> None:
+    async def handler(next: Callable[[TResult], Awaitable[None]], args: Tuple[TSource, ...]) -> None:
         b = await amapper(*args)
         await next(b)
 
@@ -88,7 +85,7 @@ def starmap(mapper: Callable[..., TResult]) -> Stream[TSource, TResult]:
     Returns an observable sequence whose elements are the result of
     invoking the mapper function on each element of the source."""
 
-    def handler(next: Callable[[TResult], Awaitable[None]], *args: TSource) -> Awaitable[None]:
+    def handler(next: Callable[[TResult], Awaitable[None]], args: Tuple[TSource, ...]) -> Awaitable[None]:
         return next(mapper(*args))
 
     return transform(handler)

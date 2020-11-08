@@ -1,9 +1,9 @@
-# type: ignore
+# type: ignore23
 import asyncio
-import threading
 from tkinter import Event, Frame, Label, Tk
 
-from aioreactive import AsyncAnonymousObserver, AsyncSubject, asyncrx
+import aioreactive as rx
+from aioreactive import AsyncAnonymousObserver, AsyncSubject
 from expression.core import MailboxProcessor, pipe
 
 
@@ -36,7 +36,11 @@ async def main(loop) -> None:
             print("Exception: ", ex)
 
         obv = AsyncAnonymousObserver(asend, athrow)
-        await pipe(mousemoves, asyncrx.delay(i / 10.0)).subscribe_async(obv)
+        await pipe(
+            mousemoves,
+            rx.delay(i / 10.0),
+            rx.subscribe_async(obv),
+        )
 
     for i, label in enumerate(labels):
         await handle_label(i, label)

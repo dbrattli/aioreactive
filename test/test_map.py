@@ -1,8 +1,8 @@
 import asyncio
-from typing import Optional, Tuple
+from typing import Optional
 
+import aioreactive as rx
 import pytest
-from aioreactive import asyncrx
 from aioreactive.observables import AsyncObservable
 from aioreactive.observers import AsyncAnonymousObserver, AsyncAwaitableObserver
 from aioreactive.testing import AsyncSubject, VirtualTimeEventLoop
@@ -11,7 +11,7 @@ from expression.core import pipe
 from expression.system.disposable import AsyncDisposable
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type:ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -20,7 +20,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_map_works():
-    xs: AsyncObservable[int] = asyncrx.from_iterable([1, 2, 3])
+    xs: AsyncObservable[int] = rx.from_iterable([1, 2, 3])
     values = []
 
     async def asend(value: int) -> None:
@@ -29,7 +29,7 @@ async def test_map_works():
     def mapper(value: int) -> int:
         return value * 10
 
-    ys = pipe(xs, asyncrx.map(mapper))
+    ys = pipe(xs, rx.map(mapper))
 
     obv: AsyncObserver[int] = AsyncAwaitableObserver(asend)
     async with await ys.subscribe_async(obv):
@@ -43,7 +43,7 @@ async def test_map_mapper_throws():
     error = Exception("ex")
     exception = None
 
-    xs = asyncrx.from_iterable([1])
+    xs = rx.from_iterable([1])
 
     async def athrow(ex: Exception):
         nonlocal exception
@@ -52,7 +52,7 @@ async def test_map_mapper_throws():
     def mapper(x: int):
         raise error
 
-    ys = pipe(xs, asyncrx.map(mapper))
+    ys = pipe(xs, rx.map(mapper))
 
     obv = AsyncAwaitableObserver(athrow=athrow)
 
@@ -69,13 +69,13 @@ async def test_map_mapper_throws():
 @pytest.mark.asyncio
 async def test_map_subscription_cancel():
     xs: AsyncSubject[int] = AsyncSubject()
-    result = []
     sub: Optional[AsyncDisposable] = None
+    result = []
 
     def mapper(value: int) -> int:
         return value * 10
 
-    ys = pipe(xs, asyncrx.map(mapper))
+    ys = pipe(xs, rx.map(mapper))
 
     async def asend(value: int) -> None:
         result.append(value)
@@ -93,17 +93,16 @@ async def test_map_subscription_cancel():
 
 @pytest.mark.asyncio
 async def test_mapi_works():
-    xs: AsyncObservable[int] = asyncrx.from_iterable([1, 2, 3])
+    xs: AsyncObservable[int] = rx.from_iterable([1, 2, 3])
     values = []
 
     async def asend(value: int) -> None:
         values.append(value)
 
-    def mapper(value: Tuple[int, int]) -> int:
-        (a, i) = value
+    def mapper(a: int, i: int) -> int:
         return a + i
 
-    ys = pipe(xs, asyncrx.mapi(mapper))
+    ys = pipe(xs, rx.mapi(mapper))
 
     obv: AsyncObserver[int] = AsyncAwaitableObserver(asend)
     async with await ys.subscribe_async(obv):
