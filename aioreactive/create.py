@@ -1,7 +1,9 @@
+import asyncio
 import logging
 from typing import Awaitable, Callable, Iterable, Tuple, TypeVar
 
-from expression.core import aio
+from expression.core import Ok, Result, aio, recursive_async
+from expression.core.fn import TailCall
 from expression.system import AsyncDisposable, CancellationToken, CancellationTokenSource
 
 from .observables import AsyncAnonymousObservable
@@ -122,7 +124,8 @@ def of_seq(xs: Iterable[TSource]) -> AsyncObservable[TSource]:
 
 
 def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
-    """Returns an observable sequence that invokes the specified factory function whenever a new observer subscribes."""
+    """Returns an observable sequence that invokes the specified factory
+    function whenever a new observer subscribes."""
 
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
         try:
@@ -135,7 +138,7 @@ def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TS
     return AsyncAnonymousObservable(subscribe_async)
 
 
-def interval(msecs: int, period: int) -> AsyncObservable[int]:
+def interval(seconds: float, period: float) -> AsyncObservable[int]:
     """Returns an observable sequence that triggers the increasing
     sequence starting with 0 after the given msecs, and the after
     each period."""
@@ -143,23 +146,25 @@ def interval(msecs: int, period: int) -> AsyncObservable[int]:
     async def subscribe_async(aobv: AsyncObserver[int]) -> AsyncDisposable:
         cancel, token = canceller()
 
-        async def handler(msecs: int, next: TSource) -> None:
-            await aio.sleep(msecs)
+        @recursive_async
+        async def handler(seconds: float, next: int) -> Result[None, Exception]:
+            await asyncio.sleep(seconds)
             await aobv.asend(next)
 
-            if period > 0:
-                await handler(period, next + 1)
-            else:
+            if not period:
                 await aobv.aclose()
+                return Ok(None)
 
-        aio.start(handler(msecs, 0), token)
+            return TailCall(period, next + 1)
+
+        aio.start(handler(seconds, 0), token)
         return cancel
 
     return AsyncAnonymousObservable(subscribe_async)
 
 
-def timer(dueTime: int) -> AsyncObservable[int]:
+def timer(due_time: float) -> AsyncObservable[int]:
     """Returns an observable sequence that triggers the value 0
     after the given duetime in milliseconds."""
 
-    return interval(dueTime, 0)
+    return interval(due_time, 0)

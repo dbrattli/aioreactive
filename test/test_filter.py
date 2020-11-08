@@ -28,7 +28,6 @@ async def test_filter_happy() -> None:
         result.append(value)
 
     async def predicate(value: int) -> bool:
-        print("sleeping")
         await asyncio.sleep(0.1)
         return value > 1
 

@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Tuple, TypeVar
 
-from expression.core import MailboxProcessor, pipe
+from expression.core import MailboxProcessor, Result, TailCall, pipe, recursive_async
 from expression.system import CancellationTokenSource
 
 from .notification import Notification, OnError, OnNext
@@ -23,7 +23,7 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
         seconds (float): Number of seconds to delay.
 
     Returns:
-        Stream[TSource, TSource]: Delayed stream.
+        Delayed stream.
     """
 
     def _delay(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
@@ -31,7 +31,8 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
 
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             async def worker(inbox: MailboxProcessor[Tuple[Notification, datetime]]) -> None:
-                while True:
+                @recursive_async
+                async def loop() -> Result[None, Exception]:
                     ns, due_time = await inbox.receive()
 
                     diff = due_time - datetime.utcnow()
@@ -47,6 +48,10 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
                         await aobv.athrow(err)
                     else:
                         await aobv.aclose()
+
+                    return TailCall()
+
+                await loop()
 
             agent = MailboxProcessor.start(worker, cts.token)
 

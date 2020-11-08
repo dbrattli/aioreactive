@@ -151,7 +151,6 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
 
     async def worker(inbox: MailboxProcessor[Notification]):
         async def message_loop(running: bool) -> None:
-
             while running:
                 msg = await inbox.receive()
                 if msg.kind == MsgKind.ON_NEXT:

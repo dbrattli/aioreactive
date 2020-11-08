@@ -165,8 +165,11 @@ def zip_seq(
             async def aclose() -> None:
                 await safe_obv.aclose()
 
-            _obv = AsyncAnonymousObserver(asend, athrow, aclose)
-            return await auto_detach(source.subscribe_async(_obv))
+            return await pipe(
+                AsyncAnonymousObserver(asend, athrow, aclose),
+                source.subscribe_async,
+                auto_detach,
+            )
 
         return AsyncAnonymousObservable(subscribe_async)
 

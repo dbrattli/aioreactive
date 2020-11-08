@@ -54,6 +54,14 @@ def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TS
     return catch(handler)
 
 
+def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+    """Returns an observable sequence that invokes the specified factory
+    function whenever a new observer subscribes."""
+    from .create import defer
+
+    return defer(factory)
+
+
 def delay(seconds: float) -> Stream[TSource, TSource]:
     from .timeshift import delay
 
@@ -90,6 +98,15 @@ def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TS
     from .transform import flat_map
 
     return flat_map(mapper)
+
+
+def interval(seconds: float, period: int) -> AsyncObservable[int]:
+    """Returns an observable sequence that triggers the increasing
+    sequence starting with 0 after the given msecs, and the after
+    each period."""
+    from .create import interval
+
+    return interval(seconds, period)
 
 
 def map(fn: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
@@ -162,6 +179,14 @@ def single(value: TSource) -> "AsyncObservable[TSource]":
     from .create import single
 
     return single(value)
+
+
+def timer(due_time: float) -> AsyncObservable[int]:
+    """Returns an observable sequence that triggers the value 0
+    after the given duetime in milliseconds."""
+    from .create import timer
+
+    return timer(due_time)
 
 
 def empty() -> "AsyncObservable[TSource]":

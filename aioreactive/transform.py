@@ -1,7 +1,7 @@
 from typing import Awaitable, Callable, Tuple, TypeVar, cast
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, Nothing, Option, Some, compose, pipe
+from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, compose, pipe, recursive_async
 from expression.system import AsyncDisposable
 
 from .combine import merge_inner, zip_seq
@@ -232,7 +232,10 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
             return AsyncAnonymousObserver(asend, athrow, aclose)
 
         async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
-            async def message_loop(current: Option[AsyncDisposable], is_stopped: bool, current_id: int) -> None:
+            @recursive_async
+            async def message_loop(
+                current: Option[AsyncDisposable], is_stopped: bool, current_id: int
+            ) -> Result[None, Exception]:
                 cmd = await inbox.receive()
 
                 if isinstance(cmd, InnerObservableMsg):
@@ -244,22 +247,22 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
                         await disp.dispose_async()
                     inner = await xs.subscribe_async(obv(inbox, next_id))
                     current, current_id = Some(inner), next_id
-                if isinstance(cmd, InnerCompletedMsg):
+                elif isinstance(cmd, InnerCompletedMsg):
                     idx = cmd.key
                     if is_stopped and idx == current_id:
                         await safe_obv.aclose()
                         current, is_stopped = Nothing, True
-                if cmd is CompletedMsg:
+                elif cmd is CompletedMsg:
                     if current.is_none():
                         await safe_obv.aclose()
-                if cmd is DisposeMsg:
+                elif cmd is DisposeMsg:
                     if current.is_some():
                         await current.value.dispose_async()
                     current, is_stopped = Nothing, True
 
-                return await message_loop(current, is_stopped, current_id)
+                return TailCall(current, is_stopped, current_id)
 
-            message_loop(Nothing, False, 0)
+            await message_loop(Nothing, False, 0)
 
         inner_agent = MailboxProcessor.start(worker)
 
