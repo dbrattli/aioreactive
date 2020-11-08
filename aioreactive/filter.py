@@ -67,8 +67,9 @@ def filter_async(predicate: Callable[[TSource], Awaitable[bool]]) -> Stream[TSou
         Stream[TSource, TSource]: [description]
     """
 
-    async def handler(next: Callable[[TResult], Awaitable[None]], x: TSource):
-        if predicate(x):
+    async def handler(next: Callable[[TSource], Awaitable[None]], x: TSource):
+        print("handler: ", x)
+        if await predicate(x):
             return await next(x)
 
     return transform(handler)
@@ -89,7 +90,7 @@ def filter(predicate: Callable[[TSource], bool]) -> Stream[TSource, TSource]:
         Stream[TSource, TSource]: [description]
     """
 
-    def handler(next: Callable[[TResult], Awaitable[None]], x: TSource) -> Awaitable[None]:
+    def handler(next: Callable[[TSource], Awaitable[None]], x: TSource) -> Awaitable[None]:
         if predicate(x):
             return next(x)
         return aio.empty

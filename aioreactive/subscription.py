@@ -32,4 +32,5 @@ async def run(
     # blocking the last single stream in the chain.
     observer_: AsyncObserver[TSource] = observer or AsyncAwaitableObserver()
     await source.subscribe_async(observer_)
+    log.debug("run(): waiting for observer ...")
     return await asyncio.wait_for(observer_, timeout)

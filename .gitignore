@@ -61,3 +61,5 @@ TestResults/Rx.TE.Tests_log.ldf
 .eggs/
 .mypy_cache/
 .ionide
+
+coverage.xml

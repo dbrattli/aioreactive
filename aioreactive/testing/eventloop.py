@@ -47,6 +47,7 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
         schedules the resulting callbacks, and finally schedules
         'call_later' callbacks.
         """
+        log.debug("run_once()")
 
         sched_count = len(self._scheduled)
         if (
@@ -72,6 +73,8 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
                 handle = heapq.heappop(self._scheduled)
                 handle._scheduled = False
 
+        # print("***", self._ready)
+        # print("***", self._scheduled)
         # timeout = None
         # if self._ready or self._stopping:
         #    timeout = 0
@@ -84,11 +87,8 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
         # self._process_events(event_list)
 
         # Handle 'later' callbacks that are ready.
-        end_time = self.time() + self._clock_resolution
-        while self._scheduled:
+        while self._scheduled and not self._ready:
             handle = self._scheduled[0]
-            if handle._when >= end_time:
-                break
             handle = heapq.heappop(self._scheduled)
             handle._scheduled = False
             self._time = handle._when
