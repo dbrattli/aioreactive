@@ -1,4 +1,4 @@
-from . import asyncrx as AsyncRx
+from . import asyncrx
 from .observables import AsyncAnonymousObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
 from .subject import AsyncSingleSubject, AsyncSubject
@@ -13,7 +13,7 @@ __all__ = [
     "AsyncNotificationObserver",
     "AsyncObservable",
     "AsyncObserver",
-    "AsyncRx",
+    "asyncrx",
     "AsyncSingleSubject",
     "AsyncSubject",
     "run",

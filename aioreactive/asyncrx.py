@@ -50,10 +50,10 @@ def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TS
     return catch(handler)
 
 
-def delay(seconds: float) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
-    from aioreactive.operators.delay import delay
+def delay(seconds: float) -> Stream[TSource, TSource]:
+    from .timeshift import delay
 
-    return partial(delay, seconds)
+    return delay(seconds)
 
 
 def filter(predicate: Callable[[TSource], bool]) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:

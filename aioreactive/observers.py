@@ -1,6 +1,7 @@
 import logging
 from asyncio import Future, iscoroutinefunction
-from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar
+from typing import (AsyncIterable, AsyncIterator, Awaitable, Callable, List,
+                    Optional, Tuple, TypeVar)
 
 from expression.core import MailboxProcessor
 from expression.system import AsyncDisposable, Disposable
@@ -121,7 +122,7 @@ class AsyncNotificationObserver(AsyncObserver[TSource]):
     def __init__(self, fn: Callable[[Notification], Awaitable[None]]) -> None:
         self._fn = fn
 
-    async def asent(self, value: TSource) -> None:
+    async def asend(self, value: TSource) -> None:
         await self._fn(OnNext(value))
 
     async def athrow(self, error: Exception) -> None:

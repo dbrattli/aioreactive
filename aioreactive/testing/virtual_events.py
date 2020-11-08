@@ -29,6 +29,16 @@ def _format_handle(handle):
 
 
 class VirtualTimeEventLoop(asyncio.BaseEventLoop):
+    """Virtual time event loop.
+
+    Works the same was as a normal event loop except that time is
+    virtual. Time starts at 0 and only advances when something is
+    scheduled into the future. Thus the event loops runs as quickly as
+    possible while producing the same output as a normal event loop
+    would do. This makes it ideal for unit-testing where you want to
+    test delays but without spending time in real life.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -42,10 +52,10 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
         return self._time
 
     def _run_once(self):
-        """Run one full iteration of the event loop.
-        This calls all currently ready callbacks, polls for I/O,
-        schedules the resulting callbacks, and finally schedules
-        'call_later' callbacks.
+        """Run one full iteration of the event loop. This calls all
+        currently ready callbacks, polls for I/O, schedules the
+        resulting callbacks, and finally schedules 'call_later'
+        callbacks.
         """
         log.debug("run_once()")
 
@@ -75,16 +85,6 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
 
         # print("***", self._ready)
         # print("***", self._scheduled)
-        # timeout = None
-        # if self._ready or self._stopping:
-        #    timeout = 0
-        # elif self._scheduled:
-        # Compute the desired timeout.
-        #    when = self._scheduled[0]._when
-        #    timeout = min(max(0, when - self.time()), MAXIMUM_SELECT_TIMEOUT)
-
-        # event_list = self._selector.select(timeout)
-        # self._process_events(event_list)
 
         # Handle 'later' callbacks that are ready.
         while self._scheduled and not self._ready:
@@ -95,11 +95,11 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
             self._ready.append(handle)
 
         # This is the only place where callbacks are actually *called*.
-        # All other places just add them to ready.
-        # Note: We run all currently scheduled callbacks, but not any
-        # callbacks scheduled by callbacks run this time around --
-        # they will be run the next time (after another I/O poll).
-        # Use an idiom that is thread-safe without using locks.
+        # All other places just add them to ready. Note: We run all
+        # currently scheduled callbacks, but not any callbacks scheduled
+        # by callbacks run this time around -- they will be run the next
+        # time (after another I/O poll). Use an idiom that is
+        # thread-safe without using locks.
         ntodo = len(self._ready)
         for i in range(ntodo):
             handle = self._ready.popleft()
