@@ -1,12 +1,14 @@
 import logging
-from typing import Awaitable, Callable, Iterable, TypeVar, Union
+from typing import Awaitable, Callable, Iterable, Tuple, TypeVar, Union
 
+from expression.core import pipe
 from expression.system import AsyncDisposable
 
 from .types import AsyncObservable, AsyncObserver
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
+TOther = TypeVar("TOther")
 TError = TypeVar("TError")
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
@@ -30,44 +32,6 @@ class AsyncAnonymousObservable(AsyncObservable[TSource]):
         log.debug("AsyncAnonymousObservable:subscribe_async(%s)", self._subscribe)
         return await self._subscribe(observer)
 
-    def __getitem__(self, key: Union[slice, int]) -> "AsyncObservable[TSource]":
-        """Slices the given source stream using Python slice notation.
-         The arguments to slice is start, stop and step given within
-         brackets [] and separated with the ':' character. It is
-         basically a wrapper around the operators skip(), skip_last(),
-         take(), take_last() and filter().
-
-         This marble diagram helps you remember how slices works with
-         streams. Positive numbers is relative to the start of the
-         events, while negative numbers are relative to the end
-         (on_completed) of the stream.
-
-         r---e---a---c---t---i---v---e---|
-         0   1   2   3   4   5   6   7   8
-        -8  -7  -6  -5  -4  -3  -2  -1
-
-         Example:
-         result = source[1:10]
-         result = source[1:-2]
-         result = source[1:-1:2]
-
-         Keyword arguments:
-         self -- Source to slice
-         key -- Slice object
-
-         Return a sliced source stream."""
-
-        from aioreactive.operators.slice import slice as _slice
-
-        if isinstance(key, slice):
-            start, stop, step = key.start, key.stop, key.step
-        elif isinstance(key, int):
-            start, stop, step = key, key + 1, 1
-        else:
-            raise TypeError("Invalid argument type.")
-
-        return _slice(start, stop, step, self)
-
 
 class AsyncChainedObservable(AsyncObservable[TSource]):
     """An AsyncChainedObservable example class similar to Rx.
@@ -83,6 +47,15 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
     def __init__(self, source: AsyncObservable[TSource]) -> None:
         super().__init__()
         self._source = source
+
+    @classmethod
+    def create(cls, source: AsyncObservable[TSource]) -> "AsyncChainedObservable[TSource]":
+        """Create `AsyncChainedObservable`.
+
+        Helper method for creating an `AsyncChainedObservable` to the
+        the generic type rightly inferred by Pylance (__init__ returns None).
+        """
+        return cls(source)
 
     async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
         return await self._source.subscribe_async(observer)
@@ -134,7 +107,12 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
 
         return AsyncChainedObservable(empty())
 
-    def debounce(self, seconds: float) -> "AsyncChainedObservable":
+    def combine_latest(self, other: TOther) -> "AsyncChainedObservable[Tuple[TSource, TOther]]":
+        from .combine import combine_latest
+
+        return pipe(self, combine_latest(other), AsyncChainedObservable.create)
+
+    def debounce(self, seconds: float) -> "AsyncChainedObservable[TSource]":
         """Debounce observable source.
 
         Ignores values from a source stream which are followed by
@@ -153,26 +131,25 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
 
         return AsyncChainedObservable(debounce(seconds, self))
 
-    def delay(self, seconds: float) -> "AsyncChainedObservable":
-        from aioreactive.operators.delay import delay
+    def delay(self, seconds: float) -> "AsyncChainedObservable[TSource]":
+        from .timeshift import delay
 
-        return AsyncChainedObservable(delay(seconds, self))
+        return AsyncChainedObservable(delay(seconds)(self))
 
-    def where(self, predicate: Callable) -> "AsyncChainedObservable":
-        from aioreactive.operators.filter import filter
+    def where(self, predicate: Callable[[TSource], TSource]) -> "AsyncChainedObservable[TSource]":
+        from .filter import filter
 
-        return AsyncChainedObservable(filter(predicate, self))
+        return pipe(self, filter(predicate), AsyncChainedObservable.create)
 
-    def select_many(self, selector: Callable) -> "AsyncChainedObservable":
-        from aioreactive.operators.flat_map import flat_map
+    def select_many(self, selector: Callable[[TSource], AsyncObservable[TResult]]) -> "AsyncChainedObservable[TResult]":
+        from .transform import flat_map
 
-        return AsyncChainedObservable(flat_map(selector, self))
+        return pipe(self, flat_map(selector), AsyncChainedObservable.create)
 
     def select(self, selector: Callable[[TSource], TResult]) -> "AsyncChainedObservable[TResult]":
-        from aioreactive.operators.map import map
+        from .transform import map
 
-        mapping = map(selector)
-        return AsyncChainedObservable(mapping(self))
+        return pipe(self, map(selector), AsyncChainedObservable.create)
 
     def merge(self, other: "AsyncChainedObservable") -> "AsyncChainedObservable":
         from aioreactive.operators.merge import merge

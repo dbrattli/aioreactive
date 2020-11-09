@@ -1,12 +1,14 @@
 from typing import Awaitable, Callable, Tuple, TypeVar, cast
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, compose, pipe, recursive_async
+from expression.core import (MailboxProcessor, Nothing, Option, Result, Some,
+                             TailCall, compose, pipe, recursive_async)
 from expression.system import AsyncDisposable
 
 from .combine import merge_inner, zip_seq
 from .create import fail
-from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Msg
+from .msg import (CompletedMsg, DisposeMsg, InnerCompletedMsg,
+                  InnerObservableMsg, Msg)
 from .observables import AsyncAnonymousObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, auto_detach_observer
 from .types import AsyncObserver, Stream
@@ -219,7 +221,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
         safe_obv, auto_detach = auto_detach_observer(aobv)
 
-        def obv(mb: MailboxProcessor[Msg[TSource]], id: int):
+        def obv(mb: MailboxProcessor[Msg], id: int):
             async def asend(value: TSource) -> None:
                 await safe_obv.asend(value)
 
@@ -231,7 +233,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
 
             return AsyncAnonymousObserver(asend, athrow, aclose)
 
-        async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
+        async def worker(inbox: MailboxProcessor[Msg]) -> None:
             @recursive_async
             async def message_loop(
                 current: Option[AsyncDisposable], is_stopped: bool, current_id: int

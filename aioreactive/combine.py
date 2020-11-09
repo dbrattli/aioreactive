@@ -3,14 +3,15 @@ from dataclasses import dataclass
 from typing import Any, Callable, Generic, Iterable, NewType, Tuple, TypeVar, cast
 
 from expression.collections import FrozenList, Map, frozenlist, map
-from expression.core import MailboxProcessor, pipe
+from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, pipe, recursive_async
 from expression.system import AsyncDisposable
 
 from .create import of_seq
-from .msg import CompletedMsg, DisposeMsg_, InnerCompletedMsg, InnerObservableMsg, Msg
+from .msg import CompletedMsg, DisposeMsg_, InnerCompletedMsg, InnerObservableMsg, Msg, OtherMsg, SourceMsg
+from .notification import Notification, OnError, OnNext
 from .observables import AsyncAnonymousObservable
-from .observers import AsyncAnonymousObserver, auto_detach_observer
-from .types import AsyncObservable, AsyncObserver
+from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
+from .types import AsyncObservable, AsyncObserver, Stream
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
@@ -44,7 +45,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                 key=Key(0),
             )
 
-            async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
+            async def worker(inbox: MailboxProcessor[Msg]) -> None:
                 def obv(key: Key) -> AsyncObserver[TSource]:
                     async def asend(value: TSource) -> None:
                         await safe_obv.asend(value)
@@ -57,7 +58,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
 
                     return AsyncAnonymousObserver(asend, athrow, aclose)
 
-                async def update(msg: Msg[TSource], model: Model[TSource]) -> Model[TSource]:
+                async def update(msg: Msg, model: Model[TSource]) -> Model[TSource]:
                     if isinstance(msg, InnerObservableMsg):
                         msg = cast(InnerObservableMsg[TSource], msg)
                         xs: AsyncObservable[TSource] = msg.inner_observable
@@ -138,6 +139,76 @@ def concat_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[T
         of_seq(sources),
         merge_inner(1),
     )
+
+    """Merges the specified observable sequences into one observable sequence by combining elements of the sources into
+    tuples. Returns an observable sequence containing the combined results."""
+
+
+def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSource, TOther]]:
+    def _combine_latest(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
+        async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
+            safe_bv, auto_detach = auto_detach_observer(aobv)
+
+            async def worker(inbox: MailboxProcessor[Msg]) -> None:
+                @recursive_async
+                async def message_loop(
+                    source: Option[TSource], other: Option[TOther]
+                ) -> Result[AsyncObservable[TSource], Exception]:
+                    cn = await inbox.receive()
+
+                    async def on_next_option(n: Notification[TSource]) -> Option[TSource]:
+                        if isinstance(n, OnNext):
+                            n = cast(OnNext[TSource], n)
+                            x = n.value
+                            return Some(x)
+                        elif isinstance(n, OnError):
+                            n = cast(OnError[TSource], n)
+                            ex = n.exception
+                            await safe_bv.athrow(ex)
+                            return Nothing
+                        else:
+                            await safe_bv.aclose()
+                            return Nothing
+
+                    if isinstance(cn, SourceMsg):
+                        cn = cast(SourceMsg[TSource], cn)
+                        source = await on_next_option(cn.value)
+                    else:
+                        cn = cast(OtherMsg[TOther], cn)
+                        other = await on_next_option(cn.value)
+
+                    def binder(s: TSource) -> Option[Tuple[TSource, TResult]]:
+                        def mapper(o: TOther) -> Tuple[TSource, TResult]:
+                            return (s, o)
+
+                        return other.map(mapper)
+
+                    combined = source.bind(binder)
+                    for x in combined.to_list():
+                        await safe_bv.asend(x)
+
+                    return TailCall(source, other)
+
+                await message_loop(Nothing, Nothing)
+
+            agent = MailboxProcessor.start(worker)
+
+            async def obv_fn1(n: Notification[TSource]) -> None:
+                pipe(SourceMsg(n), agent.post)
+
+            async def obv_fn2(n: Notification[TOther]) -> None:
+                pipe(OtherMsg(n), agent.post)
+
+            obv1: AsyncObserver[TSource] = AsyncNotificationObserver(obv_fn1)
+            obv2: AsyncObserver[TOther] = AsyncNotificationObserver(obv_fn2)
+            dispose1 = await pipe(obv1, source.subscribe_async, auto_detach)
+            dispose2 = await pipe(obv2, other.subscribe_async, auto_detach)
+
+            return AsyncDisposable.composite(dispose1, dispose2)
+
+        return AsyncAnonymousObservable(subscribe_async)
+
+    return _combine_latest
 
 
 def zip_seq(

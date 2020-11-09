@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Awaitable, Callable, TypeVar
+from typing import Any, Awaitable, Callable, Generic, TypeVar
 
 from .types import AsyncObserver
 
@@ -14,7 +14,7 @@ class MsgKind(Enum):
     ON_COMPLETED = 3
 
 
-class Notification(ABC):
+class Notification(ABC, Generic[TSource]):
     """Represents a message to a mailbox processor."""
 
     def __init__(self, kind: MsgKind):
@@ -34,7 +34,7 @@ class Notification(ABC):
         raise NotImplementedError
 
 
-class OnNext(Notification):
+class OnNext(Notification[TSource]):
     """Represents an OnNext notification to an observer."""
 
     def __init__(self, value: TSource):
@@ -57,7 +57,7 @@ class OnNext(Notification):
         return f"OnNext({self.value})"
 
 
-class OnError(Notification):
+class OnError(Notification[TSource]):
     """Represents an OnError notification to an observer."""
 
     def __init__(self, exception: Exception):
@@ -80,7 +80,7 @@ class OnError(Notification):
         return f"OnError({self.exception})"
 
 
-class OnCompleted_(Notification):
+class OnCompleted_(Notification[TSource]):
     """Represents an OnCompleted notification to an observer."""
 
     def __init__(self):
@@ -103,5 +103,5 @@ class OnCompleted_(Notification):
         return "OnCompleted"
 
 
-OnCompleted = OnCompleted_()
+OnCompleted: Notification[Any] = OnCompleted_()
 """OnCompleted singleton instance."""

@@ -3,7 +3,7 @@
 from functools import partial
 from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar
 
-from expression.core import Option
+from expression.core import Option, pipe
 from expression.system.disposable import AsyncDisposable
 
 from .observables import AsyncAnonymousObservable, AsyncObservable
@@ -14,6 +14,7 @@ from .types import AsyncObserver, Stream
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
+TOther = TypeVar("TOther")
 
 
 def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSource]:
@@ -28,7 +29,13 @@ def choose_async(chooser: Callable[[TSource], Awaitable[Option[TSource]]]) -> St
     return choose_async(chooser)
 
 
-def debounce(seconds: float) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
+def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSource, TOther]]:
+    from .combine import combine_latest
+
+    return pipe(combine_latest(other))
+
+
+def debounce(seconds: float) -> Stream[TSource, TSource]:
     """Debounce source stream.
 
     Ignores values from a source stream which are followed by
@@ -68,6 +75,12 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
     return delay(seconds)
 
 
+def empty() -> "AsyncObservable[TSource]":
+    from .create import empty
+
+    return empty()
+
+
 def filter(predicate: Callable[[TSource], bool]) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
     from .filter import filter
 
@@ -98,6 +111,14 @@ def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TS
     from .transform import flat_map
 
     return flat_map(mapper)
+
+
+def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
+    from aioreactive.operators.from_async_iterable import from_async_iterable
+
+    from .create import of
+
+    return AsyncChainedObservable(from_async_iterable(iter))
 
 
 def interval(seconds: float, period: int) -> AsyncObservable[int]:
@@ -137,10 +158,10 @@ def merge(other: AsyncObservable) -> Callable[[AsyncObservable], AsyncObservable
     return partial(merge, other)
 
 
-def with_latest_from(mapper: Callable, other: AsyncObservable) -> Callable[[AsyncObservable], AsyncObservable]:
-    from aioreactive.operators.with_latest_from import with_latest_from
+def never() -> "AsyncObservable[TSource]":
+    from .create import never
 
-    return partial(with_latest_from, mapper, other)
+    return never()
 
 
 def distinct_until_changed() -> Callable[[AsyncObservable], AsyncObservable]:
@@ -155,6 +176,17 @@ def retry(retry_count: int) -> Stream[TSource, TSource]:
     return retry(retry_count)
 
 
+def subscribe_async(obv: AsyncObserver[TSource]) -> Callable[[AsyncObservable[TSource]], Awaitable[AsyncDisposable]]:
+    """A pipeable subscribe async.
+
+    Example:
+        >>> await pipe(xs, filter(predicate), subscribe_async)
+    """
+    from .subscription import subscribe_async
+
+    return subscribe_async(obv)
+
+
 def switch_latest() -> Stream[TSource, TSource]:
     from .transform import switch_latest
 
@@ -165,14 +197,6 @@ def to_async_iterable() -> Callable[[AsyncObservable], AsyncIterable]:
     from aioreactive.operators.to_async_iterable import to_async_iterable
 
     return partial(to_async_iterable)
-
-
-def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
-    from aioreactive.operators.from_async_iterable import from_async_iterable
-
-    from .create import of
-
-    return AsyncChainedObservable(from_async_iterable(iter))
 
 
 def single(value: TSource) -> "AsyncObservable[TSource]":
@@ -189,27 +213,10 @@ def timer(due_time: float) -> AsyncObservable[int]:
     return timer(due_time)
 
 
-def empty() -> "AsyncObservable[TSource]":
-    from .create import empty
+def with_latest_from(mapper: Callable, other: AsyncObservable) -> Callable[[AsyncObservable], AsyncObservable]:
+    from aioreactive.operators.with_latest_from import with_latest_from
 
-    return empty()
-
-
-def never() -> "AsyncObservable[TSource]":
-    from .create import never
-
-    return never()
-
-
-def subscribe_async(obv: AsyncObserver[TSource]) -> Callable[[AsyncObservable[TSource]], Awaitable[AsyncDisposable]]:
-    """A pipeable subscribe async.
-
-    Example:
-        >>> await pipe(xs, filter(predicate), subscribe_async)
-    """
-    from .subscription import subscribe_async
-
-    return subscribe_async(obv)
+    return partial(with_latest_from, mapper, other)
 
 
 __all__ = [
@@ -226,6 +233,7 @@ __all__ = [
     "catch",
     "choose",
     "choose_async",
+    "combine_latest",
     "delay",
     "empty",
     "filter",

@@ -5,39 +5,50 @@ from typing import Generic, TypeVar
 
 from expression.system import AsyncDisposable
 
+from .notification import Notification
 from .observables import AsyncObservable
 
 TSource = TypeVar("TSource")
 
 
-class Msg(Generic[TSource]):
+class Msg:
     """Message base class"""
 
     ...
 
 
 @dataclass
-class DisposableMsg(Msg[TSource]):
+class SourceMsg(Msg, Generic[TSource]):
+    value: Notification[TSource]
+
+
+@dataclass
+class OtherMsg(Msg, Generic[TSource]):
+    value: Notification[TSource]
+
+
+@dataclass
+class DisposableMsg(Msg, Generic[TSource]):
     """Message containing a diposable."""
 
     disposable: AsyncDisposable
 
 
 @dataclass
-class InnerObservableMsg(Msg[TSource]):
+class InnerObservableMsg(Msg, Generic[TSource]):
     """Message containing an inner observable."""
 
     inner_observable: AsyncObservable[TSource]
 
 
 @dataclass
-class InnerCompletedMsg(Msg[TSource]):
+class InnerCompletedMsg(Msg):
     """Message notifying that the inner observable completed."""
 
     key: int
 
 
-class CompletedMsg(Msg[TSource]):
+class CompletedMsg(Msg, Generic[TSource]):
     """Message notifying that the observable sequence completed."""
 
     pass
@@ -46,7 +57,7 @@ class CompletedMsg(Msg[TSource]):
 CompletedMsg_ = CompletedMsg()  # Singleton
 
 
-class DisposeMsg(Msg[TSource]):
+class DisposeMsg(Msg, Generic[TSource]):
     """Message notifying that the operator got disposed."""
 
     pass
