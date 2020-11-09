@@ -152,14 +152,25 @@ def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
     return mapi(mapper)
 
 
-def merge(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
+def merge_inner(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
     from .combine import merge_inner
+
+    return pipe(source, merge_inner(0))
+
+
+def merge(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
     from .create import of_seq
 
     def _(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
-        return pipe(of_seq([source, other]), merge_inner(0))
+        return pipe(of_seq([source, other]), merge_inner)
 
     return _
+
+
+def merge_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+    from .create import of_seq
+
+    return pipe(of_seq(sources), merge_inner)
 
 
 def never() -> "AsyncObservable[TSource]":
@@ -245,6 +256,9 @@ __all__ = [
     "from_iterable",
     "map",
     "map_async",
+    "merge",
+    "merge_inner",
+    "merge_seq",
     "never",
     "retry",
     "run",

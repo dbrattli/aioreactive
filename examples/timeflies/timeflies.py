@@ -50,7 +50,7 @@ async def main(loop) -> None:
     # A simple combined event loop
     while True:
         root.update()
-        await asyncio.sleep(0.010)
+        await asyncio.sleep(0.001)
 
 
 if __name__ == "__main__":

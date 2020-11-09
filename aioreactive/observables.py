@@ -96,16 +96,16 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
         return AsyncChainedObservable(of_seq(iter))
 
     @classmethod
-    def single(cls, value: TSource) -> "AsyncChainedObservable[TSource]":
-        from .create import single
-
-        return AsyncChainedObservable(single(value))
-
-    @classmethod
     def empty(cls) -> "AsyncChainedObservable[TSource]":
         from .create import empty
 
         return AsyncChainedObservable(empty())
+
+    @classmethod
+    def single(cls, value: TSource) -> "AsyncChainedObservable[TSource]":
+        from .create import single
+
+        return AsyncChainedObservable(single(value))
 
     def combine_latest(self, other: TOther) -> "AsyncChainedObservable[Tuple[TSource, TOther]]":
         from .combine import combine_latest

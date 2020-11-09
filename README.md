@@ -9,14 +9,14 @@ and await. Aioreactive is the next version of
 [RxPY](https://github.com/ReactiveX/RxPY), that integrates more
 naturally with the Python language.
 
->aioreactive is the unification of RxPY, reactive programming with asyncio using async and await.
+> aioreactive is the unification of RxPY and reactive programming with
+> asyncio using async and await.
 
 ## The design goals for aioreactive:
 
 * Python 3.8+ only. We have a hard dependency on `async` and `await`,
-  and typing.
-* All operators and tools are implemented as plain old functions. No
-  methods other than Python special methods.
+  data classes and type variables.
+* All operators and tools are implemented as plain old functions.
 * Everything is `async`. Sending values is async, subscribing to
   observables is async.
 * One scheduler to rule them all. Everything runs on the asyncio base
@@ -43,7 +43,7 @@ With aioreactive you subscribe observers to observables, and the key
 abstractions of aioreactive can be seen in this single line of code:
 
 ```python
-subscription = await subscribe(observable, observer)
+subscription = await subscribe_async(observable, observer)
 ```
 
 The difference from RxPY can be seen with the `await` expression.
@@ -53,14 +53,14 @@ classes are called AsyncObservable and AsyncObserver.
 
 AsyncObservable is a producer of events. It may be seen as the dual or
 opposite of AsyncIterable and provides a single setter method called
-`__asubscribe__()` that is the dual of the `__aiter__()` getter method:
+`subscribe_async()` that is the dual of the `__aiter__()` getter method:
 
 ```python
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
-class AsyncObservable(metaclass=ABCMeta):
+class AsyncObservable(ABC):
     @abstractmethod
-    async def __asubscribe__(self, observer):
+    async def subscribe_async(self, observer):
         return NotImplemented
 ```
 
@@ -75,9 +75,9 @@ three async methods `asend()`, that is the opposite of `__anext__()`,
 that is the opposite of `raise StopAsyncIteration`:
 
 ```python
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
-class AsyncObserver(AsyncObservable):
+class AsyncObserver(ABC):
     @abstractmethod
     async def asend(self, value):
         return NotImplemented
@@ -94,27 +94,28 @@ class AsyncObserver(AsyncObservable):
 ## Subscribing to observables
 
 An observable becomes hot and starts streaming items by using the
-`subscribe()` function. The `subscribe()` function takes an observable
-returns a disposable subscription. So the `subscribe()` function is used
-to attach a observer to the observable.
+`subscribe_async()` method. The `subscribe_async()` method takes an
+observable and returns a disposable subscription. So the
+`subscribe_async()` method is used to attach a observer to the
+observable.
 
 ```python
 async def asend(value):
     print(value)
 
-subscription = await subscribe(source, AsyncAnonymousObserver(asend))
+disposable = await subscribe(source, AsyncAnonymousObserver(asend))
 ```
 
 `AsyncAnonymousObserver` is an anonymous observer that constructs an
 `AsyncObserver` out of plain async functions, so you don't have to
 implement a new named observer every time you need one.
 
-The subscription returned by `__asubscribe__()` is disposable, so to
-unsubscribe you need to await the `adispose()` method on the
+The subscription returned by `subscribe_async()` is disposable, so to
+unsubscribe you need to await the `dispose_async()` method on the
 subscription.
 
 ```python
-await subscription.adispose()
+await subscription.dispose_async()
 ```
 
 ## Asynchronous iteration
@@ -161,7 +162,7 @@ Aioreactive lets you create streams explicitly.
 stream = AsyncStream()  # Alias for AsyncMultiStream
 
 sink = AsyncAnonymousObserver()
-await subscribe(stream, sink)
+await stream.subscribe_async(sink)
 await stream.asend(42)
 ```
 
@@ -194,7 +195,9 @@ ones.
 * **from_iterable** -- Create an observable from an (async) iterable.
 * **subscribe** -- Subscribes an observer to an observable. Returns a subscription.
 * **map** -- transforms an observable.
-* **merge** -- Merges an observable of observables.
+* **merge_inner** -- Merges an observable of observables.
+* **merge** -- Merge one observable with another observable.
+* **merge_seq** -- Merge a sequence of observables.
 * **run** -- Awaits the future returned by subscribe. Returns when the subscription closes.
 * **slice** -- Slices an observable.
 * **switch_latest** -- Merges the latest stream in an observable of streams.
@@ -210,35 +213,36 @@ supports both method chaining or forward pipe programming styles.
 ## Pipe forward programming style
 
 `AsyncObservable` may compose operators using forward pipelining with
-the `|` (or) operator. This works by having the operators partially
+the `pipe` operator. This works by having the operators partially
 applied with their arguments before being given the source stream
 argument.
 
 ```python
-ys = xs | op.filter(predicate) | op.map(mapper) | op.flat_map(request)
+ys = pipe(xs, filter(predicate), map(mapper), flat_map(request))
 ```
 
 Longer pipelines may break lines as for binary operators:
 
 ```python
-from aioreactive.core import AsyncStream, subscribe
-from aioreactive.core import Operators as op
+import aioreactve as rx
+from aioreactive.core import AsyncStream
 
 async def main():
     stream = AsyncStream()
     obv = AsyncIteratorObserver()
 
-    xs = (stream
-          | op.map(lambda x: x["term"])
-          | op.filter(lambda text: len(text) > 2)
-          | op.debounce(0.75)
-          | op.distinct_until_changed()
-          | op.map(search_wikipedia)
-          | op.switch_latest()
-          )
+    xs = compose(
+        stream,
+        rx.map(lambda x: x["term"]),
+        rx.filter(lambda text: len(text) > 2),
+        rx.debounce(0.75),
+        rx.distinct_until_changed(),
+        rx.map(search_wikipedia),
+        rx.switch_latest(),
+    )
 
-    async with subscribe(xs, obv) as ys
-        async for value in ys:
+    async with xs.subscribe(obv) as ys
+        async for value in obv:
             print(value)
 ```
 
@@ -247,7 +251,7 @@ AsyncObservable also supports slicing using the Python slice notation.
 ```python
 @pytest.mark.asyncio
 async def test_slice_special():
-    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
+    xs = rx.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value):
@@ -273,7 +277,7 @@ where we may use methods such as `.where()` and `.select()`.
 ```python
 @pytest.mark.asyncio
 async def test_observable_simple_pipe():
-    xs = AsyncObservable.from_iterable([1, 2, 3])
+    xs = rx.from_iterable([1, 2, 3])
     result = []
 
     async def mapper(value):
