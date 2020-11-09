@@ -151,10 +151,12 @@ class AsyncChainedObservable(AsyncObservable[TSource]):
 
         return pipe(self, map(selector), AsyncChainedObservable.create)
 
-    def merge(self, other: "AsyncChainedObservable") -> "AsyncChainedObservable":
-        from aioreactive.operators.merge import merge
+    def merge(self, other: AsyncObservable[TSource]) -> "AsyncChainedObservable[TSource]":
+        from .combine import merge_inner
+        from .create import of_seq
 
-        return AsyncChainedObservable(merge(other, self))
+        source = of_seq([self, other])
+        return pipe(source, merge_inner(0), AsyncChainedObservable.create)
 
     def with_latest_from(self, mapper, other) -> "AsyncChainedObservable":
         from aioreactive.operators.with_latest_from import with_latest_from

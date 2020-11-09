@@ -152,10 +152,14 @@ def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
     return mapi(mapper)
 
 
-def merge(other: AsyncObservable) -> Callable[[AsyncObservable], AsyncObservable]:
-    from aioreactive.operators.merge import merge
+def merge(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
+    from .combine import merge_inner
+    from .create import of_seq
 
-    return partial(merge, other)
+    def _(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+        return pipe(of_seq([source, other]), merge_inner(0))
+
+    return _
 
 
 def never() -> "AsyncObservable[TSource]":
