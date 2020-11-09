@@ -45,7 +45,7 @@ class Merge(AsyncObservable):
             self._inner_subs = {}
 
         async def asend_core(self, stream: AsyncObservable) -> None:
-            log.debug("Merge.Sink:asend_core(%s)" % stream)
+            log.debug("Merge.Sink:asend_core(%s)", stream)
 
             inner_stream = Merge.Sink.InnerStream()
             inner_sub = await chain(inner_stream, self._observer)  # type: AsyncDisposable

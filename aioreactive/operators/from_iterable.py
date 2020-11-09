@@ -29,7 +29,7 @@ class FromIterable(AsyncObservable, Generic[T]):
             log.debug("sync_worker()")
             for value in self.iterable:
                 try:
-                    log.debug("sync_worker. asending: %s" % str(value))
+                    log.debug("sync_worker. asending: %s", value)
                     await observer.asend(value)
                 except Exception as ex:
                     await observer.athrow(ex)

@@ -34,7 +34,7 @@ class SwitchLatest(AsyncObservable):
             self.latest = 0
 
         async def asend(self, stream) -> None:
-            log.debug("SwitchLatest._:send(%s)" % stream)
+            log.debug("SwitchLatest._:send(%s)", stream)
             inner_observer = await chain(SwitchLatest.Sink.Inner(self), self._observer)
 
             self._latest = id(inner_observer)
