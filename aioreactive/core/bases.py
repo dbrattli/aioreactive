@@ -27,7 +27,7 @@ class AsyncObserverBase(Future, AsyncObserver[T], Disposable):
         self._is_stopped = False
 
     async def asend(self, value: T) -> None:
-        log.debug("AsyncObserverBase:asend(%s)", value)
+        log.debug("AsyncObserverBase:asend(%s)", str(value))
 
         if self._is_stopped:
             log.debug("Closed!!")

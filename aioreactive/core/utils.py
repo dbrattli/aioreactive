@@ -16,7 +16,7 @@ async def anoop(*args, **kw) -> None:
 
 class NoopObserver(typing.AsyncObserver):
     async def asend(self, value) -> None:
-        log.debug("NoopSink:asend(%s)", value)
+        log.debug("NoopSink:asend(%s)", str(value))
         pass
 
     async def athrow(self, ex) -> None:
