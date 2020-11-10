@@ -1,10 +1,15 @@
 import asyncio
-from typing import Awaitable, Callable, TypeVar
+import logging
+from typing import Awaitable, Callable, List, Tuple, TypeVar
 
+import aioreactive
+from aioreactive.notification import Notification, OnCompleted, OnError, OnNext
 from aioreactive.types import AsyncObserver
 from aioreactive.utils import anoop
 
 TSource = TypeVar("TSource")
+
+log = logging.getLogger(__name__)
 
 
 class AsyncTestObserver(AsyncObserver[TSource]):
@@ -30,7 +35,7 @@ class AsyncTestObserver(AsyncObserver[TSource]):
         aclose: Callable[[], Awaitable[None]] = anoop,
     ):
         super().__init__()
-        self._values = []
+        self._values: List[Tuple[float, Notification[TSource]]] = []
 
         self._send = asend
         self._throw = athrow
@@ -39,21 +44,21 @@ class AsyncTestObserver(AsyncObserver[TSource]):
         self._loop = asyncio.get_event_loop()
 
     async def asend_core(self, value: TSource):
-        print("AsyncAnonymousObserver:asend_core(%s)" % value)
+        log.debug("AsyncAnonymousObserver:asend_core(%s)", value)
         time = self._loop.time()
-        self._values.append((time, value))
+        self._values.append((time, OnNext(value)))
 
         await self._send(value)
 
     async def athrow_core(self, error: Exception):
         time = self._loop.time()
-        self._values.append((time, error))
+        self._values.append((time, OnError(error)))
 
         await self._throw(error)
 
     async def aclose_core(self):
         time = self._loop.time()
-        self._values.append((time,))
+        self._values.append((time, OnCompleted))
 
         await self._close()
 

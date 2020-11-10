@@ -1,13 +1,12 @@
-import pytest
 import asyncio
 
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators import from_iterable, flat_map, unit
-from aioreactive.core import AsyncStream, subscribe, run
-from aioreactive.testing import AsyncTestObserver
+import aioreactive as rx
+import pytest
+from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
+from expression.core import pipe
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -16,97 +15,90 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_flap_map_done():
-    xs = AsyncStream()
-    result = []
+    xs: rx.AsyncSubject[int] = rx.AsyncSubject()
 
-    async def asend(value):
-        nonlocal result
-        result.append(value)
+    def mapper(value: int) -> rx.AsyncObservable[int]:
+        return rx.from_iterable([value])
 
-    async def mapper(value):
-        return from_iterable([value])
-
-    ys = flat_map(mapper, xs)
+    ys = pipe(xs, rx.flat_map(mapper))
 
     obv = AsyncTestObserver()
-    await subscribe(ys, obv)
+    await ys.subscribe_async(obv)
     await xs.asend(10)
     await xs.asend(20)
     await xs.aclose()
 
     await obv
 
-    assert obv.values == [
-        (0, 10),
-        (0, 20),
-        (0, )]
+    assert obv.values == [(0, 10), (0, 20), (0,)]
 
 
-@pytest.mark.asyncio
-async def test_flat_map_monad():
-    m = unit(42)
+# @pytest.mark.asyncio
+# async def test_flat_map_monad():
+#     m = unit(42)
 
-    async def mapper(x):
-        return unit(x * 10)
+#     async def mapper(x):
+#         return unit(x * 10)
 
-    a = await run(flat_map(mapper, m))
-    b = await run(unit(420))
-    assert a == b
-
-
-@pytest.mark.asyncio
-async def test_flat_map_monad_law_left_identity():
-    # return x >>= f is the same thing as f x
-
-    x = 3
-
-    async def f(x):
-        return unit(x + 100000)
-
-    a = await run(flat_map(f, unit(x)))
-    b = await run(await f(x))
-
-    assert a == b
+#     a = await run(flat_map(mapper, m))
+#     b = await run(unit(420))
+#     assert a == b
 
 
-@pytest.mark.asyncio
-async def test_flat_map_monad_law_right_identity():
-    # m >>= return is no different than just m.
+# @pytest.mark.asyncio
+# async def test_flat_map_monad_law_left_identity():
+#     # return x >>= f is the same thing as f x
 
-    m = unit("move on up")
+#     x = 3
 
-    async def aunit(x):
-        return unit(x)
+#     async def f(x):
+#         return unit(x + 100000)
 
-    a = await run(flat_map(aunit, m))
-    b = await run(m)
+#     a = await run(flat_map(f, unit(x)))
+#     b = await run(await f(x))
 
-    assert a == b
+#     assert a == b
 
 
-@pytest.mark.asyncio
-async def test_flat_map_monad_law_associativity():
-    # (m >>= f) >>= g is just like doing m >>= (\x -> f x >>= g)
+# @pytest.mark.asyncio
+# async def test_flat_map_monad_law_right_identity():
+#     # m >>= return is no different than just m.
 
-    m = unit(42)
+#     m = unit("move on up")
 
-    async def f(x):
-        return unit(x + 1000)
+#     async def aunit(x):
+#         return unit(x)
 
-    async def g(y):
-        return unit(y * 333)
+#     a = await run(flat_map(aunit, m))
+#     b = await run(m)
 
-    async def h(x):
-        return flat_map(g, await f(x))
+#     assert a == b
 
-    zs = flat_map(f, m)
-    a = await run(flat_map(g, zs))
 
-    b = await run(flat_map(h, m))
+# @pytest.mark.asyncio
+# async def test_flat_map_monad_law_associativity():
+#     # (m >>= f) >>= g is just like doing m >>= (\x -> f x >>= g)
 
-    assert a == b
+#     m = unit(42)
 
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(test_flat_map_monad())
-    loop.close()
+#     async def f(x):
+#         return unit(x + 1000)
+
+#     async def g(y):
+#         return unit(y * 333)
+
+#     async def h(x):
+#         return flat_map(g, await f(x))
+
+#     zs = flat_map(f, m)
+#     a = await run(flat_map(g, zs))
+
+#     b = await run(flat_map(h, m))
+
+#     assert a == b
+
+
+# if __name__ == "__main__":
+#     loop = asyncio.get_event_loop()
+#     loop.run_until_complete(test_flat_map_monad())
+#     loop.close()

@@ -1,7 +1,7 @@
 """Aioreactive module"""
 
 from functools import partial
-from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar
+from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar, Union
 
 from expression.core import Option, pipe
 from expression.system.disposable import AsyncDisposable
@@ -15,6 +15,137 @@ from .types import AsyncObserver, Stream
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
 TOther = TypeVar("TOther")
+
+
+class AsyncRx(AsyncObservable[TSource]):
+    """An AsyncObservable class similar to classic Rx.
+
+    This class supports has all operators as methods and supports
+    method chaining.
+
+    Subscribe is also a method.
+
+    All methods are lazy imported.
+    """
+
+    def __init__(self, source: AsyncObservable[TSource]) -> None:
+        super().__init__()
+        self._source = source
+
+    @classmethod
+    def create(cls, source: AsyncObservable[TSource]) -> "AsyncRx[TSource]":
+        """Create `AsyncChainedObservable`.
+
+        Helper method for creating an `AsyncChainedObservable` to the
+        the generic type rightly inferred by Pylance (__init__ returns None).
+        """
+        return cls(source)
+
+    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+        return await self._source.subscribe_async(observer)
+
+    def __getitem__(self, key: Union[slice, int]) -> "AsyncRx[TSource]":
+        """Slices the given source stream using Python slice notation.
+         The arguments to slice is start, stop and step given within
+         brackets [] and separated with the ':' character. It is
+         basically a wrapper around the operators skip(), skip_last(),
+         take(), take_last() and filter().
+
+         This marble diagram helps you remember how slices works with
+         streams. Positive numbers is relative to the start of the
+         events, while negative numbers are relative to the end
+         (on_completed) of the stream.
+
+         r---e---a---c---t---i---v---e---|
+         0   1   2   3   4   5   6   7   8
+        -8  -7  -6  -5  -4  -3  -2  -1
+
+         Example:
+         result = source[1:10]
+         result = source[1:-2]
+         result = source[1:-1:2]
+
+         Keyword arguments:
+         self -- Source to slice
+         key -- Slice object
+
+         Returne a sliced source stream."""
+
+        return AsyncRx(super(AsyncRx, self).__getitem__(key))
+
+    @classmethod
+    def from_iterable(cls, iter: Iterable[TSource]) -> "AsyncRx[TSource]":
+        from .create import of_seq
+
+        return AsyncRx(of_seq(iter))
+
+    @classmethod
+    def empty(cls) -> "AsyncRx[TSource]":
+        from .create import empty
+
+        return AsyncRx(empty())
+
+    @classmethod
+    def single(cls, value: TSource) -> "AsyncRx[TSource]":
+        from .create import single
+
+        return AsyncRx(single(value))
+
+    def combine_latest(self, other: TOther) -> "AsyncRx[Tuple[TSource, TOther]]":
+        from .combine import combine_latest
+
+        return pipe(self, combine_latest(other), AsyncRx.create)
+
+    def debounce(self, seconds: float) -> "AsyncRx[TSource]":
+        """Debounce observable source.
+
+        Ignores values from a source stream which are followed by
+        another value before seconds has elapsed.
+
+        Example:
+        partial = debounce(5) # 5 seconds
+
+        Keyword arguments:
+        seconds -- Duration of the throttle period for each value
+
+        Returns partially applied function that takes a source sequence.
+        """
+
+        from aioreactive.operators.debounce import debounce
+
+        return AsyncRx(debounce(seconds, self))
+
+    def delay(self, seconds: float) -> "AsyncRx[TSource]":
+        from .timeshift import delay
+
+        return AsyncRx(delay(seconds)(self))
+
+    def where(self, predicate: Callable[[TSource], TSource]) -> "AsyncRx[TSource]":
+        from .filter import filter
+
+        return pipe(self, filter(predicate), AsyncRx.create)
+
+    def select_many(self, selector: Callable[[TSource], AsyncObservable[TResult]]) -> "AsyncRx[TResult]":
+        from .transform import flat_map
+
+        return pipe(self, flat_map(selector), AsyncRx.create)
+
+    def select(self, selector: Callable[[TSource], TResult]) -> "AsyncRx[TResult]":
+        from .transform import map
+
+        return pipe(self, map(selector), AsyncRx.create)
+
+    def merge(self, other: AsyncObservable[TSource]) -> "AsyncRx[TSource]":
+        from .combine import merge_inner
+        from .create import of_seq
+
+        source = of_seq([self, other])
+        return pipe(source, merge_inner(0), AsyncRx.create)
+
+    def with_latest_from(self, mapper, other) -> "AsyncRx":
+        from aioreactive.operators.with_latest_from import with_latest_from
+
+        return AsyncRx(with_latest_from(mapper, other, self))
 
 
 def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSource]:
@@ -38,8 +169,8 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
 def debounce(seconds: float) -> Stream[TSource, TSource]:
     """Debounce source stream.
 
-    Ignores values from a source stream which are followed by
-    another value before seconds has elapsed.
+    Ignores values from a source stream which are followed by another
+    value before seconds has elapsed.
 
     Example:
     partial = debounce(5) # 5 seconds
@@ -100,8 +231,8 @@ def from_iterable(iterable: Iterable[TSource]) -> AsyncObservable[TSource]:
 
     1 - xs = from_iterable([1,2,3])
 
-    Returns the source stream whose elements are pulled from the
-    given (async) iterable sequence."""
+    Returns the source stream whose elements are pulled from the given
+    (async) iterable sequence."""
     from .create import of_seq
 
     return of_seq(iterable)
@@ -118,13 +249,13 @@ def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
 
     from .create import of
 
-    return AsyncChainedObservable(from_async_iterable(iter))
+    return AsyncRx(from_async_iterable(iter))
 
 
 def interval(seconds: float, period: int) -> AsyncObservable[int]:
     """Returns an observable sequence that triggers the increasing
-    sequence starting with 0 after the given msecs, and the after
-    each period."""
+    sequence starting with 0 after the given msecs, and the after each
+    period."""
     from .create import interval
 
     return interval(seconds, period)
@@ -137,16 +268,18 @@ def map(fn: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
 
 
 def mapi_async(mapper: Callable[[Tuple[TSource, int]], Awaitable[TResult]]) -> Stream[TSource, TResult]:
-    """Returns an observable sequence whose elements are the result of invoking the async mapper function by
-    incorporating the element's index on each element of the source."""
+    """Returns an observable sequence whose elements are the result of
+    invoking the async mapper function by incorporating the element's
+    index on each element of the source."""
     from .transform import map_async
 
     return map_async(mapper)
 
 
 def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
-    """Returns an observable sequence whose elements are the result of invoking the mapper function and incorporating
-    the element's index on each element of the source."""
+    """Returns an observable sequence whose elements are the result of
+    invoking the mapper function and incorporating the element's index
+    on each element of the source."""
     from .transform import mapi
 
     return mapi(mapper)
@@ -183,6 +316,10 @@ def distinct_until_changed() -> Callable[[AsyncObservable], AsyncObservable]:
     from aioreactive.operators.distinct_until_changed import distinct_until_changed
 
     return partial(distinct_until_changed)
+
+
+def as_chained(source: AsyncObservable[TSource]) -> AsyncRx[TSource]:
+    return AsyncRx(source)
 
 
 def retry(retry_count: int) -> Stream[TSource, TSource]:

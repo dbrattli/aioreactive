@@ -249,7 +249,7 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         log.debug("AsyncAwaitableObserver:asend(%s)", str(value))
 
         if self._is_stopped:
-            log.debug("Closed!!")
+            log.debug("AsyncAwaitableObserver:asend(), Closed!!")
             return
 
         self._last_value = value
@@ -259,7 +259,7 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
     async def athrow(self, error: Exception) -> None:
         log.debug("AsyncAwaitableObserver:athrow()")
         if self._is_stopped:
-            log.debug("Closed!!")
+            log.debug("AsyncAwaitableObserver:athrow(), Closed!!")
             return
 
         self._is_stopped = True
@@ -271,7 +271,7 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         log.debug("AsyncAwaitableObserver:aclose")
 
         if self._is_stopped:
-            log.debug("Closed!!")
+            log.debug("AsyncAwaitableObserver:aclose(), Closed!!")
             return
 
         self._is_stopped = True

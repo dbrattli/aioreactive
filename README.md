@@ -14,7 +14,7 @@ naturally with the Python language.
 
 ## The design goals for aioreactive:
 
-* Python 3.8+ only. We have a hard dependency on `async` and `await`,
+* Python 3.7+ only. We have a hard dependency on `async` and `await`,
   data classes and type variables.
 * All operators and tools are implemented as plain old functions.
 * Everything is `async`. Sending values is async, subscribing to
@@ -195,6 +195,9 @@ ones.
 * **from_iterable** -- Create an observable from an (async) iterable.
 * **subscribe** -- Subscribes an observer to an observable. Returns a subscription.
 * **map** -- transforms an observable.
+* **mapi** -- transforms an observable with index.
+* **map_async** -- transforms an observable asynchronously.
+* **mapi_async** -- transforms an observable asynchronously with index.
 * **merge_inner** -- Merges an observable of observables.
 * **merge** -- Merge one observable with another observable.
 * **merge_seq** -- Merge a sequence of observables.
