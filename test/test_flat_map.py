@@ -2,6 +2,7 @@ import asyncio
 
 import aioreactive as rx
 import pytest
+from aioreactive.notification import OnCompleted, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from expression.core import pipe
 
@@ -24,13 +25,13 @@ async def test_flap_map_done():
 
     obv = AsyncTestObserver()
     await ys.subscribe_async(obv)
+
     await xs.asend(10)
     await xs.asend(20)
     await xs.aclose()
-
     await obv
 
-    assert obv.values == [(0, 10), (0, 20), (0,)]
+    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted)]
 
 
 # @pytest.mark.asyncio

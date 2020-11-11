@@ -2,9 +2,8 @@ import asyncio
 import logging
 from typing import Awaitable, Callable, List, Tuple, TypeVar
 
-import aioreactive
+from aioreactive import AsyncAwaitableObserver
 from aioreactive.notification import Notification, OnCompleted, OnError, OnNext
-from aioreactive.types import AsyncObserver
 from aioreactive.utils import anoop
 
 TSource = TypeVar("TSource")
@@ -12,7 +11,7 @@ TSource = TypeVar("TSource")
 log = logging.getLogger(__name__)
 
 
-class AsyncTestObserver(AsyncObserver[TSource]):
+class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
     """A recording AsyncAnonymousObserver.
 
     Records all values and events that happens and makes them available
@@ -34,33 +33,39 @@ class AsyncTestObserver(AsyncObserver[TSource]):
         athrow: Callable[[Exception], Awaitable[None]] = anoop,
         aclose: Callable[[], Awaitable[None]] = anoop,
     ):
-        super().__init__()
+        super().__init__(asend, athrow, aclose)
         self._values: List[Tuple[float, Notification[TSource]]] = []
 
         self._send = asend
         self._throw = athrow
         self._close = aclose
 
-        self._loop = asyncio.get_event_loop()
+        # self._loop = asyncio.get_event_loop()
 
-    async def asend_core(self, value: TSource):
-        log.debug("AsyncAnonymousObserver:asend_core(%s)", value)
+    async def asend(self, value: TSource):
+        log.debug("AsyncAnonymousObserver:asend(%s)", value)
         time = self._loop.time()
         self._values.append((time, OnNext(value)))
 
-        await self._send(value)
+        await super().asend(value)
+        # await self._send(value)
 
-    async def athrow_core(self, error: Exception):
+    async def athrow(self, error: Exception):
+        log.debug("AsyncAnonymousObserver:athrow(%s)", error)
         time = self._loop.time()
         self._values.append((time, OnError(error)))
 
-        await self._throw(error)
+        await super().athrow(error)
+        # await self._throw(error)
 
-    async def aclose_core(self):
+    async def aclose(self):
+        log.debug("AsyncAnonymousObserver:aclose()")
+
         time = self._loop.time()
         self._values.append((time, OnCompleted))
 
-        await self._close()
+        await super().aclose()
+        # await self._close()
 
     @property
     def values(self):

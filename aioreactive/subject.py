@@ -78,7 +78,7 @@ class AsyncMultiSubject(AsyncObserver[TSource], AsyncObservable[TSource]):
     Both an async multi future and async iterable. Thus you may
     .cancel() it to stop streaming, async iterate it using async-for.
 
-    The AsyncMultiStream is hot in the sense that it will drop events
+    The AsyncMultiStream is "hot" in the sense that it will drop events
     if there are currently no observer running.
     """
 
@@ -101,14 +101,13 @@ class AsyncMultiSubject(AsyncObserver[TSource], AsyncObservable[TSource]):
     async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
         """Subscribe."""
 
-        log.debug("AsyncMultiStream:subscribe")
+        log.debug("AsyncMultiStream:subscribe_async()")
 
         self._observers.append(observer)
 
         async def dispose() -> None:
             log.debug("AsyncMultiStream:dispose()")
             if observer in self._observers:
-                print("Remove")
                 self._observers.remove(observer)
 
         return AsyncDisposable.create(dispose)

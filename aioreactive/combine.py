@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Generic, Iterable, NewType, Tuple, TypeVar, cast
 
@@ -19,6 +20,8 @@ TOther = TypeVar("TOther")
 
 
 Key = NewType("Key", int)
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -59,10 +62,11 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                     return AsyncAnonymousObserver(asend, athrow, aclose)
 
                 async def update(msg: Msg, model: Model[TSource]) -> Model[TSource]:
+                    log.debug("update: %s, model: %s", msg, model)
                     if isinstance(msg, InnerObservableMsg):
                         msg = cast(InnerObservableMsg[TSource], msg)
                         xs: AsyncObservable[TSource] = msg.inner_observable
-                        if max_concurrent == 0 and len(model.subscriptions) < max_concurrent:
+                        if max_concurrent == 0 or len(model.subscriptions) < max_concurrent:
                             inner = await xs.subscribe_async(obv(model.key))
                             return model.replace(
                                 subscriptions=model.subscriptions.add(model.key, inner),
@@ -90,8 +94,10 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                                 await safe_obv.aclose()
                             return model.replace(subscriptions=map.empty)
                     elif msg is CompletedMsg:
-                        if len(model.subscriptions):
+                        if not model.subscriptions:
+                            log.debug("merge_inner: closing!")
                             await safe_obv.aclose()
+
                         return model.replace(is_stopped=True)
                     else:
                         for key, dispose in model.subscriptions:
@@ -108,6 +114,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
             agent = MailboxProcessor.start(worker)
 
             async def asend(xs: TSource) -> None:
+                log.debug("merge_inner:asend(%s)", xs)
                 agent.post(InnerObservableMsg(inner_observable=xs))
 
             async def athrow(error: Exception) -> None:
@@ -140,11 +147,22 @@ def concat_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[T
         merge_inner(1),
     )
 
-    """Merges the specified observable sequences into one observable sequence by combining elements of the sources into
-    tuples. Returns an observable sequence containing the combined results."""
-
 
 def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSource, TOther]]:
+    """Combine latest values.
+
+    Merges the specified observable sequences into one observable
+    sequence by combining elements of the sources into tuples. Returns
+    an observable sequence containing the combined results.
+
+    Args:
+        other: The other observable to combine with.
+
+    Returns:
+        A partially applied stream that takes the source observable and
+        returns the combined observable.
+    """
+
     def _combine_latest(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
         async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
             safe_bv, auto_detach = auto_detach_observer(aobv)
@@ -208,6 +226,7 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
 
         return AsyncAnonymousObservable(subscribe_async)
 
+    _combine_latest.__doc__ = combine_latest.__doc__
     return _combine_latest
 
 

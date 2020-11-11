@@ -3,7 +3,6 @@ from typing import Any, Generator
 
 import aioreactive as rx
 import pytest
-from aioreactive import AsyncAwaitableObserver
 from aioreactive.testing import VirtualTimeEventLoop
 from expression.core import pipe
 
@@ -32,7 +31,7 @@ async def test_filter_happy() -> None:
         return value > 1
 
     ys = pipe(xs, rx.filter_async(predicate))
-    value = await rx.run(ys, AsyncAwaitableObserver(asend))
+    value = await rx.run(ys, rx.AsyncAwaitableObserver(asend))
     assert value == 3
     assert result == [2, 3]
 
@@ -53,6 +52,6 @@ async def test_filter_predicate_throws() -> None:
     ys = pipe(xs, rx.filter_async(predicate))
 
     with pytest.raises(MyException):
-        await rx.run(ys, AsyncAwaitableObserver(asend))
+        await rx.run(ys, rx.AsyncAwaitableObserver(asend))
 
     assert result == []

@@ -91,6 +91,7 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
             handle = self._scheduled[0]
             handle = heapq.heappop(self._scheduled)
             handle._scheduled = False
+            log.debug("Advancing time: %s", handle._when)
             self._time = handle._when
             self._ready.append(handle)
 

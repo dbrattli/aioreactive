@@ -218,7 +218,7 @@ def auto_detach_observer(
 
 
 class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable):
-    """An async observer abstract base class.
+    """An async awaitable observer.
 
     Both a future and async observer. The future resolves with the last
     value before the observer is closed. A close without any values sent
@@ -231,6 +231,7 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         aclose: Callable[[], Awaitable[None]] = anoop,
     ) -> None:
         super().__init__()
+
         assert iscoroutinefunction(asend)
         self._asend = asend
 
@@ -240,10 +241,9 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         assert iscoroutinefunction(aclose)
         self._aclose = aclose
 
-        self._has_value = False
         self._last_value: Optional[TSource] = None
-
         self._is_stopped = False
+        self._has_value = False
 
     async def asend(self, value: TSource) -> None:
         log.debug("AsyncAwaitableObserver:asend(%s)", str(value))
@@ -283,4 +283,6 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         await self._aclose()
 
     def dispose(self) -> None:
+        log.debug("AsyncAwaitableObserver:dispose()")
+
         self._is_stopped = True

@@ -3,12 +3,10 @@ from typing import Optional
 
 import aioreactive as rx
 import pytest
-from aioreactive.observables import AsyncObservable
-from aioreactive.observers import AsyncAnonymousObserver, AsyncAwaitableObserver
-from aioreactive.testing import AsyncSubject, VirtualTimeEventLoop
-from aioreactive.types import AsyncObserver
+from aioreactive import AsyncObservable, AsyncObserver
+from aioreactive.testing import VirtualTimeEventLoop
 from expression.core import pipe
-from expression.system.disposable import AsyncDisposable
+from expression.system import AsyncDisposable
 
 
 @pytest.yield_fixture()  # type:ignore
@@ -31,7 +29,7 @@ async def test_map_works():
 
     ys = pipe(xs, rx.map(mapper))
 
-    obv: AsyncObserver[int] = AsyncAwaitableObserver(asend)
+    obv: AsyncObserver[int] = rx.AsyncAwaitableObserver(asend)
     async with await ys.subscribe_async(obv):
         result = await obv
         assert result == 30
@@ -54,7 +52,7 @@ async def test_map_mapper_throws():
 
     ys = pipe(xs, rx.map(mapper))
 
-    obv = AsyncAwaitableObserver(athrow=athrow)
+    obv = rx.AsyncAwaitableObserver(athrow=athrow)
 
     await ys.subscribe_async(obv)
 
@@ -68,7 +66,7 @@ async def test_map_mapper_throws():
 
 @pytest.mark.asyncio
 async def test_map_subscription_cancel():
-    xs: AsyncSubject[int] = AsyncSubject()
+    xs: rx.AsyncSubject[int] = rx.AsyncSubject()
     sub: Optional[AsyncDisposable] = None
     result = []
 
@@ -83,7 +81,7 @@ async def test_map_subscription_cancel():
         await sub.dispose_async()
         await asyncio.sleep(0)
 
-    async with await ys.subscribe_async(AsyncAnonymousObserver(asend)) as sub:
+    async with await ys.subscribe_async(rx.AsyncAnonymousObserver(asend)) as sub:
         await xs.asend(10)
         await asyncio.sleep(0)
         await xs.asend(20)
@@ -104,7 +102,7 @@ async def test_mapi_works():
 
     ys = pipe(xs, rx.mapi(mapper))
 
-    obv: AsyncObserver[int] = AsyncAwaitableObserver(asend)
+    obv: AsyncObserver[int] = rx.AsyncAwaitableObserver(asend)
     async with await ys.subscribe_async(obv):
         result = await obv
         assert result == 5

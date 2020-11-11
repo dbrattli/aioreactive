@@ -33,6 +33,9 @@ class Notification(ABC, Generic[TSource]):
     async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
         raise NotImplementedError
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class OnNext(Notification[TSource]):
     """Represents an OnNext notification to an observer."""
@@ -52,6 +55,11 @@ class OnNext(Notification[TSource]):
 
     async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
         await obv.asend(self.value)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, OnNext):
+            return self.value == other.value  # type: ignore
+        return False
 
     def __str__(self) -> str:
         return f"OnNext({self.value})"
@@ -76,6 +84,11 @@ class OnError(Notification[TSource]):
     async def accept_observer(self, obv: AsyncObserver[TSource]):
         await obv.athrow(self.exception)
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, OnError):
+            return self.exception == other.exception
+        return False
+
     def __str__(self) -> str:
         return f"OnError({self.exception})"
 
@@ -98,6 +111,11 @@ class OnCompleted_(Notification[TSource]):
 
     async def accept_observer(self, obv: AsyncObserver[TSource]):
         await obv.aclose()
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, OnCompleted_):
+            return True
+        return False
 
     def __str__(self) -> str:
         return "OnCompleted"
