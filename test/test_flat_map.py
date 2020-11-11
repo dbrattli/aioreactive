@@ -4,6 +4,7 @@ import aioreactive as rx
 import pytest
 from aioreactive.notification import OnCompleted, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.types import AsyncObservable
 from expression.core import pipe
 
 
@@ -34,69 +35,70 @@ async def test_flap_map_done():
     assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted)]
 
 
-# @pytest.mark.asyncio
-# async def test_flat_map_monad():
-#     m = unit(42)
+@pytest.mark.asyncio
+async def test_flat_map_monad():
+    m = rx.single(42)
 
-#     async def mapper(x):
-#         return unit(x * 10)
+    def mapper(x: int) -> AsyncObservable[int]:
+        return rx.single(x * 10)
 
-#     a = await run(flat_map(mapper, m))
-#     b = await run(unit(420))
-#     assert a == b
+    a = await rx.run(pipe(m, rx.flat_map(mapper)))
+    b = await rx.run(rx.single(420))
 
-
-# @pytest.mark.asyncio
-# async def test_flat_map_monad_law_left_identity():
-#     # return x >>= f is the same thing as f x
-
-#     x = 3
-
-#     async def f(x):
-#         return unit(x + 100000)
-
-#     a = await run(flat_map(f, unit(x)))
-#     b = await run(await f(x))
-
-#     assert a == b
+    assert a == b
 
 
-# @pytest.mark.asyncio
-# async def test_flat_map_monad_law_right_identity():
-#     # m >>= return is no different than just m.
+@pytest.mark.asyncio
+async def test_flat_map_monad_law_left_identity():
+    # return x >>= f is the same thing as f x
 
-#     m = unit("move on up")
+    x = 3
 
-#     async def aunit(x):
-#         return unit(x)
+    def f(x: int) -> AsyncObservable[int]:
+        return rx.single(x + 100000)
 
-#     a = await run(flat_map(aunit, m))
-#     b = await run(m)
+    a = await rx.run(pipe(rx.single(x), rx.flat_map(f)))
+    b = await rx.run(f(x))
 
-#     assert a == b
+    assert a == b
 
 
-# @pytest.mark.asyncio
-# async def test_flat_map_monad_law_associativity():
-#     # (m >>= f) >>= g is just like doing m >>= (\x -> f x >>= g)
+@pytest.mark.asyncio
+async def test_flat_map_monad_law_right_identity():
+    # m >>= return is no different than just m.
 
-#     m = unit(42)
+    m = rx.single("move on up")
 
-#     async def f(x):
-#         return unit(x + 1000)
+    def mapper(x: str) -> AsyncObservable[str]:
+        return rx.single(x)
 
-#     async def g(y):
-#         return unit(y * 333)
+    a = await rx.run(pipe(m, rx.flat_map(mapper)))
+    b = await rx.run(m)
 
-#     async def h(x):
-#         return flat_map(g, await f(x))
+    assert a == b
 
-#     zs = flat_map(f, m)
-#     a = await run(flat_map(g, zs))
 
-#     b = await run(flat_map(h, m))
+@pytest.mark.asyncio
+async def test_flat_map_monad_law_associativity():
+    # (m >>= f) >>= g is just like doing m >>= (\x -> f x >>= g)
 
-#     assert a == b
+    m = rx.single(42)
+
+    def f(x: int) -> AsyncObservable[int]:
+        return rx.single(x + 1000)
+
+    def g(y: int) -> AsyncObservable[int]:
+        return rx.single(y * 333)
+
+    def h(x: int) -> AsyncObservable[int]:
+        return pipe(f(x), rx.flat_map(g))
+
+    zs = pipe(m, rx.flat_map(f))
+    a = await rx.run(pipe(zs, rx.flat_map(g)))
+
+    b = await rx.run(pipe(m, rx.flat_map(h)))
+
+    assert a == b
 
 
 # if __name__ == "__main__":

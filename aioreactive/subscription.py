@@ -32,10 +32,10 @@ async def run(
 
     # For run we need a noopobserver if no observer is specified to avoid
     # blocking the last single stream in the chain.
-    observer_: AsyncObserver[TSource] = observer or AsyncAwaitableObserver()
-    await source.subscribe_async(observer_)
-    log.debug("run(): waiting for observer ...")
-    return await asyncio.wait_for(observer_, timeout)
+    obv: AsyncObserver[TSource] = observer or AsyncAwaitableObserver()
+    async with await source.subscribe_async(obv):
+        log.debug("run(): waiting for observer ...")
+        return await asyncio.wait_for(obv, timeout)
 
 
 def subscribe_async(obv: AsyncObserver[TSource]) -> Callable[[AsyncObservable[TSource]], Awaitable[AsyncDisposable]]:

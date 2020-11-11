@@ -8,7 +8,7 @@ from expression.core import MailboxProcessor, Nothing, Option, Result, Some, Tai
 from expression.system import AsyncDisposable
 
 from .create import of_seq
-from .msg import CompletedMsg, DisposeMsg_, InnerCompletedMsg, InnerObservableMsg, Msg, OtherMsg, SourceMsg
+from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Msg, OtherMsg, SourceMsg
 from .notification import Notification, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
@@ -102,12 +102,15 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                     else:
                         for key, dispose in model.subscriptions:
                             await dispose.dispose_async()
-                        return initial_model
+                        return initial_model.replace(is_stopped=True)
 
                 async def message_loop(model: Model[TSource]) -> None:
                     while True:
                         msg = await inbox.receive()
                         model = await update(msg, model)
+
+                        if model.is_stopped and not model.subscriptions:
+                            break
 
                 await message_loop(initial_model)
 
@@ -119,7 +122,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
 
             async def athrow(error: Exception) -> None:
                 await safe_obv.athrow(error)
-                agent.post(DisposeMsg_)
+                agent.post(DisposeMsg)
 
             async def aclose() -> None:
                 agent.post(CompletedMsg)
@@ -129,7 +132,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
 
             async def cancel() -> None:
                 await dispose.dispose_async()
-                agent.post(DisposeMsg_)
+                agent.post(DisposeMsg)
 
             return AsyncDisposable.create(cancel)
 
