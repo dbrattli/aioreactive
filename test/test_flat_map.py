@@ -1,5 +1,3 @@
-import asyncio
-
 import aioreactive as rx
 import pytest
 from aioreactive.notification import OnCompleted, OnNext
