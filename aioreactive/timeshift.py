@@ -1,13 +1,14 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Tuple, TypeVar, cast
+from typing import Iterable, Tuple, TypeVar, cast
 
-from expression.core import MailboxProcessor, Result, TailCall, pipe, recursive_async
+from expression.collections import seq
+from expression.core import MailboxProcessor, Result, TailCall, aio, pipe, recursive_async
 from expression.system import CancellationTokenSource
 
-from .notification import Notification, OnError, OnNext
+from .notification import Notification, OnCompleted, OnError, OnNext
 from .observables import AsyncAnonymousObservable
-from .observers import AsyncNotificationObserver
+from .observers import AsyncNotificationObserver, auto_detach_observer
 from .types import AsyncDisposable, AsyncObservable, AsyncObserver, Stream
 
 TSource = TypeVar("TSource")
@@ -72,3 +73,72 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
         return AsyncAnonymousObservable(subscribe_async)
 
     return _delay
+
+
+def debounce(seconds: float) -> Stream[TSource, TSource]:
+    """Debounce observable stream.
+
+    Ignores values from an observable sequence which are followed by
+    another value before the given timeout.
+
+    Args:
+        seconds (float): Number of seconds to debounce.
+
+    Returns:
+        The debounced stream.
+    """
+
+    def _debounce(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+        async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+            safe_obv, auto_detach = auto_detach_observer(aobv)
+            infinite: Iterable[int] = seq.infinite()
+
+            @recursive_async
+            async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], int]]) -> None:
+                async def message_loop(current_index: int) -> Result[TSource, Exception]:
+                    n, index = await inbox.receive()
+
+                    if isinstance(n, OnNext):
+                        n = cast(OnNext[TSource], n)
+                        if index == current_index:
+                            x = n.value
+                            await safe_obv.asend(x)
+                            current_index = index
+                        elif index > current_index:
+                            current_index = index
+                    if isinstance(n, OnError):
+                        n = cast(OnError[TSource], n)
+                        await safe_obv.athrow(n.exception)
+                    else:
+                        await safe_obv.aclose()
+
+                    return TailCall(current_index)
+
+                await message_loop(-1)
+
+            agent = MailboxProcessor.start(worker)
+
+            indexer = iter(infinite)
+
+            async def obv(n: Notification[TSource]) -> None:
+                index = next(indexer)
+                agent.post((n, index))
+
+                async def worker() -> None:
+                    await asyncio.sleep(seconds)
+                    agent.post((n, index))
+
+                aio.start(worker())
+
+            obv_: AsyncObserver[TSource] = AsyncNotificationObserver(obv)
+            dispose = await pipe(obv_, source.subscribe_async, auto_detach)
+
+            async def cancel() -> None:
+                await dispose.dispose_async()
+                agent.post((OnCompleted, 0))
+
+            return AsyncDisposable.create(cancel)
+
+        return AsyncAnonymousObservable(subscribe_async)
+
+    return _debounce

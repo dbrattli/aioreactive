@@ -111,9 +111,9 @@ class AsyncRx(AsyncObservable[TSource]):
         Returns partially applied function that takes a source sequence.
         """
 
-        from aioreactive.operators.debounce import debounce
+        from .timeshift import debounce
 
-        return AsyncRx(debounce(seconds, self))
+        return AsyncRx(pipe(self, debounce(seconds)))
 
     def delay(self, seconds: float) -> "AsyncRx[TSource]":
         from .timeshift import delay
@@ -181,9 +181,9 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
     Returns a partially applied function that takes a source stream to
     debounce."""
 
-    from aioreactive.operators.debounce import debounce
+    from .timeshift import debounce
 
-    return partial(debounce, seconds)
+    return debounce(seconds)
 
 
 def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TSource, TSource]:
