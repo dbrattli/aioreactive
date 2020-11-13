@@ -6,7 +6,7 @@ from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar,
 from expression.core import Option, pipe
 from expression.system.disposable import AsyncDisposable
 
-from .observables import AsyncAnonymousObservable, AsyncObservable
+from .observables import AsyncAnonymousObservable, AsyncIterableObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
 from .subject import AsyncSingleSubject, AsyncSubject
 from .subscription import run
@@ -142,10 +142,10 @@ class AsyncRx(AsyncObservable[TSource]):
         source = of_seq([self, other])
         return pipe(source, merge_inner(0), AsyncRx.create)
 
-    def with_latest_from(self, mapper, other) -> "AsyncRx":
-        from aioreactive.operators.with_latest_from import with_latest_from
+    def with_latest_from(self, other: AsyncObservable[TOther]) -> "AsyncRx[Tuple[TSource, TOther]]":
+        from .combine import with_latest_from
 
-        return AsyncRx(with_latest_from(mapper, other, self))
+        return AsyncRx(pipe(self, with_latest_from(other)))
 
 
 def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSource]:
@@ -345,10 +345,10 @@ def switch_latest() -> Stream[TSource, TSource]:
     return switch_latest
 
 
-def to_async_iterable() -> Callable[[AsyncObservable], AsyncIterable]:
-    from aioreactive.operators.to_async_iterable import to_async_iterable
+def to_async_iterable(source: AsyncObservable[TSource]) -> AsyncIterable[TSource]:
+    from .leave import to_async_iterable
 
-    return partial(to_async_iterable)
+    return to_async_iterable(source)
 
 
 def single(value: TSource) -> "AsyncObservable[TSource]":
@@ -365,10 +365,10 @@ def timer(due_time: float) -> AsyncObservable[int]:
     return timer(due_time)
 
 
-def with_latest_from(mapper: Callable, other: AsyncObservable) -> Callable[[AsyncObservable], AsyncObservable]:
-    from aioreactive.operators.with_latest_from import with_latest_from
+def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSource, TOther]]:
+    from .combine import with_latest_from
 
-    return partial(with_latest_from, mapper, other)
+    return with_latest_from(other)
 
 
 __all__ = [
@@ -376,6 +376,7 @@ __all__ = [
     "AsyncAnonymousObserver",
     "AsyncAwaitableObserver",
     "AsyncIteratorObserver",
+    "AsyncIterableObservable",
     "AsyncNotificationObserver",
     "AsyncObservable",
     "AsyncObserver",
@@ -402,4 +403,5 @@ __all__ = [
     "single",
     "Stream",
     "switch_latest",
+    "to_async_iterable",
 ]

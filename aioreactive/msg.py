@@ -6,7 +6,7 @@ from typing import Generic, TypeVar
 from expression.system import AsyncDisposable
 
 from .notification import Notification
-from .observables import AsyncObservable
+from .types import AsyncObservable
 
 TSource = TypeVar("TSource")
 

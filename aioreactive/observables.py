@@ -1,8 +1,9 @@
 import logging
-from typing import Awaitable, Callable, TypeVar
+from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, TypeVar
 
 from expression.system import AsyncDisposable
 
+from .observers import AsyncIteratorObserver
 from .types import AsyncObservable, AsyncObserver
 
 TSource = TypeVar("TSource")
@@ -17,11 +18,9 @@ log = logging.getLogger(__name__)
 
 class AsyncAnonymousObservable(AsyncObservable[TSource]):
 
-    """An AsyncObservable that works with Python special methods.
+    """An anonymous AsyncObservable.
 
-    This class supports python special methods including pipe-forward
-    using OR operator. All operators are provided as partially applied
-    plain old functions
+    Uses a custom subscribe method.
     """
 
     def __init__(self, subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]]) -> None:
@@ -30,3 +29,23 @@ class AsyncAnonymousObservable(AsyncObservable[TSource]):
     async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
         log.debug("AsyncAnonymousObservable:subscribe_async(%s)", self._subscribe)
         return await self._subscribe(observer)
+
+
+class AsyncIterableObservable(AsyncIterable[TSource]):
+    def __init__(self, source: AsyncObservable[TSource]) -> None:
+        self._source = source
+
+    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+        return await self._source.subscribe_async(observer)
+
+    async def __aiter__(self) -> AsyncIterator[TSource]:
+        """Iterate asynchronously.
+
+        Transforms the async source to an async iterable. The source
+        will await for the iterator to pick up the value before
+        continuing to avoid queuing values.
+        """
+
+        obv: AsyncObserver[TSource] = AsyncIteratorObserver()
+        await self.subscribe_async(obv)
+        return obv
