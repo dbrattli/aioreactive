@@ -5,13 +5,13 @@
 [![Build Status](https://travis-ci.org/dbrattli/aioreactive.svg?branch=master)](https://travis-ci.org/dbrattli/aioreactive)
 [![Coverage Status](https://coveralls.io/repos/github/dbrattli/aioreactive/badge.svg?branch=master)](https://coveralls.io/github/dbrattli/aioreactive?branch=master)
 
-> *News: Project rebooted Nov. 2020. Now being rebuilt on Expression*
+> *News: Project rebooted Nov. 2020. Currently being rebuilt based on [Expression](https://github.com/dbrattli/Expression)*
 
 Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY) for asyncio.
 It's an asynchronous and reactive Python library for asyncio using async
 and await. Aioreactive is built on the
 [Expression](https://github.com/dbrattli/Expression) functional library
-and, integrates more naturally with the Python language.
+and, integrates naturally with the Python language.
 
 > aioreactive is the unification of RxPY and reactive programming with
 > asyncio using async and await.
@@ -22,7 +22,7 @@ and, integrates more naturally with the Python language.
   data classes and type variables.
 * All operators and tools are implemented as plain old functions.
 * Everything is `async`. Sending values is async, subscribing to
-  observables is async.
+  observables is async. Disposing subscriptions is async.
 * One scheduler to rule them all. Everything runs on the asyncio base
   event-loop.
 * No multi-threading. Only async and await with concurrency using
@@ -150,7 +150,7 @@ xs = from_iterable([1, 2, 3])
 result = []
 
 obv = AsyncIteratorObserver()
-async with subscribe(xs, obv) as subscription:
+async with await xs.subscribe(obv) as subscription:
     async for x in obv:
         result.append(x)
 
@@ -403,8 +403,8 @@ Many ideas from aioreactive might be ported back into "classic" RxPY.
 
 Aioreactive was inspired by:
 
-* [AsyncRx](https://github.com/dbrattli/asyncrx)
-* [Expression](https://github.com/dbrattli/Expression)
+* [AsyncRx](https://github.com/dbrattli/asyncrx) - Aioreactive is a port of AsyncRx from F#.
+* [Expression](https://github.com/dbrattli/Expression) - Functional programming for Python.
 * [Is it really Pythonic to continue using LINQ operators instead of plain old functions?](https://github.com/ReactiveX/RxPY/issues/94)
 * [Reactive Extensions (Rx)](http://reactivex.io) and [RxPY](https://github.com/ReactiveX/RxPY).
 * [Dart Streams](https://www.dartlang.org/tutorials/language/streams)
