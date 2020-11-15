@@ -1,13 +1,16 @@
 """Aioreactive module"""
 
 from functools import partial
-from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar, Union
+from typing import (AsyncIterable, Awaitable, Callable, Iterable, Tuple,
+                    TypeVar, Union)
 
 from expression.core import Option, pipe
 from expression.system.disposable import AsyncDisposable
 
-from .observables import AsyncAnonymousObservable, AsyncIterableObservable, AsyncObservable
-from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
+from .observables import (AsyncAnonymousObservable, AsyncIterableObservable,
+                          AsyncObservable)
+from .observers import (AsyncAnonymousObserver, AsyncAwaitableObserver,
+                        AsyncIteratorObserver, AsyncNotificationObserver)
 from .subject import AsyncSingleSubject, AsyncSubject
 from .subscription import run
 from .types import AsyncObserver, Stream
@@ -95,6 +98,11 @@ class AsyncRx(AsyncObservable[TSource]):
         from .combine import combine_latest
 
         return pipe(self, combine_latest(other), AsyncRx.create)
+
+    def concat(self, other: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+        from .combine import concat_seq
+
+        return concat_seq([self, other])
 
     def debounce(self, seconds: float) -> "AsyncRx[TSource]":
         """Debounce observable source.
@@ -190,6 +198,26 @@ def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TS
     from .transform import catch
 
     return catch(handler)
+
+
+def concat(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
+    """Concatenates an observable sequence with another observable
+    sequence."""
+
+    def _concat(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+        from .combine import concat_seq
+
+        return concat_seq([source, other])
+
+    return _concat
+
+
+def concat_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+    """Concatenates an iterable of observable sequences."""
+
+    from .combine import concat_seq
+
+    return concat_seq(sources)
 
 
 def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
@@ -327,7 +355,8 @@ def never() -> "AsyncObservable[TSource]":
 
 
 def distinct_until_changed() -> Callable[[AsyncObservable], AsyncObservable]:
-    from aioreactive.operators.distinct_until_changed import distinct_until_changed
+    from aioreactive.operators.distinct_until_changed import \
+        distinct_until_changed
 
     return partial(distinct_until_changed)
 
@@ -401,7 +430,8 @@ __all__ = [
     "choose",
     "choose_async",
     "combine_latest",
-    "delay",
+    "concat",
+    "concat_seq" "delay",
     "empty",
     "filter",
     "filter_async",
