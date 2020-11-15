@@ -1,16 +1,13 @@
 """Aioreactive module"""
 
 from functools import partial
-from typing import (AsyncIterable, Awaitable, Callable, Iterable, Tuple,
-                    TypeVar, Union)
+from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar, Union
 
 from expression.core import Option, pipe
 from expression.system.disposable import AsyncDisposable
 
-from .observables import (AsyncAnonymousObservable, AsyncIterableObservable,
-                          AsyncObservable)
-from .observers import (AsyncAnonymousObserver, AsyncAwaitableObserver,
-                        AsyncIteratorObserver, AsyncNotificationObserver)
+from .observables import AsyncAnonymousObservable, AsyncIterableObservable, AsyncObservable
+from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
 from .subject import AsyncSingleSubject, AsyncSubject
 from .subscription import run
 from .types import AsyncObserver, Stream
@@ -149,6 +146,11 @@ class AsyncRx(AsyncObservable[TSource]):
 
         source = of_seq([self, other])
         return pipe(source, merge_inner(0), AsyncRx.create)
+
+    def to_async_iterable(self) -> AsyncIterable[TSource]:
+        from .leave import to_async_iterable
+
+        return to_async_iterable(self)
 
     def with_latest_from(self, other: AsyncObservable[TOther]) -> "AsyncRx[Tuple[TSource, TOther]]":
         from .combine import with_latest_from
@@ -355,8 +357,7 @@ def never() -> "AsyncObservable[TSource]":
 
 
 def distinct_until_changed() -> Callable[[AsyncObservable], AsyncObservable]:
-    from aioreactive.operators.distinct_until_changed import \
-        distinct_until_changed
+    from aioreactive.operators.distinct_until_changed import distinct_until_changed
 
     return partial(distinct_until_changed)
 

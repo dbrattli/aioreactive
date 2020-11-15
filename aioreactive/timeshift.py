@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Iterable, Tuple, TypeVar, cast
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, Result, TailCall, aio, match, pipe, recursive_async
+from expression.core import MailboxProcessor, Result, TailCall, aio, pipe, recursive_async
 from expression.system import CancellationTokenSource
 
 from .notification import Notification, OnCompleted, OnError, OnNext

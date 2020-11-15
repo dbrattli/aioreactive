@@ -31,14 +31,14 @@ class AsyncAnonymousObservable(AsyncObservable[TSource]):
         return await self._subscribe(observer)
 
 
-class AsyncIterableObservable(AsyncIterable[TSource]):
+class AsyncIterableObservable(AsyncIterable[TSource], AsyncObservable[TSource]):
     def __init__(self, source: AsyncObservable[TSource]) -> None:
         self._source = source
 
     async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
         return await self._source.subscribe_async(observer)
 
-    async def __aiter__(self) -> AsyncIterator[TSource]:
+    def __aiter__(self) -> AsyncIterator[TSource]:
         """Iterate asynchronously.
 
         Transforms the async source to an async iterable. The source
@@ -46,6 +46,6 @@ class AsyncIterableObservable(AsyncIterable[TSource]):
         continuing to avoid queuing values.
         """
 
-        obv: AsyncIteratorObserver[TSource] = AsyncIteratorObserver()
-        await self.subscribe_async(obv)
+        obv: AsyncIteratorObserver[TSource] = AsyncIteratorObserver(self)
+
         return obv

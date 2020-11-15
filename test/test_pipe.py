@@ -1,17 +1,18 @@
-import pytest
 import asyncio
 import logging
 
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver, Operators as _
-from aioreactive.operators.to_async_iterable import to_async_iterable
-from aioreactive.operators.pipe import pipe
+import aioreactive as rx
+import pytest
+from aioreactive.notification import OnCompleted, OnNext
+from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.types import AsyncObservable
+from expression.core import pipe
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -20,66 +21,58 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_pipe_map():
-    xs = AsyncObservable.from_iterable([1, 2, 3])
-    result = []
+    xs = rx.from_iterable([1, 2, 3])
 
-    def mapper(value):
+    def mapper(value: int) -> int:
         return value * 10
 
-    ys = pipe(xs, _.map(mapper))
+    ys = pipe(xs, rx.map(mapper))
 
-    async def asend(value):
-        result.append(value)
-
-    await run(ys, AsyncAnonymousObserver(asend))
-    assert result == [10, 20, 30]
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    await rx.run(ys, obv)
+    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnNext(30)), (0, OnCompleted)]
 
 
 @pytest.mark.asyncio
 async def test_pipe_simple_pipe():
-    xs = AsyncObservable.from_iterable([1, 2, 3])
-    result = []
+    xs = rx.from_iterable([1, 2, 3])
 
-    def mapper(value):
+    def mapper(value: int) -> int:
         return value * 10
 
-    async def predicate(value):
+    async def predicate(value: int) -> bool:
         await asyncio.sleep(0.1)
         return value > 1
 
-    ys = pipe(xs,
-              _.filter(predicate),
-              _.map(mapper)
-              )
+    ys = pipe(xs, rx.filter_async(predicate), rx.map(mapper))
 
-    async def asend(value):
-        result.append(value)
-
-    await run(ys, AsyncAnonymousObserver(asend))
-    assert result == [20, 30]
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    await rx.run(ys, obv)
+    assert obv.values == [(0, OnNext(20)), (0, OnNext(30))]
 
 
 @pytest.mark.asyncio
 async def test_pipe_complex_pipe():
-    xs = AsyncObservable.from_iterable([1, 2, 3])
+    xs = rx.from_iterable([1, 2, 3])
     result = []
 
-    def mapper(value):
+    def mapper(value: int) -> int:
         return value * 10
 
-    async def predicate(value):
+    async def predicate(value: int) -> bool:
         await asyncio.sleep(0.1)
         return value > 1
 
-    async def long_running(value):
-        return AsyncObservable.from_iterable([value])
+    def long_running(value: int) -> AsyncObservable[int]:
+        return rx.from_iterable([value])
 
-    ys = pipe(xs,
-              _.filter(predicate),
-              _.map(mapper),
-              _.flat_map(long_running),
-              _.to_async_iterable()
-              )
+    ys = pipe(
+        xs,
+        rx.filter_async(predicate),
+        rx.map(mapper),
+        rx.flat_map(long_running),
+        rx.to_async_iterable,
+    )
 
     async for value in ys:
         result.append(value)

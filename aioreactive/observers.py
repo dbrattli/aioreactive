@@ -7,7 +7,7 @@ from expression.system import AsyncDisposable, Disposable
 
 from .msg import DisposableMsg, DisposeMsg_, Msg
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
-from .types import AsyncObserver
+from .types import AsyncObservable, AsyncObserver
 from .utils import anoop
 
 log = logging.getLogger(__name__)
@@ -15,16 +15,18 @@ log = logging.getLogger(__name__)
 TSource = TypeVar("TSource")
 
 
-class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource]):
+class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource], AsyncDisposable):
     """An async observer that might be iterated asynchronously."""
 
-    def __init__(self) -> None:
+    def __init__(self, source: AsyncObservable[TSource]) -> None:
         super().__init__()
 
         self._push: Future[TSource] = Future()
         self._pull: Future[TSource] = Future()
 
         self._awaiters: List[Future[TSource]] = []
+        self._subscription: Optional[AsyncDisposable] = None
+        self._source = source
         self._busy = False
 
     async def asend(self, value: TSource) -> None:
@@ -64,6 +66,9 @@ class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource]):
         self._busy = True
 
     async def wait_for_push(self) -> TSource:
+        if self._subscription is None:
+            self._subscription = await self._source.subscribe_async(self)
+
         value = await self._push
         self._push = Future()
         self._pull.set_result(True)
@@ -73,7 +78,12 @@ class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource]):
             awaiter.set_result(True)
         return value
 
-    async def __aiter__(self) -> AsyncIterator[TSource]:
+    async def dispose_async(self) -> None:
+        if self._subscription is not None:
+            self._subscription.dispose_async()
+        self._subscription = None
+
+    def __aiter__(self) -> AsyncIterator[TSource]:
         log.debug("AsyncIteratorObserver:__aiter__")
         return self
 
