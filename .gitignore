@@ -60,3 +60,6 @@ TestResults/Rx.TE.Tests_log.ldf
 .ipynb_checkpoints
 .eggs/
 .mypy_cache/
+.ionide
+
+coverage.xml

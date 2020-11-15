@@ -9,29 +9,24 @@ Requirements:
 > pip3 install aiohttp_jinja2
 """
 
-import os
-import json
 import asyncio
+import json
+import os
 
 import aiohttp
-import jinja2
 import aiohttp_jinja2
+import jinja2
 from aiohttp import web
-
-from aioreactive.core import AsyncAnonymousObserver, subscribe
-from aioreactive.core import AsyncObservable, AsyncStream
+from aioreactive.core import AsyncAnonymousObserver, AsyncObservable, AsyncStream, subscribe
 from aioreactive.operators import op
+from expression.core import pipe
 
 
 async def search_wikipedia(term):
     """Search Wikipedia for a given term"""
-    url = 'http://en.wikipedia.org/w/api.php'
+    url = "http://en.wikipedia.org/w/api.php"
 
-    params = {
-        "action": 'opensearch',
-        "search": term,
-        "format": 'json'
-    }
+    params = {"action": "opensearch", "search": term, "format": "json"}
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as resp:
@@ -43,13 +38,14 @@ async def websocket_handler(request):
 
     stream = AsyncStream()
 
-    xs = (stream
-          | op.map(lambda x: x["term"])
-          | op.filter(lambda text: len(text) > 2)
-          | op.debounce(0.5)
-          | op.distinct_until_changed()
-          | op.flat_map(search_wikipedia)
-          )
+    xs = pipe(
+        stream,
+        op.map(lambda x: x["term"]),
+        op.filter(lambda text: len(text) > 2),
+        op.debounce(0.5),
+        op.distinct_until_changed(),
+        op.flat_map(search_wikipedia),
+    )
 
     ws = web.WebSocketResponse()
     await ws.prepare(request)
@@ -68,13 +64,13 @@ async def websocket_handler(request):
             await stream.asend(obj)
 
         elif msg.type == aiohttp.WSMsgType.ERROR:
-            print('ws connection closed with exception %s' % ws.exception())
+            print("ws connection closed with exception %s" % ws.exception())
 
-    print('websocket connection closed')
+    print("websocket connection closed")
     return ws
 
 
-@aiohttp_jinja2.template('index.html')
+@aiohttp_jinja2.template("index.html")
 async def index(request):
     return dict()
 
@@ -85,10 +81,10 @@ async def init(loop):
     app = web.Application(loop=loop)
     print("Starting server at port: %s" % port)
 
-    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('.'))
-    app.router.add_static('/static', "static")
-    app.router.add_get('/', index)
-    app.router.add_get('/ws', websocket_handler)
+    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader("."))
+    app.router.add_static("/static", "static")
+    app.router.add_get("/", index)
+    app.router.add_get("/ws", websocket_handler)
 
     return app, host, port
 
@@ -99,5 +95,5 @@ def main():
     web.run_app(app, host=host, port=port)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

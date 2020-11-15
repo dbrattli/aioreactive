@@ -3,7 +3,7 @@ import pytest
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import run, subscribe
 from aioreactive.operators import from_iterable, distinct_until_changed
-from aioreactive.testing import AsyncAnonymousObserver
+from aioreactive.testing import AsyncTestObserver
 
 
 class MyException(Exception):
@@ -21,7 +21,7 @@ def event_loop():
 async def test_distinct_until_changed_different():
     xs = from_iterable([1, 2, 3])
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     ys = distinct_until_changed(xs)
 
     await run(ys, obv)
@@ -36,7 +36,7 @@ async def test_distinct_until_changed_different():
 async def test_distinct_until_changed_changed():
     xs = from_iterable([1, 2, 2, 1, 3, 3, 1, 2, 2])
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     ys = distinct_until_changed(xs)
 
     await run(ys, obv)

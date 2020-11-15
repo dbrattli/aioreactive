@@ -1,13 +1,13 @@
-import pytest
 import asyncio
-from asyncio import Future
 import logging
+from typing import Optional
 
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators import map
-from aioreactive.core import run, subscribe, chain
-from aioreactive.testing import AsyncStream, AsyncAnonymousObserver
+import aioreactive as rx
+import pytest
+from aioreactive.notification import OnCompleted, OnError, OnNext
+from aioreactive.testing import AsyncSubject, AsyncTestObserver, VirtualTimeEventLoop
+from expression.core import pipe
+from expression.system.disposable import AsyncDisposable
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -17,7 +17,7 @@ class MyException(Exception):
     pass
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -26,29 +26,25 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_stream_happy() -> None:
-    xs = AsyncStream()
+    xs: AsyncSubject[int] = AsyncSubject()
 
-    obv = AsyncAnonymousObserver()
-    await subscribe(xs, obv)
+    obv = AsyncTestObserver()
+    await xs.subscribe_async(obv)
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
 
-    assert obv.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30)
-    ]
+    assert obv.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30))]
 
 
 @pytest.mark.asyncio
 async def test_stream_throws() -> None:
     ex = MyException("ex")
-    xs = AsyncStream()
+    xs: AsyncSubject[int] = AsyncSubject()
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     with pytest.raises(MyException):
-        await (xs > obv)
+        await xs.subscribe_async(obv)
 
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
@@ -58,20 +54,15 @@ async def test_stream_throws() -> None:
 
         await obv
 
-    assert obv.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30),
-        (4, ex)
-    ]
+    assert obv.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30)), (4, OnError(ex))]
 
 
 @pytest.mark.asyncio
 async def test_stream_send_after_close() -> None:
-    xs = AsyncStream()
+    xs: AsyncSubject[int] = AsyncSubject()
 
-    obv = AsyncAnonymousObserver()
-    await subscribe(xs, obv)
+    obv = AsyncTestObserver()
+    await xs.subscribe_async(obv)
 
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
@@ -79,70 +70,67 @@ async def test_stream_send_after_close() -> None:
     await xs.aclose_later(2)
     await xs.asend_later(1, 40)
 
-    assert obv.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30),
-        (5,)
-    ]
+    assert obv.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30)), (5, OnCompleted)]
 
 
 @pytest.mark.asyncio
 async def test_stream_cancel() -> None:
-    xs = AsyncStream()
-    subscription = None
+    xs: AsyncSubject[int] = AsyncSubject()
+    subscription: Optional[AsyncDisposable] = None
 
-    def mapper(value) -> int:
+    def mapper(value: int) -> int:
         return value * 10
 
-    ys = map(mapper, xs)
+    ys = pipe(xs, rx.map(mapper))
 
-    obv = AsyncAnonymousObserver()
-    subscription = await subscribe(ys, obv)
+    obv = AsyncTestObserver()
+    subscription = await ys.subscribe_async(obv)
     await xs.asend_later(1, 10)
-    await subscription.adispose()
+    await subscription.dispose_async()
     await xs.asend_later(1, 20)
 
-    assert obv.values == [(1, 100)]
+    assert obv.values == [(1, OnNext(100))]
 
 
 @pytest.mark.asyncio
 async def test_stream_cancel_asend() -> None:
-    xs = AsyncStream()
-    subscription = None
+    xs: AsyncSubject[int] = AsyncSubject()
+    subscription: Optional[AsyncDisposable] = None
 
-    async def asend(value) -> None:
-        await subscription.adispose()
+    async def asend(value: int) -> None:
+        assert subscription is not None
+        await subscription.dispose_async()
         await asyncio.sleep(0)
 
-    def mapper(value) -> int:
+    def mapper(value: int) -> int:
         return value * 10
 
-    ys = map(mapper, xs)
+    ys = pipe(xs, rx.map(mapper))
 
-    obv = AsyncAnonymousObserver(asend)
-    async with subscribe(ys, obv) as sub:
+    obv = AsyncTestObserver(asend)
+    async with await ys.subscribe_async(obv) as sub:
         subscription = sub
 
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
 
-    assert obv.values == [(1, 100)]
+    assert obv.values == [(1, OnNext(100))]
 
 
 @pytest.mark.asyncio
 async def test_stream_cancel_mapper():
-    xs = AsyncStream()
-    subscription = None
+    xs: AsyncSubject[int] = AsyncSubject()
+    subscription: Optional[AsyncDisposable] = None
 
-    def mapper(value):
-        asyncio.ensure_future(subscription.adispose())
+    def mapper(value: int) -> int:
+        assert subscription is not None
+        asyncio.ensure_future(subscription.dispose_async())
         return value * 10
 
-    ys = map(mapper, xs)
+    ys = pipe(xs, rx.map(mapper))
 
-    obv = AsyncAnonymousObserver()
-    async with subscribe(ys, obv) as subscription:
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    async with await ys.subscribe_async(obv) as subscription:
 
         await xs.asend_later(100, 10)
         await xs.asend_later(100, 20)
@@ -151,34 +139,18 @@ async def test_stream_cancel_mapper():
         await xs.asend_later(100, 50)
         await xs.asend_later(100, 60)
 
-    assert obv.values == [(100, 100)]
+    assert obv.values == [(100, OnNext(100))]
 
 
 @pytest.mark.asyncio
 async def test_stream_cancel_context():
-    xs = AsyncStream()
+    xs: AsyncSubject[int] = AsyncSubject()
 
-    obv = AsyncAnonymousObserver()
-    async with subscribe(xs, obv):
+    obv = AsyncTestObserver()
+    async with await xs.subscribe_async(obv):
         pass
 
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
 
     assert obv.values == []
-
-
-@pytest.mark.asyncio
-async def test_stream_chain_observer():
-    xs = AsyncStream()
-
-    obv = AsyncAnonymousObserver()
-    await chain(xs, obv)
-
-    await xs.asend_later(1, 10)
-    await xs.asend_later(1, 20)
-
-    assert obv.values == [
-        (1, 10),
-        (2, 20)
-    ]

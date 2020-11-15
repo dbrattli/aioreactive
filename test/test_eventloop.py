@@ -1,11 +1,11 @@
-from functools import partial
-import pytest
 import asyncio
+from functools import partial
 
+import pytest
 from aioreactive.testing import VirtualTimeEventLoop
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -25,7 +25,7 @@ async def test_sleep():
 async def test_call_soon():
     result = []
 
-    def action(value):
+    def action(value: int) -> None:
         result.append(value)
 
     loop = asyncio.get_event_loop()
@@ -40,7 +40,7 @@ async def test_call_soon():
 async def test_call_later():
     result = []
 
-    def action(value):
+    def action(value: int) -> None:
         result.append(value)
 
     loop = asyncio.get_event_loop()
@@ -55,7 +55,7 @@ async def test_call_later():
 async def test_call_at():
     result = []
 
-    def action(value):
+    def action(value: int) -> None:
         result.append(value)
 
     loop = asyncio.get_event_loop()
@@ -70,7 +70,7 @@ async def test_call_at():
 async def test_cancel():
     result = []
 
-    def action(value):
+    def action(value: int) -> None:
         result.append(value)
 
     loop = asyncio.get_event_loop()

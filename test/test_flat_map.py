@@ -1,13 +1,12 @@
+import aioreactive as rx
 import pytest
-import asyncio
-
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators import from_iterable, flat_map, unit
-from aioreactive.core import AsyncStream, subscribe, run
-from aioreactive.testing import AsyncAnonymousObserver
+from aioreactive.notification import OnCompleted, OnNext
+from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.types import AsyncObservable
+from expression.core import pipe
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -16,41 +15,34 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_flap_map_done():
-    xs = AsyncStream()
-    result = []
+    xs: rx.AsyncSubject[int] = rx.AsyncSubject()
 
-    async def asend(value):
-        nonlocal result
-        result.append(value)
+    def mapper(value: int) -> rx.AsyncObservable[int]:
+        return rx.from_iterable([value])
 
-    async def mapper(value):
-        return from_iterable([value])
+    ys = pipe(xs, rx.flat_map(mapper))
 
-    ys = flat_map(mapper, xs)
+    obv = AsyncTestObserver()
+    await ys.subscribe_async(obv)
 
-    obv = AsyncAnonymousObserver()
-    await subscribe(ys, obv)
     await xs.asend(10)
     await xs.asend(20)
     await xs.aclose()
-
     await obv
 
-    assert obv.values == [
-        (0, 10),
-        (0, 20),
-        (0, )]
+    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted)]
 
 
 @pytest.mark.asyncio
 async def test_flat_map_monad():
-    m = unit(42)
+    m = rx.single(42)
 
-    async def mapper(x):
-        return unit(x * 10)
+    def mapper(x: int) -> AsyncObservable[int]:
+        return rx.single(x * 10)
 
-    a = await run(flat_map(mapper, m))
-    b = await run(unit(420))
+    a = await rx.run(pipe(m, rx.flat_map(mapper)))
+    b = await rx.run(rx.single(420))
+
     assert a == b
 
 
@@ -60,11 +52,11 @@ async def test_flat_map_monad_law_left_identity():
 
     x = 3
 
-    async def f(x):
-        return unit(x + 100000)
+    def f(x: int) -> AsyncObservable[int]:
+        return rx.single(x + 100000)
 
-    a = await run(flat_map(f, unit(x)))
-    b = await run(await f(x))
+    a = await rx.run(pipe(rx.single(x), rx.flat_map(f)))
+    b = await rx.run(f(x))
 
     assert a == b
 
@@ -73,13 +65,13 @@ async def test_flat_map_monad_law_left_identity():
 async def test_flat_map_monad_law_right_identity():
     # m >>= return is no different than just m.
 
-    m = unit("move on up")
+    m = rx.single("move on up")
 
-    async def aunit(x):
-        return unit(x)
+    def mapper(x: str) -> AsyncObservable[str]:
+        return rx.single(x)
 
-    a = await run(flat_map(aunit, m))
-    b = await run(m)
+    a = await rx.run(pipe(m, rx.flat_map(mapper)))
+    b = await rx.run(m)
 
     assert a == b
 
@@ -88,25 +80,26 @@ async def test_flat_map_monad_law_right_identity():
 async def test_flat_map_monad_law_associativity():
     # (m >>= f) >>= g is just like doing m >>= (\x -> f x >>= g)
 
-    m = unit(42)
+    m = rx.single(42)
 
-    async def f(x):
-        return unit(x + 1000)
+    def f(x: int) -> AsyncObservable[int]:
+        return rx.single(x + 1000)
 
-    async def g(y):
-        return unit(y * 333)
+    def g(y: int) -> AsyncObservable[int]:
+        return rx.single(y * 333)
 
-    async def h(x):
-        return flat_map(g, await f(x))
+    def h(x: int) -> AsyncObservable[int]:
+        return pipe(f(x), rx.flat_map(g))
 
-    zs = flat_map(f, m)
-    a = await run(flat_map(g, zs))
+    zs = pipe(m, rx.flat_map(f))
+    a = await rx.run(pipe(zs, rx.flat_map(g)))
 
-    b = await run(flat_map(h, m))
+    b = await rx.run(pipe(m, rx.flat_map(h)))
 
     assert a == b
 
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(test_flat_map_monad())
-    loop.close()
+
+# if __name__ == "__main__":
+#     loop = asyncio.get_event_loop()
+#     loop.run_until_complete(test_flat_map_monad())
+#     loop.close()

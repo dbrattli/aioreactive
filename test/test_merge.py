@@ -5,7 +5,7 @@ import logging
 from aioreactive.core import subscribe
 from aioreactive.operators.from_iterable import from_iterable
 from aioreactive.operators.merge import merge
-from aioreactive.testing import AsyncStream, VirtualTimeEventLoop, AsyncAnonymousObserver
+from aioreactive.testing import AsyncStream, VirtualTimeEventLoop, AsyncTestObserver
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -23,7 +23,7 @@ async def test_merge_done():
 
     ys = merge(xs)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     await subscribe(ys, obv)
     await xs.asend(from_iterable([10]))
     await xs.asend(from_iterable([20]))
@@ -44,7 +44,7 @@ async def test_merge_streams():
 
     ys = merge(xs)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     await subscribe(ys, obv)
     await xs.asend(s1)
     await xs.asend(s2)
@@ -82,7 +82,7 @@ async def test_merge_streams_concat():
 
     ys = merge(xs, 1)
 
-    obv = AsyncAnonymousObserver()
+    obv = AsyncTestObserver()
     await subscribe(ys, obv)
 
     await s1.asend_at(1, 10)

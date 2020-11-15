@@ -1,13 +1,11 @@
-from typing import TypeVar, AsyncIterable, AsyncIterator, Generic
+from typing import TypeVar, AsyncIterable, Generic
 
-from aioreactive.core import AsyncSingleStream
-from aioreactive.core import AsyncObserver, AsyncObservable, chain
+from aioreactive.core import AsyncObservable
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class ToAsyncObservable(Generic[T], AsyncIterable[T]):
-
     def __init__(self, source: AsyncIterable) -> None:
         self._source = source
 
@@ -21,4 +19,3 @@ def to_async_observable(source: AsyncIterable) -> AsyncObservable:
     Returns async observable"""
 
     return ToAsyncObservable(source)
-

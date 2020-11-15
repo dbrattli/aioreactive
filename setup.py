@@ -1,40 +1,44 @@
-try:
-    from setuptools import setup
-except ImportError:
-    from ez_setup import use_setuptools
-    use_setuptools()
-    from setuptools import setup
+# read the contents of your README file
+from os import path
+
+from setuptools import find_packages, setup
+
+import versioneer
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
 
 setup(
-    name='aioreactive',
-    version='0.5.0',
-    description='Async/await Reactive Tools for Python 3.6+',
-    long_description=(
-        "aioreactive is a library for asynchronous and reactive "
-        "programming using asyncio, async and await"),
-    author='Børge Lanes & Dag Brattli',
-    author_email='dag@brattli.net',
-    license='MIT License',
-    url='https://github.com/dbrattli/aioreactive',
-    download_url='https://github.com/dbrattli/aioreactive',
+    name="aioreactive",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+    description="Async/await Reactive Tools for Python 3.7+",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    author="Børge Lanes & Dag Brattli",
+    author_email="dag@brattli.net",
+    license="MIT License",
+    url="https://github.com/dbrattli/aioreactive",
+    download_url="https://github.com/dbrattli/aioreactive",
     zip_safe=True,
-
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Environment :: Other Environment',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Topic :: Software Development :: Libraries :: Python Modules',
+        "Development Status :: 3 - Alpha",
+        "Environment :: Other Environment",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest', "pytest-asyncio"],
-
-    packages=['aioreactive', 'aioreactive.core', 'aioreactive.abc',
-              'aioreactive.operators', 'aioreactive.testing'],
-    package_dir={'aioreactive': 'aioreactive'}
+    python_requires=">=3.8",
+    install_requires=["expression"],
+    setup_requires=["pytest-runner"],
+    tests_require=["pytest", "pytest-asyncio", "pytest-cov", "hypothesis"],
+    package_data={"aioreactive": ["py.typed"]},
+    packages=find_packages(),
+    package_dir={"aioreactive": "aioreactive"},
 )

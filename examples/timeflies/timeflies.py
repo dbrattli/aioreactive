@@ -1,38 +1,46 @@
+# type: ignore23
 import asyncio
-from tkinter import *
+from tkinter import Event, Frame, Label, Tk
 
-from aioreactive.core import subscribe, AsyncAnonymousObserver
-from aioreactive.core import AsyncStream
-from aioreactive.operators.pipe import delay
+import aioreactive as rx
+from aioreactive import AsyncAnonymousObserver, AsyncSubject
+from expression.core import MailboxProcessor, pipe
 
 
 async def main(loop) -> None:
     root = Tk()
     root.title("aioreactive")
 
-    mousemoves = AsyncStream()
+    mousemoves: AsyncSubject[Event[Frame]] = AsyncSubject()
 
-    frame = Frame(root, width=800, height=600)
+    frame = Frame(root, width=800, height=600, bg="white")
 
-    async def move(event) -> None:
-        await mousemoves.asend(event)
+    async def worker(mb: MailboxProcessor[Event]) -> None:
+        while True:
+            event = await mb.receive()
+            await mousemoves.asend(event)
 
-    def call_move(event):
-        asyncio.ensure_future(move(event))
-    frame.bind("<Motion>", call_move)
+    agent = MailboxProcessor.start(worker)
+    frame.bind("<Motion>", agent.post)
 
     text = "TIME FLIES LIKE AN ARROW"
-    labels = [Label(frame, text=c) for c in text]
+    labels = [Label(frame, text=c, bg="white") for c in text]
 
-    async def handle_label(i, label) -> None:
+    async def handle_label(i: int, label: Label) -> None:
         label.config(dict(borderwidth=0, padx=0, pady=0))
 
-        async def asend(ev) -> None:
+        async def asend(ev: Event) -> None:
             label.place(x=ev.x + i * 12 + 15, y=ev.y)
 
-        obv = AsyncAnonymousObserver(asend)
+        async def athrow(ex: Exception):
+            print("Exception: ", ex)
 
-        await (mousemoves | delay(i / 10.0) > obv)
+        obv = AsyncAnonymousObserver(asend, athrow)
+        await pipe(
+            mousemoves,
+            rx.delay(i / 10.0),
+            rx.subscribe_async(obv),
+        )
 
     for i, label in enumerate(labels):
         await handle_label(i, label)
@@ -42,9 +50,10 @@ async def main(loop) -> None:
     # A simple combined event loop
     while True:
         root.update()
-        await asyncio.sleep(0.005)
+        await asyncio.sleep(0.001)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main(loop))
     loop.close()
