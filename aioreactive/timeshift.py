@@ -41,16 +41,19 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
                     if seconds > 0:
                         await asyncio.sleep(seconds)
 
-                    m = ns.match()
-                    for x in m.case(OnNext):
-                        await aobv.asend(x)
-                        break
-                    for err in m.case(OnError):
-                        await aobv.athrow(err)
-                        break
-                    else:
-                        await aobv.aclose()
+                    async def matcher():
+                        m = ns.match()
+                        for x in m.case(OnNext):
+                            await aobv.asend(x)
+                            return
+                        for err in m.case(OnError):
+                            await aobv.athrow(err)
+                            return
+                        else:
+                            await aobv.aclose()
+                            return
 
+                    await matcher()
                     return TailCall()
 
                 await loop()
