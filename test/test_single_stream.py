@@ -5,9 +5,9 @@ from typing import Optional
 import aioreactive as rx
 import pytest
 from aioreactive.notification import OnCompleted, OnError, OnNext
-from aioreactive.observers import AsyncAnonymousObserver
-from aioreactive.testing import AsyncSingleSubject, AsyncTestObserver, VirtualTimeEventLoop
-from aioreactive.types import AsyncObservable, AsyncObserver
+from aioreactive.testing import (AsyncSingleSubject, AsyncTestObserver,
+                                 VirtualTimeEventLoop)
+from aioreactive.types import AsyncObserver
 from expression.core import pipe
 from expression.system import AsyncDisposable, ObjectDisposedException
 
