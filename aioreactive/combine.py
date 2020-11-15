@@ -36,7 +36,7 @@ class Model(Generic[TSource]):
         return dataclasses.replace(self, **changes)
 
 
-def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
+def merge_inner(max_concurrent: int = 0) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
     def _(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
@@ -77,7 +77,6 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                     elif isinstance(msg, InnerCompletedMsg):
                         key = Key(msg.key)
                         subscriptions = model.subscriptions.remove(key)
-
                         if len(model.queue):
                             xs = model.queue[0]
                             inner = await xs.subscribe_async(obv(model.key))
@@ -85,7 +84,7 @@ def merge_inner(max_concurrent: int) -> Callable[[AsyncObservable[TSource]], Asy
                             return model.replace(
                                 subscriptions=subscriptions.add(model.key, inner),
                                 key=model.key + 1,
-                                queue=model.queue.tail,
+                                queue=model.queue.tail(),
                             )
                         elif len(subscriptions):
                             return model.replace(subscriptions=subscriptions)

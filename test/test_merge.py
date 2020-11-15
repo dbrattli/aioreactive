@@ -1,16 +1,17 @@
-import pytest
 import asyncio
 import logging
 
-from aioreactive.core import subscribe
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.merge import merge
-from aioreactive.testing import AsyncStream, VirtualTimeEventLoop, AsyncTestObserver
+import aioreactive as rx
+import pytest
+from aioreactive.notification import OnCompleted, OnNext
+from aioreactive.testing import AsyncSubject, AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.types import AsyncObservable
+from expression.core import pipe
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -19,33 +20,30 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_merge_done():
-    xs = AsyncStream()
+    xs: AsyncSubject[AsyncObservable[int]] = AsyncSubject()
 
-    ys = merge(xs)
+    ys = pipe(xs, rx.merge_inner())
 
     obv = AsyncTestObserver()
-    await subscribe(ys, obv)
-    await xs.asend(from_iterable([10]))
-    await xs.asend(from_iterable([20]))
+    await ys.subscribe_async(obv)
+    await xs.asend(rx.from_iterable([10]))
+    await xs.asend(rx.from_iterable([20]))
     await xs.aclose()
     await obv
 
-    assert obv.values == [
-        (0, 10),
-        (0, 20),
-        (0,)
-    ]
+    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted)]
+
 
 @pytest.mark.asyncio
 async def test_merge_streams():
-    xs = AsyncStream()
-    s1 = AsyncStream()
-    s2 = AsyncStream()
+    xs: AsyncSubject[AsyncObservable[int]] = AsyncSubject()
+    s1: AsyncSubject[int] = AsyncSubject()
+    s2: AsyncSubject[int] = AsyncSubject()
 
-    ys = merge(xs)
+    ys = pipe(xs, rx.merge_inner())
 
     obv = AsyncTestObserver()
-    await subscribe(ys, obv)
+    await ys.subscribe_async(obv)
     await xs.asend(s1)
     await xs.asend(s2)
 
@@ -63,27 +61,27 @@ async def test_merge_streams():
     await obv
 
     assert obv.values == [
-        (0, 40),
-        (1, 10),
-        (2, 20),
-        (3, 50),
-        (4, 30),
-        (5, 60),
-        (6,)
+        (0, OnNext(40)),
+        (1, OnNext(10)),
+        (2, OnNext(20)),
+        (3, OnNext(50)),
+        (4, OnNext(30)),
+        (5, OnNext(60)),
+        (6, OnCompleted),
     ]
 
 
 @pytest.mark.asyncio
 async def test_merge_streams_concat():
-    s1 = AsyncStream()
-    s2 = from_iterable([1, 2, 3])
+    s1: AsyncSubject[int] = AsyncSubject()
+    s2 = rx.from_iterable([1, 2, 3])
 
-    xs = from_iterable([s1, s2])
+    xs = rx.from_iterable([s1, s2])
 
-    ys = merge(xs, 1)
+    ys = pipe(xs, rx.merge_inner(1))
 
     obv = AsyncTestObserver()
-    await subscribe(ys, obv)
+    await ys.subscribe_async(obv)
 
     await s1.asend_at(1, 10)
     await s1.asend_at(2, 20)
@@ -93,17 +91,11 @@ async def test_merge_streams_concat():
     await obv
 
     assert obv.values == [
-        (1, 10),
-        (2, 20),
-        (4, 30),
-        (6, 1),
-        (6, 2),
-        (6, 3),
-        (6,)
+        (1, OnNext(10)),
+        (2, OnNext(20)),
+        (4, OnNext(30)),
+        (6, OnNext(1)),
+        (6, OnNext(2)),
+        (6, OnNext(3)),
+        (6, OnCompleted),
     ]
-
-
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(test_merge_streams())
-    loop.close()
