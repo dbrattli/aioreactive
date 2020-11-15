@@ -46,6 +46,6 @@ class AsyncIterableObservable(AsyncIterable[TSource]):
         continuing to avoid queuing values.
         """
 
-        obv: AsyncObserver[TSource] = AsyncIteratorObserver()
+        obv: AsyncIteratorObserver[TSource] = AsyncIteratorObserver()
         await self.subscribe_async(obv)
         return obv

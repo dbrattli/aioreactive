@@ -17,17 +17,18 @@ async def run(
 ) -> TSource:
     """Run the source with the given observer.
 
-    Similar to subscribe() but also awaits until the stream closes and
-    returns the final value.
+    Similar to `subscribe_async()` but also awaits until the stream
+    closes and returns the final value received.
 
-    Keyword arguments:
-    timeout -- Seconds before timing out in case source never closes.
+    Args:
+        timeout -- Seconds before timing out in case source never closes.
 
-    Returns last event sent through the stream. If any values have been
-    sent through the stream it will return the last value. If the stream
-    is closed without any previous values it will throw
-    StopAsyncIteration. For any other errors it will throw the
-    exception.
+    Returns:
+        The last event sent through the stream. If any values have been
+        sent through the stream it will return the last value. If the
+        stream is closed without any previous values it will throw
+        `StopAsyncIteration`. For any other errors it will throw the
+        exception.
     """
 
     # For run we need a noopobserver if no observer is specified to avoid
