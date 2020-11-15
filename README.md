@@ -47,7 +47,7 @@ With aioreactive you subscribe observers to observables, and the key
 abstractions of aioreactive can be seen in this single line of code:
 
 ```python
-subscription = await subscribe_async(observable, observer)
+subscription = await observable.subscribe_async(observer)
 ```
 
 The difference from RxPY can be seen with the `await` expression.
@@ -342,7 +342,7 @@ async def test_call_later():
 ```
 
 The `aioreactive.testing` module provides a test `AsyncSubject` that may
-delay sending values, and test `AsyncAnonymousObserver` that records all
+delay sending values, and a test `AsyncTestObserver` that records all
 events. These two classes helps you with testing in virtual time.
 
 ```python
@@ -360,7 +360,7 @@ async def test_delay_done():
         return value * 10
 
     ys = delay(0.5, xs)
-    lis = AsyncAnonymousObserver()  # Test AsyncAnonymousObserver
+    lis = AsyncTestObserver()  # Test AsyncAnonymousObserver
     sub = await subscribe(ys, lis)
     await xs.asend_later(0, 10)
     await xs.asend_later(1, 20)
@@ -368,9 +368,9 @@ async def test_delay_done():
     await sub
 
     assert lis.values == [
-        (0.5, 10),
-        (1.5, 20),
-        (2.5,)
+        (0.5, OnNext(10)),
+        (1.5, OnNext(20)),
+        (2.5, OnCompleted)
     ]
 ```
 
@@ -403,6 +403,8 @@ Many ideas from aioreactive might be ported back into "classic" RxPY.
 
 Aioreactive was inspired by:
 
+* [AsyncRx](https://github.com/dbrattli/asyncrx)
+* [Expression](https://github.com/dbrattli/Expression)
 * [Is it really Pythonic to continue using LINQ operators instead of plain old functions?](https://github.com/ReactiveX/RxPY/issues/94)
 * [Reactive Extensions (Rx)](http://reactivex.io) and [RxPY](https://github.com/ReactiveX/RxPY).
 * [Dart Streams](https://www.dartlang.org/tutorials/language/streams)
