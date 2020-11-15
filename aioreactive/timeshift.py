@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Iterable, Tuple, TypeVar, cast
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, Result, TailCall, aio, pipe, recursive_async
+from expression.core import MailboxProcessor, Result, TailCall, aio, match, pipe, recursive_async
 from expression.system import CancellationTokenSource
 
 from .notification import Notification, OnCompleted, OnError, OnNext
@@ -41,13 +41,13 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
                     if seconds > 0:
                         await asyncio.sleep(seconds)
 
-                    if isinstance(ns, OnNext):
-                        ns = cast(OnNext[TSource], ns)
-                        x = ns.value
+                    m = ns.match()
+                    for x in m.case(OnNext):
                         await aobv.asend(x)
-                    elif isinstance(ns, OnError):
-                        err = ns.exception
+                        break
+                    for err in m.case(OnError):
                         await aobv.athrow(err)
+                        break
                     else:
                         await aobv.aclose()
 

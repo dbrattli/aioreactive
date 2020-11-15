@@ -1,13 +1,17 @@
+
+<img src="logo/logo.jpg" alt="drawing" width="200"/>
+
+# aioreactive - RxPY for asyncio using async and await
 [![Build Status](https://travis-ci.org/dbrattli/aioreactive.svg?branch=master)](https://travis-ci.org/dbrattli/aioreactive)
 [![Coverage Status](https://coveralls.io/repos/github/dbrattli/aioreactive/badge.svg?branch=master)](https://coveralls.io/github/dbrattli/aioreactive?branch=master)
 
-# aioreactive - RxPY for asyncio using async and await
+> *News: Project rebooted Nov. 2020. Now being rebuilt on Expression*
 
 Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY) for asyncio.
 It's an asynchronous and reactive Python library for asyncio using async
-and await. Aioreactive is the next version of
-[RxPY](https://github.com/ReactiveX/RxPY), that integrates more
-naturally with the Python language.
+and await. Aioreactive is built on the
+[Expression](https://github.com/dbrattli/Expression) functional library
+and, integrates more naturally with the Python language.
 
 > aioreactive is the unification of RxPY and reactive programming with
 > asyncio using async and await.
@@ -32,7 +36,7 @@ naturally with the Python language.
 * Simple, clean and use few abstractions. Try to align with the
   itertools package, and reuse as much from the Python standard library
   as possible.
-* Support type hints and optional static type checking.
+* Support type hints and static type checking using [Pylance](https://devblogs.microsoft.com/python/announcing-pylance-fast-feature-rich-language-support-for-python-in-visual-studio-code/).
 * Implicit synchronous back-pressure &trade;. Producers of events will
   simply be awaited until the event can be processed by the down-stream
   consumers.
@@ -64,7 +68,7 @@ class AsyncObservable(ABC):
         return NotImplemented
 ```
 
-AsyncObserver is a consumer of events and is modelled after the
+AsyncObserver is a consumer of events and is modeled after the
 so-called [consumer interface](http://effbot.org/zone/consumer.htm), the
 enhanced generator interface in
 [PEP-342](https://www.python.org/dev/peps/pep-0342/) and async
@@ -216,7 +220,7 @@ supports both method chaining or forward pipe programming styles.
 ## Pipe forward programming style
 
 `AsyncObservable` may compose operators using forward pipelining with
-the `pipe` operator. This works by having the operators partially
+the `pipe` operator provided by the [Expression]() library. This works by having the operators partially
 applied with their arguments before being given the source stream
 argument.
 
@@ -274,13 +278,15 @@ An alternative to pipelining is to use classic and fluent method
 chaining as we know from [ReactiveX](http://reactivex.io).
 
 An `AsyncObservable` created from class methods such as
-`AsyncObservable.from_iterable()` returns a `AsyncChainedObservable`.
-where we may use methods such as `.where()` and `.select()`.
+`AsyncRx.from_iterable()` returns a `AsyncChainedObservable`.
+where we may use methods such as `.filter()` and `.map()`.
 
 ```python
+from aioreactive import AsyncRx
+
 @pytest.mark.asyncio
 async def test_observable_simple_pipe():
-    xs = rx.from_iterable([1, 2, 3])
+    xs = AsyncRx.from_iterable([1, 2, 3])
     result = []
 
     async def mapper(value):
@@ -291,7 +297,7 @@ async def test_observable_simple_pipe():
         await asyncio.sleep(0.1)
         return value > 1
 
-    ys = xs.where(predicate).select(mapper)
+    ys = xs.filter(predicate).map(mapper)
 
     async def on_next(value):
         result.append(value)
@@ -335,7 +341,7 @@ async def test_call_later():
     assert result == [2, 3, 1]
 ```
 
-The `aioreactive.testing` module provides a test `AsyncStream` that may
+The `aioreactive.testing` module provides a test `AsyncSubject` that may
 delay sending values, and test `AsyncAnonymousObserver` that records all
 events. These two classes helps you with testing in virtual time.
 
@@ -348,7 +354,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_delay_done():
-    xs = AsyncStream()  # Test stream
+    xs = AsyncSubject()  # Test stream
 
     async def mapper(value):
         return value * 10
@@ -397,7 +403,7 @@ Many ideas from aioreactive might be ported back into "classic" RxPY.
 
 Aioreactive was inspired by:
 
-* [Is it really Pythonic to continue using linq operators instead of plain old functions?](https://github.com/ReactiveX/RxPY/issues/94)
+* [Is it really Pythonic to continue using LINQ operators instead of plain old functions?](https://github.com/ReactiveX/RxPY/issues/94)
 * [Reactive Extensions (Rx)](http://reactivex.io) and [RxPY](https://github.com/ReactiveX/RxPY).
 * [Dart Streams](https://www.dartlang.org/tutorials/language/streams)
 * [Underscore.js](http://underscorejs.org).

@@ -240,27 +240,35 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
             ) -> Result[None, Exception]:
                 cmd = await inbox.receive()
 
-                if isinstance(cmd, InnerObservableMsg):
-                    cmd = cast(InnerObservableMsg[TSource], cmd)
-                    xs = cmd.inner_observable
-
+                m = cmd.match()
+                for xs in m.case(InnerObservableMsg):
                     next_id = current_id + 1
                     for disp in current.to_list():
                         await disp.dispose_async()
                     inner = await xs.subscribe_async(obv(inbox, next_id))
                     current, current_id = Some(inner), next_id
-                elif isinstance(cmd, InnerCompletedMsg):
-                    idx = cmd.key
+                    break
+                for xs in m.case(InnerObservableMsg):
+                    next_id = current_id + 1
+                    for disp in current.to_list():
+                        await disp.dispose_async()
+                    inner = await xs.subscribe_async(obv(inbox, next_id))
+                    current, current_id = Some(inner), next_id
+                    break
+                for idx in m.case(InnerCompletedMsg):
                     if is_stopped and idx == current_id:
                         await safe_obv.aclose()
                         current, is_stopped = Nothing, True
-                elif cmd is CompletedMsg:
+                    break
+                while m.case(CompletedMsg):
                     if current.is_none():
                         await safe_obv.aclose()
-                elif cmd is DisposeMsg:
+                    break
+                while m.case(DisposeMsg):
                     if current.is_some():
                         await current.value.dispose_async()
                     current, is_stopped = Nothing, True
+                    break
 
                 return TailCall(current, is_stopped, current_id)
 

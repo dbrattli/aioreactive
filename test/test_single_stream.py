@@ -1,13 +1,15 @@
-import pytest
 import asyncio
-from asyncio import Future
 import logging
+from typing import Optional
 
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.map import map
-from aioreactive.core import run, subscribe
-from aioreactive.testing import AsyncSingleStream, AsyncTestObserver
+import aioreactive as rx
+import pytest
+from aioreactive.notification import OnCompleted, OnError, OnNext
+from aioreactive.observers import AsyncAnonymousObserver
+from aioreactive.testing import AsyncSingleSubject, AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.types import AsyncObservable, AsyncObserver
+from expression.core import pipe
+from expression.system import AsyncDisposable, ObjectDisposedException
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -17,7 +19,7 @@ class MyException(Exception):
     pass
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -26,29 +28,25 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_stream_happy():
-    xs = AsyncSingleStream()
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
 
     sink = AsyncTestObserver()
-    await subscribe(xs, sink)
+    await xs.subscribe_async(sink)
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
 
-    assert sink.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30)
-    ]
+    assert sink.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30))]
 
 
 @pytest.mark.asyncio
 async def test_stream_throws():
     ex = MyException("ex")
-    xs = AsyncSingleStream()
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
 
     sink = AsyncTestObserver()
     with pytest.raises(MyException):
-        await subscribe(xs, sink)
+        await xs.subscribe_async(sink)
         await xs.asend_later(1, 10)
         await xs.asend_later(1, 20)
         await xs.asend_later(1, 30)
@@ -56,154 +54,149 @@ async def test_stream_throws():
         await xs.asend_later(1, 40)
         await sink
 
-    assert sink.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30),
-        (4, ex)
-    ]
+    assert sink.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30)), (4, OnError(ex))]
 
 
 @pytest.mark.asyncio
 async def test_stream_send_after_close():
-    xs = AsyncSingleStream()
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
 
     sink = AsyncTestObserver()
-    await subscribe(xs, sink)
+    await xs.subscribe_async(sink)
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
     await xs.aclose_later(2)
     await xs.asend_later(1, 40)
 
-    assert sink.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30),
-        (5,)
-    ]
+    assert sink.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30)), (5, OnCompleted)]
 
 
 @pytest.mark.asyncio
 async def test_stream_cancel():
-    xs = AsyncSingleStream()
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
     sub = None
 
-    def mapper(value):
+    def mapper(value: int) -> int:
         return value * 10
 
-    ys = map(mapper, xs)
+    ys = pipe(xs, rx.map(mapper))
 
     sink = AsyncTestObserver()
-    sub = await subscribe(ys, sink)
+    sub = await ys.subscribe_async(sink)
     await xs.asend_later(1, 10)
-    await sub.adispose()
-    await xs.asend_later(1, 20)
+    await sub.dispose_async()
 
-    assert sink.values == [(1, 100)]
+    with pytest.raises(ObjectDisposedException):
+        await xs.asend_later(1, 20)
+
+    assert sink.values == [(1, OnNext(100))]
 
 
 @pytest.mark.asyncio
 async def test_stream_cancel_asend():
-    xs = AsyncSingleStream()
-    sub = None
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    sub: Optional[AsyncDisposable] = None
 
-    async def asend(value):
-        await sub.adispose()
+    async def asend(value: int) -> None:
+        assert sub is not None
+        await sub.dispose_async()
         await asyncio.sleep(0)
 
-    def mapper(value):
+    def mapper(value: int) -> int:
         return value * 10
 
-    ys = map(mapper, xs)
+    ys = pipe(xs, rx.map(mapper))
 
     sink = AsyncTestObserver(asend)
-    async with subscribe(ys, sink) as sub:
+    async with await ys.subscribe_async(sink) as sub:
 
         await xs.asend_later(1, 10)
-        await xs.asend_later(1, 20)
 
-    assert sink.values == [(1, 100)]
+        with pytest.raises(ObjectDisposedException):
+            await xs.asend_later(1, 20)
+
+    assert sink.values == [(1, OnNext(100))]
 
 
-# @pytest.mark.asyncio
-# async def test_stream_cancel_mapper():
-#     xs = AsyncSingleStream()
-#     sub = None
+@pytest.mark.asyncio
+async def test_stream_cancel_mapper():
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    sub: Optional[AsyncDisposable] = None
 
-#     def mapper(value):
-#         sub.dispose()
-#         return value * 10
+    async def mapper(value: int) -> int:
+        assert sub is not None
+        await sub.dispose_async()
 
-#     ys = map(mapper, xs)
+        await asyncio.sleep(0)
+        return value * 10
 
-#     sink = AsyncAnonymousObserver()
-#     async with subscribe(ys, sink) as sub:
+    ys = pipe(xs, rx.map_async(mapper))
 
-#         await xs.asend_later(1, 10)
-#         await xs.asend_later(1, 20)
+    sink: AsyncObserver[int] = AsyncTestObserver()
+    async with await ys.subscribe_async(sink) as sub:
 
-#     assert sink.values == []
+        await xs.asend_later(1, 10)
+        with pytest.raises(ObjectDisposedException):
+            await xs.asend_later(1, 20)
+
+    assert sink.values == [(1, OnNext(100))]
 
 
 @pytest.mark.asyncio
 async def test_stream_cancel_context():
-    xs = AsyncSingleStream()
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
 
     sink = AsyncTestObserver()
-    async with subscribe(xs, sink):
+    async with await xs.subscribe_async(sink):
         pass
 
-    await xs.asend_later(1, 10)
-    await xs.asend_later(1, 20)
+    with pytest.raises(ObjectDisposedException):
+        await xs.asend_later(1, 10)
+        await xs.asend_later(1, 20)
 
     assert sink.values == []
 
 
 @pytest.mark.asyncio
 async def test_stream_cold_send():
-    xs = AsyncSingleStream()
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
 
     sink = AsyncTestObserver()
 
-    async def asend(value):
+    async def asend(value: int) -> None:
         await xs.asend(value)
 
     asyncio.ensure_future(asend(42))
     await asyncio.sleep(10)
 
-    async with subscribe(xs, sink):
+    async with await xs.subscribe_async(sink):
         await xs.asend_later(1, 20)
 
-    assert sink.values == [
-        (10, 42),
-        (11, 20)
-    ]
+    assert sink.values == [(10, OnNext(42)), (11, OnNext(20))]
 
 
 @pytest.mark.asyncio
 async def test_stream_cold_throw():
-    xs = AsyncSingleStream()
-
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    error = MyException()
     sink = AsyncTestObserver()
 
     async def athrow():
-        await xs.athrow(MyException)
+        await xs.athrow(error)
 
     asyncio.ensure_future(athrow())
     await asyncio.sleep(10)
 
-    async with subscribe(xs, sink):
+    async with await xs.subscribe_async(sink):
         await xs.asend_later(1, 20)
 
-    assert sink.values == [
-        (10, MyException)
-    ]
+    assert sink.values == [(10, OnError(error))]
 
 
 @pytest.mark.asyncio
 async def test_stream_cold_close():
-    xs = AsyncSingleStream()
+    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
 
     sink = AsyncTestObserver()
 
@@ -212,9 +205,7 @@ async def test_stream_cold_close():
 
     asyncio.ensure_future(aclose())
     await asyncio.sleep(10)
-    async with subscribe(xs, sink):
+    async with await xs.subscribe_async(sink):
         await xs.asend_later(1, 20)
 
-    assert sink.values == [
-        (10,)
-    ]
+    assert sink.values == [(10, OnCompleted)]

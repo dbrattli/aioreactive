@@ -1,13 +1,16 @@
 """Aioreactive module"""
 
 from functools import partial
-from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar, Union
+from typing import (AsyncIterable, Awaitable, Callable, Iterable, Tuple,
+                    TypeVar, Union)
 
 from expression.core import Option, pipe
 from expression.system.disposable import AsyncDisposable
 
-from .observables import AsyncAnonymousObservable, AsyncIterableObservable, AsyncObservable
-from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
+from .observables import (AsyncAnonymousObservable, AsyncIterableObservable,
+                          AsyncObservable)
+from .observers import (AsyncAnonymousObserver, AsyncAwaitableObserver,
+                        AsyncIteratorObserver, AsyncNotificationObserver)
 from .subject import AsyncSingleSubject, AsyncSubject
 from .subscription import run
 from .types import AsyncObserver, Stream
@@ -120,17 +123,17 @@ class AsyncRx(AsyncObservable[TSource]):
 
         return AsyncRx(delay(seconds)(self))
 
-    def where(self, predicate: Callable[[TSource], TSource]) -> "AsyncRx[TSource]":
+    def filter(self, predicate: Callable[[TSource], TSource]) -> "AsyncRx[TSource]":
         from .filter import filter
 
         return pipe(self, filter(predicate), AsyncRx.create)
 
-    def select_many(self, selector: Callable[[TSource], AsyncObservable[TResult]]) -> "AsyncRx[TResult]":
+    def flat_map(self, selector: Callable[[TSource], AsyncObservable[TResult]]) -> "AsyncRx[TResult]":
         from .transform import flat_map
 
         return pipe(self, flat_map(selector), AsyncRx.create)
 
-    def select(self, selector: Callable[[TSource], TResult]) -> "AsyncRx[TResult]":
+    def map(self, selector: Callable[[TSource], TResult]) -> "AsyncRx[TResult]":
         from .transform import map
 
         return pipe(self, map(selector), AsyncRx.create)
@@ -267,13 +270,24 @@ def map(fn: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
     return _map(fn)
 
 
-def mapi_async(mapper: Callable[[Tuple[TSource, int]], Awaitable[TResult]]) -> Stream[TSource, TResult]:
-    """Returns an observable sequence whose elements are the result of
-    invoking the async mapper function by incorporating the element's
-    index on each element of the source."""
+def map_async(mapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+    """Map asynchrnously.
+
+    Returns an observable sequence whose elements are the result of
+    invoking the async mapper function on each element of the
+    source."""
     from .transform import map_async
 
     return map_async(mapper)
+
+
+def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+    """Returns an observable sequence whose elements are the result of
+    invoking the async mapper function by incorporating the element's
+    index on each element of the source."""
+    from .transform import mapi_async
+
+    return mapi_async(mapper)
 
 
 def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
@@ -313,7 +327,8 @@ def never() -> "AsyncObservable[TSource]":
 
 
 def distinct_until_changed() -> Callable[[AsyncObservable], AsyncObservable]:
-    from aioreactive.operators.distinct_until_changed import distinct_until_changed
+    from aioreactive.operators.distinct_until_changed import \
+        distinct_until_changed
 
     return partial(distinct_until_changed)
 

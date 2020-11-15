@@ -39,15 +39,12 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         self._throw = athrow
         self._close = aclose
 
-        # self._loop = asyncio.get_event_loop()
-
     async def asend(self, value: TSource):
         log.debug("AsyncAnonymousObserver:asend(%s)", value)
         time = self._loop.time()
         self._values.append((time, OnNext(value)))
 
         await super().asend(value)
-        # await self._send(value)
 
     async def athrow(self, error: Exception):
         log.debug("AsyncAnonymousObserver:athrow(%s)", error)
@@ -55,7 +52,6 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         self._values.append((time, OnError(error)))
 
         await super().athrow(error)
-        # await self._throw(error)
 
     async def aclose(self):
         log.debug("AsyncAnonymousObserver:aclose()")
@@ -64,7 +60,6 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         self._values.append((time, OnCompleted))
 
         await super().aclose()
-        # await self._close()
 
     @property
     def values(self):

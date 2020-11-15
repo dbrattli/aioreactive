@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Awaitable, Callable, Generic, TypeVar
+from typing import Any, Awaitable, Callable, Generic, Iterable, Optional, Type, TypeVar, overload
+
+from expression.core import Matcher
 
 from .types import AsyncObserver
 
@@ -12,6 +14,32 @@ class MsgKind(Enum):
     ON_NEXT = 1
     ON_ERROR = 2
     ON_COMPLETED = 3
+
+
+class Case(Generic[TSource]):
+    """Contains overloads to avoid type casting when pattern matching on
+    the message (`Msg`) class
+
+    Currently we wrap instead of inherit to make type checkers happy.
+    """
+
+    def __init__(self, match: Matcher[TSource]) -> None:
+        self.match = match
+
+    @overload
+    def case(self, pattern: "Type[OnNext[TSource]]") -> Iterable[TSource]:
+        ...
+
+    @overload
+    def case(self, pattern: "Type[OnError[TSource]]") -> Iterable[Exception]:
+        ...
+
+    @overload
+    def case(self, pattern: "Type[OnCompleted_[TSource]]") -> Iterable[None]:
+        ...
+
+    def case(self, pattern: Any):
+        return self.match.case(pattern)
 
 
 class Notification(ABC, Generic[TSource]):
@@ -32,6 +60,26 @@ class Notification(ABC, Generic[TSource]):
     @abstractmethod
     async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
         raise NotImplementedError
+
+    @overload
+    def match(self) -> "Case[TSource]":
+        ...
+
+    @overload
+    def match(self, pattern: "Type[OnNext[TSource]]") -> Iterable[TSource]:
+        ...
+
+    @overload
+    def match(self, pattern: "Type[OnError[TSource]]") -> Iterable[Exception]:
+        ...
+
+    @overload
+    def match(self, pattern: "Type[OnCompleted_[TSource]]") -> Iterable[None]:
+        ...
+
+    def match(self, pattern: Optional[Any] = None) -> Any:
+        m: Matcher[Any] = Matcher(self)
+        return m.case(pattern) if pattern else Case(m)
 
     def __repr__(self) -> str:
         return str(self)
@@ -55,6 +103,11 @@ class OnNext(Notification[TSource]):
 
     async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
         await obv.asend(self.value)
+
+    def __match__(self, pattern: Any) -> Iterable[TSource]:
+        if isinstance(self, pattern):
+            return [self.value]
+        return []
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, OnNext):
@@ -83,6 +136,11 @@ class OnError(Notification[TSource]):
 
     async def accept_observer(self, obv: AsyncObserver[TSource]):
         await obv.athrow(self.exception)
+
+    def __match__(self, pattern: Any) -> Iterable[TSource]:
+        if isinstance(self, pattern):
+            return [self.exception]
+        return []
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, OnError):
