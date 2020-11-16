@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Iterable, Tuple, TypeVar, cast
+from typing import Iterable, Tuple, TypeVar
 
 from expression.collections import seq
 from expression.core import MailboxProcessor, Result, TailCall, aio, pipe, recursive_async
@@ -41,17 +41,17 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
                     if seconds > 0:
                         await asyncio.sleep(seconds)
 
-                    async def matcher():
-                        m = ns.match()
-                        for x in m.case(OnNext):
-                            await aobv.asend(x)
-                            return
-                        for err in m.case(OnError):
-                            await aobv.athrow(err)
-                            return
-                        else:
-                            await aobv.aclose()
-                            return
+                    async def matcher() -> None:
+                        with ns.match() as m:
+                            for x in m.case(OnNext):
+                                await aobv.asend(x)
+                                return
+                            for err in m.case(OnError):
+                                await aobv.athrow(err)
+                                return
+                            while m.case(OnCompleted):
+                                await aobv.aclose()
+                                return
 
                     await matcher()
                     return TailCall()
@@ -101,19 +101,17 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
                 async def message_loop(current_index: int) -> Result[TSource, Exception]:
                     n, index = await inbox.receive()
 
-                    if isinstance(n, OnNext):
-                        n = cast(OnNext[TSource], n)
-                        if index == current_index:
-                            x = n.value
-                            await safe_obv.asend(x)
-                            current_index = index
-                        elif index > current_index:
-                            current_index = index
-                    if isinstance(n, OnError):
-                        n = cast(OnError[TSource], n)
-                        await safe_obv.athrow(n.exception)
-                    else:
-                        await safe_obv.aclose()
+                    with n.match() as m:
+                        for x in m.case(OnNext):
+                            if index == current_index:
+                                await safe_obv.asend(x)
+                                current_index = index
+                            elif index > current_index:
+                                current_index = index
+                        for err in m.case(OnError):
+                            await safe_obv.athrow(err)
+                        while m.case(OnCompleted):
+                            await safe_obv.aclose()
 
                     return TailCall(current_index)
 

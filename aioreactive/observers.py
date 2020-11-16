@@ -5,7 +5,7 @@ from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Opti
 from expression.core import MailboxProcessor
 from expression.system import AsyncDisposable, Disposable
 
-from .msg import DisposableMsg, DisposeMsg_, Msg
+from .msg import DisposableMsg, DisposeMsg, Msg
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
 from .types import AsyncObservable, AsyncObserver
 from .utils import anoop
@@ -126,7 +126,7 @@ class AsyncAnonymousObserver(AsyncObserver[TSource]):
 
 
 class AsyncNotificationObserver(AsyncObserver[TSource]):
-    """Observer created from an async notificaton processing function"""
+    """Observer created from an async notification processing function"""
 
     def __init__(self, fn: Callable[[Notification[TSource]], Awaitable[None]]) -> None:
         self._fn = fn
@@ -213,16 +213,16 @@ def auto_detach_observer(
     agent = MailboxProcessor.start(worker)
 
     async def cancel():
-        agent.post(DisposeMsg_)
+        agent.post(DisposeMsg)
 
-    disp = AsyncDisposable.create(cancel)
-    safe_obv = safe_observer(obv, disp)
+    canceller = AsyncDisposable.create(cancel)
+    safe_obv = safe_observer(obv, canceller)
 
     # Auto-detaches (disposes) the disposable when the observer completes with success or error.
-    async def auto_detach(disposable: Awaitable[AsyncDisposable]):
-        disp = await disposable
-        agent.post(DisposableMsg(disp))
-        return disp
+    async def auto_detach(async_disposable: Awaitable[AsyncDisposable]):
+        disposable = await async_disposable
+        agent.post(DisposableMsg(disposable))
+        return disposable
 
     return safe_obv, auto_detach
 

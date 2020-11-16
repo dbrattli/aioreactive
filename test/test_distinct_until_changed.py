@@ -1,16 +1,16 @@
+import aioreactive as rx
 import pytest
-
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import run, subscribe
-from aioreactive.operators import from_iterable, distinct_until_changed
-from aioreactive.testing import AsyncTestObserver
+from aioreactive import AsyncRx
+from aioreactive.notification import OnCompleted, OnNext
+from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
+from expression.core import pipe
 
 
 class MyException(Exception):
     pass
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -19,32 +19,29 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_distinct_until_changed_different():
-    xs = from_iterable([1, 2, 3])
+    xs = rx.from_iterable([1, 2, 3])
 
-    obv = AsyncTestObserver()
-    ys = distinct_until_changed(xs)
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    ys = pipe(xs, rx.distinct_until_changed)
 
-    await run(ys, obv)
-    assert obv.values == [
-        (0, 1),
-        (0, 2),
-        (0, 3),
-        (0, )]
+    await rx.run(ys, obv)
+    assert obv.values == [(0, OnNext(1)), (0, OnNext(2)), (0, OnNext(3)), (0, OnCompleted)]
 
 
 @pytest.mark.asyncio
 async def test_distinct_until_changed_changed():
-    xs = from_iterable([1, 2, 2, 1, 3, 3, 1, 2, 2])
+    xs = AsyncRx.from_iterable([1, 2, 2, 1, 3, 3, 1, 2, 2])
 
-    obv = AsyncTestObserver()
-    ys = distinct_until_changed(xs)
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    ys = xs.distinct_until_changed()
 
-    await run(ys, obv)
+    await rx.run(ys, obv)
     assert obv.values == [
-        (0, 1),
-        (0, 2),
-        (0, 1),
-        (0, 3),
-        (0, 1),
-        (0, 2),
-        (0, )]
+        (0, OnNext(1)),
+        (0, OnNext(2)),
+        (0, OnNext(1)),
+        (0, OnNext(3)),
+        (0, OnNext(1)),
+        (0, OnNext(2)),
+        (0, OnCompleted),
+    ]

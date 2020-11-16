@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+from types import TracebackType
 from typing import Any, Awaitable, Callable, Generic, Iterable, Optional, Type, TypeVar, overload
 
 from expression.core import Matcher
@@ -16,7 +17,7 @@ class MsgKind(Enum):
     ON_COMPLETED = 3
 
 
-class Case(Generic[TSource]):
+class NotificationMatcher(Generic[TSource]):
     """Contains overloads to avoid type casting when pattern matching on
     the message (`Msg`) class
 
@@ -38,8 +39,20 @@ class Case(Generic[TSource]):
     def case(self, pattern: "Type[OnCompleted_[TSource]]") -> Iterable[None]:
         ...
 
-    def case(self, pattern: Any):
+    @overload
+    def case(self, pattern: Any) -> Any:
         return self.match.case(pattern)
+
+    def __enter__(self) -> "Matcher[TSource]":
+        """Enter context management."""
+        return self.match.__enter__()
+
+    def __exit__(
+        self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
+    ) -> None:
+        """Exit context management."""
+
+        return self.match.__exit__(exctype, excinst, exctb)
 
 
 class Notification(ABC, Generic[TSource]):
@@ -62,7 +75,7 @@ class Notification(ABC, Generic[TSource]):
         raise NotImplementedError
 
     @overload
-    def match(self) -> "Case[TSource]":
+    def match(self) -> "NotificationMatcher[TSource]":
         ...
 
     @overload
@@ -79,7 +92,7 @@ class Notification(ABC, Generic[TSource]):
 
     def match(self, pattern: Optional[Any] = None) -> Any:
         m: Matcher[Any] = Matcher(self)
-        return m.case(pattern) if pattern else Case(m)
+        return m.case(pattern) if pattern else NotificationMatcher(m)
 
     def __repr__(self) -> str:
         return str(self)

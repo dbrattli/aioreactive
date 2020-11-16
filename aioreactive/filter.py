@@ -1,9 +1,15 @@
 from typing import Awaitable, Callable, TypeVar
 
-from expression.core import Option, aio
+from expression.core import Option, Result, aio, match, pipe
+from expression.core.fn import TailCall, recursive_async
+from expression.core.mailbox import MailboxProcessor
+from expression.system.disposable import AsyncDisposable
 
+from .notification import Notification, OnCompleted, OnError, OnNext
+from .observables import AsyncAnonymousObservable
+from .observers import AsyncNotificationObserver, auto_detach_observer
 from .transform import transform
-from .types import Stream
+from .types import AsyncObservable, AsyncObserver, Stream
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
@@ -96,3 +102,59 @@ def filter(predicate: Callable[[TSource], bool]) -> Stream[TSource, TSource]:
         return aio.empty
 
     return transform(handler)
+
+
+def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+    """Distinct until changed.
+
+    Return an observable sequence only containing the distinct
+    contiguous elementsfrom the source sequence.
+
+    Args:
+        source (AsyncObservable[TSource]): [description]
+
+    Returns:
+        AsyncObservable[TSource]: [description]
+    """
+
+    async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+        safe_obv, auto_detach = auto_detach_observer(aobv)
+
+        async def worker(inbox: MailboxProcessor[Notification[TSource]]) -> None:
+            @recursive_async
+            async def message_loop(latest: Notification[TSource]) -> Result[Notification[TSource], Exception]:
+                n = await inbox.receive()
+
+                async def get_latest() -> Notification[TSource]:
+                    with match(n) as m:
+                        for x in m.case(OnNext):
+                            if n == latest:
+                                break
+                            try:
+                                await safe_obv.asend(x)
+                            except Exception as ex:
+                                await safe_obv.athrow(ex)
+                            break
+                        for err in m.case(OnError):
+                            await safe_obv.athrow(err)
+                            break
+                        while m.case(OnCompleted):
+                            await safe_obv.aclose()
+                            break
+
+                    return n
+
+                latest = await get_latest()
+                return TailCall(latest)
+
+            await message_loop(OnCompleted)  # Use as sentinel value as it will not match any OnNext value
+
+        agent = MailboxProcessor.start(worker)
+
+        async def notification(n: Notification[TSource]) -> None:
+            agent.post(n)
+
+        obv: AsyncObserver[TSource] = AsyncNotificationObserver(notification)
+        return await pipe(obv, source.subscribe_async, auto_detach)
+
+    return AsyncAnonymousObservable(subscribe_async)

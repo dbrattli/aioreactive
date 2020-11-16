@@ -125,6 +125,11 @@ class AsyncRx(AsyncObservable[TSource]):
 
         return AsyncRx(delay(seconds)(self))
 
+    def distinct_until_changed(self) -> AsyncObservable[TSource]:
+        from .filter import distinct_until_changed
+
+        return distinct_until_changed(self)
+
     def filter(self, predicate: Callable[[TSource], TSource]) -> "AsyncRx[TSource]":
         from .filter import filter
 
@@ -356,10 +361,10 @@ def never() -> "AsyncObservable[TSource]":
     return never()
 
 
-def distinct_until_changed() -> Callable[[AsyncObservable], AsyncObservable]:
-    from aioreactive.operators.distinct_until_changed import distinct_until_changed
+def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+    from .filter import distinct_until_changed
 
-    return partial(distinct_until_changed)
+    return distinct_until_changed(source)
 
 
 def as_chained(source: AsyncObservable[TSource]) -> AsyncRx[TSource]:
