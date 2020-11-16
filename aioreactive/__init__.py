@@ -279,6 +279,12 @@ def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TS
     return flat_map(mapper)
 
 
+def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+    from .transform import flat_mapi
+
+    return flat_mapi(mapper)
+
+
 def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
     from aioreactive.operators.from_async_iterable import from_async_iterable
 
@@ -300,6 +306,16 @@ def map(fn: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
     from .transform import map as _map
 
     return _map(fn)
+
+
+def starmap(mapper: Callable[..., TResult]) -> Stream[TSource, TResult]:
+    """Map and spread the arguments to the mapper.
+
+    Returns an observable sequence whose elements are the result of
+    invoking the mapper function on each element of the source."""
+    from .transform import starmap
+
+    return starmap(mapper)
 
 
 def map_async(mapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSource, TResult]:
