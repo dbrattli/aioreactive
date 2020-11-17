@@ -2,8 +2,10 @@
 <img src="logo/logo.jpg" alt="drawing" width="200"/>
 
 # aioreactive - RxPY for asyncio using async and await
-[![Build Status](https://travis-ci.org/dbrattli/aioreactive.svg?branch=master)](https://travis-ci.org/dbrattli/aioreactive)
-[![Coverage Status](https://coveralls.io/repos/github/dbrattli/aioreactive/badge.svg?branch=master)](https://coveralls.io/github/dbrattli/aioreactive?branch=master)
+![Python package](https://github.com/dbrattli/aioreactive/workflows/Python%20package/badge.svg)
+![Upload Python Package](https://github.com/dbrattli/aioreactive/workflows/Upload%20Python%20Package/badge.svg)
+[![codecov](https://codecov.io/gh/dbrattli/aioreactive/branch/master/graph/badge.svg)](https://codecov.io/gh/dbrattli/aioreactive)
+
 
 > *News: Project rebooted Nov. 2020. Currently being rebuilt based on [Expression](https://github.com/dbrattli/Expression)*
 
