@@ -36,10 +36,9 @@ class NotificationMatcher(Generic[TSource]):
         ...
 
     @overload
-    def case(self, pattern: "Type[OnCompleted_[TSource]]") -> Iterable[None]:
+    def case(self, pattern: "Type[_OnCompleted[TSource]]") -> Iterable[None]:
         ...
 
-    @overload
     def case(self, pattern: Any) -> Any:
         return self.match.case(pattern)
 
@@ -87,7 +86,7 @@ class Notification(ABC, Generic[TSource]):
         ...
 
     @overload
-    def match(self, pattern: "Type[OnCompleted_[TSource]]") -> Iterable[None]:
+    def match(self, pattern: "Type[_OnCompleted[TSource]]") -> Iterable[None]:
         ...
 
     def match(self, pattern: Optional[Any] = None) -> Any:
@@ -164,8 +163,11 @@ class OnError(Notification[TSource]):
         return f"OnError({self.exception})"
 
 
-class OnCompleted_(Notification[TSource]):
-    """Represents an OnCompleted notification to an observer."""
+class _OnCompleted(Notification[TSource]):
+    """Represents an OnCompleted notification to an observer.
+
+    Note: Do not use. Use the singleton `OnCompleted` instance instead.
+    """
 
     def __init__(self):
         """Constructs a notification of the end of a sequence."""
@@ -184,7 +186,7 @@ class OnCompleted_(Notification[TSource]):
         await obv.aclose()
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, OnCompleted_):
+        if isinstance(other, _OnCompleted):
             return True
         return False
 
@@ -192,5 +194,5 @@ class OnCompleted_(Notification[TSource]):
         return "OnCompleted"
 
 
-OnCompleted: Notification[Any] = OnCompleted_()
+OnCompleted: Notification[Any] = _OnCompleted()
 """OnCompleted singleton instance."""

@@ -1,6 +1,6 @@
 from typing import TypeVar, AsyncIterable, Generic
 
-from aioreactive.core import AsyncObservable
+from aioreactive import AsyncObservable
 
 T = TypeVar("T")
 

@@ -1,6 +1,5 @@
 """Aioreactive module"""
 
-from functools import partial
 from typing import AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar, Union
 
 from expression.core import Option, pipe
@@ -128,12 +127,12 @@ class AsyncRx(AsyncObservable[TSource]):
     def distinct_until_changed(self) -> AsyncObservable[TSource]:
         from .filter import distinct_until_changed
 
-        return distinct_until_changed(self)
+        return AsyncRx(distinct_until_changed(self))
 
     def filter(self, predicate: Callable[[TSource], TSource]) -> "AsyncRx[TSource]":
         from .filter import filter
 
-        return pipe(self, filter(predicate), AsyncRx.create)
+        return AsyncRx(pipe(self, filter(predicate), AsyncRx.create))
 
     def flat_map(self, selector: Callable[[TSource], AsyncObservable[TResult]]) -> "AsyncRx[TResult]":
         from .transform import flat_map
@@ -143,14 +142,78 @@ class AsyncRx(AsyncObservable[TSource]):
     def map(self, selector: Callable[[TSource], TResult]) -> "AsyncRx[TResult]":
         from .transform import map
 
-        return pipe(self, map(selector), AsyncRx.create)
+        return AsyncRx(pipe(self, map(selector), AsyncRx.create))
 
     def merge(self, other: AsyncObservable[TSource]) -> "AsyncRx[TSource]":
         from .combine import merge_inner
         from .create import of_seq
 
         source = of_seq([self, other])
-        return pipe(source, merge_inner(0), AsyncRx.create)
+        return AsyncRx(pipe(source, merge_inner(0), AsyncRx.create))
+
+    def skip(self, count: int) -> AsyncObservable[TSource]:
+        """Skip items from start of the stream.
+
+        Bypasses a specified number of elements in an observable sequence
+        and then returns the remaining elements.
+
+        Args:
+            count: Items to skip
+
+        Returns:
+            Stream[TSource, TSource]: [description]
+        """
+        from .filter import skip
+
+        return AsyncRx(pipe(self, skip(count)))
+
+    def take(self, count: int) -> AsyncObservable[TSource]:
+        """Take the first elements from the stream.
+
+        Returns a specified number of contiguous elements from the start of
+        an observable sequence.
+
+        Args:
+            count Number of elements to take.
+
+        Returns:
+            Stream[TSource, TSource]: [description]
+        """
+        from .filter import take
+
+        return AsyncRx(pipe(self, take(count)))
+
+    def take_last(self, count: int) -> AsyncObservable[TSource]:
+        """Take last elements from stream.
+
+        Returns a specified number of contiguous elements from the end of an
+        observable sequence.
+
+        Args:
+            count: Number of elements to take.
+
+        Returns:
+            Stream[TSource, TSource]: [description]
+        """
+        from .filter import take_last
+
+        return AsyncRx(pipe(self, take_last(count)))
+
+    def take_until(self, other: AsyncObservable[TResult]) -> AsyncObservable[TSource]:
+        """Take elements until other.
+
+        Returns the values from the source observable sequence until the
+        other observable sequence produces a value.
+
+        Args:
+            other: The other async observable
+
+        Returns:
+            Stream[TSource, TSource]: [description]
+        """
+        from .filter import take_until
+
+        return AsyncRx(pipe(self, take_until(other)))
 
     def to_async_iterable(self) -> AsyncIterable[TSource]:
         from .leave import to_async_iterable
@@ -259,6 +322,12 @@ def filter_async(
     from .filter import filter_async
 
     return filter_async(predicate)
+
+
+def from_async(worker: Awaitable[TSource]) -> AsyncObservable[TSource]:
+    from .create import of_async
+
+    return of_async(worker)
 
 
 def from_iterable(iterable: Iterable[TSource]) -> AsyncObservable[TSource]:
@@ -380,7 +449,7 @@ def merge(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
     from .create import of_seq
 
     def _(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
-        return pipe(of_seq([source, other]), merge_inner)
+        return pipe(of_seq([source, other]), merge_inner())
 
     return _
 
@@ -388,7 +457,7 @@ def merge(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
 def merge_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
     from .create import of_seq
 
-    return pipe(of_seq(sources), merge_inner)
+    return pipe(of_seq(sources), merge_inner())
 
 
 def never() -> "AsyncObservable[TSource]":
@@ -430,6 +499,57 @@ def switch_latest() -> Stream[TSource, TSource]:
     return switch_latest
 
 
+def take(count: int) -> Stream[TSource, TSource]:
+    """Take the first elements from the stream.
+
+    Returns a specified number of contiguous elements from the start of
+    an observable sequence.
+
+    Args:
+        count Number of elements to take.
+
+    Returns:
+        Stream[TSource, TSource]: [description]
+    """
+    from .filter import take
+
+    return take(count)
+
+
+def take_last(count: int) -> Stream[TSource, TSource]:
+    """Take last elements from stream.
+
+    Returns a specified number of contiguous elements from the end of an
+    observable sequence.
+
+    Args:
+        count: Number of elements to take.
+
+    Returns:
+        Stream[TSource, TSource]: [description]
+    """
+    from .filter import take_last
+
+    return take_last(count)
+
+
+def take_until(other: AsyncObservable[TResult]) -> Stream[TSource, TSource]:
+    """Take elements until other.
+
+    Returns the values from the source observable sequence until the
+    other observable sequence produces a value.
+
+    Args:
+        other: The other async observable
+
+    Returns:
+        Stream[TSource, TSource]: [description]
+    """
+    from .filter import take_until
+
+    return take_until(other)
+
+
 def to_async_iterable(source: AsyncObservable[TSource]) -> AsyncIterable[TSource]:
     from .leave import to_async_iterable
 
@@ -440,6 +560,23 @@ def single(value: TSource) -> "AsyncObservable[TSource]":
     from .create import single
 
     return single(value)
+
+
+def skip(count: int) -> Stream[TSource, TSource]:
+    """Skip items in the stream.
+
+    Bypasses a specified number of elements in an observable sequence
+    and then returns the remaining elements.
+
+    Args:
+        count (int): Items to skip
+
+    Returns:
+        Stream[TSource, TSource]: [description]
+    """
+    from .filter import skip
+
+    return skip(count)
 
 
 def timer(due_time: float) -> AsyncObservable[int]:
@@ -477,6 +614,7 @@ __all__ = [
     "empty",
     "filter",
     "filter_async",
+    "from_async",
     "from_iterable",
     "map",
     "map_async",

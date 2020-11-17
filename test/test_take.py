@@ -1,9 +1,9 @@
-import pytest
 import logging
-from asyncio import Future, CancelledError
+from asyncio import CancelledError, Future
 
-from aioreactive.operators.take import take
-from aioreactive.core import AsyncObservable, run, subscribe, AsyncAnonymousObserver
+import aioreactive as rx
+import pytest
+from aioreactive.testing import AsyncTestObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 @pytest.mark.asyncio
 async def test_take_zero() -> None:
-    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
+    xs = rx.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value) -> None:
@@ -20,14 +20,14 @@ async def test_take_zero() -> None:
     ys = take(0, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, AsyncAnonymousObserver(asend))
+        await run(ys, AsyncTestObserver(asend))
 
     assert values == []
 
 
 @pytest.mark.asyncio
 async def test_take_empty() -> None:
-    xs = AsyncObservable.empty()
+    xs = rx.empty()
     values = []
 
     async def asend(value) -> None:
@@ -36,14 +36,14 @@ async def test_take_empty() -> None:
     ys = take(42, xs)
 
     with pytest.raises(CancelledError):
-        await run(ys, AsyncAnonymousObserver(asend))
+        await run(ys, AsyncTestObserver(asend))
 
     assert values == []
 
 
 @pytest.mark.asyncio
 async def test_take_negative() -> None:
-    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
+    xs = rx.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value) -> None:
@@ -55,7 +55,7 @@ async def test_take_negative() -> None:
 
 @pytest.mark.asyncio
 async def test_take_normal() -> None:
-    xs = AsyncObservable.from_iterable([1, 2, 3, 4, 5])
+    xs = rx.from_iterable([1, 2, 3, 4, 5])
     values = []
 
     async def asend(value) -> None:
@@ -63,7 +63,7 @@ async def test_take_normal() -> None:
 
     ys = take(2, xs)
 
-    result = await run(ys, AsyncAnonymousObserver(asend))
+    result = await run(ys, AsyncTestObserver(asend))
 
     assert result == 2
     assert values == [1, 2]
