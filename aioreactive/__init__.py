@@ -70,7 +70,14 @@ class AsyncRx(AsyncObservable[TSource]):
 
          Returne a sliced source stream."""
 
-        return AsyncRx(super(AsyncRx, self).__getitem__(key))
+        from .filter import slice as _slice
+
+        if isinstance(key, slice):
+            start, stop, step = key.start, key.stop, key.step
+        else:
+            start, stop, step = key, key + 1, 1
+
+        return AsyncRx(pipe(self, _slice(start, stop, step)))
 
     @classmethod
     def from_iterable(cls, iter: Iterable[TSource]) -> "AsyncRx[TSource]":

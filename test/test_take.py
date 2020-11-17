@@ -1,69 +1,65 @@
 import logging
-from asyncio import CancelledError, Future
+from asyncio import CancelledError
 
 import aioreactive as rx
 import pytest
-from aioreactive.testing import AsyncTestObserver
+from aioreactive.notification import OnCompleted, OnNext
+from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
+from expression.core import pipe
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
+@pytest.yield_fixture()  # type:ignore
+def event_loop():
+    loop = VirtualTimeEventLoop()
+    yield loop
+    loop.close()
+
+
 @pytest.mark.asyncio
 async def test_take_zero() -> None:
     xs = rx.from_iterable([1, 2, 3, 4, 5])
-    values = []
 
-    async def asend(value) -> None:
-        values.append(value)
+    ys = pipe(xs, rx.take(0))
 
-    ys = take(0, xs)
-
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
     with pytest.raises(CancelledError):
-        await run(ys, AsyncTestObserver(asend))
+        await rx.run(ys, obv)
 
-    assert values == []
+    assert obv.values == [(0, OnCompleted)]
 
 
 @pytest.mark.asyncio
 async def test_take_empty() -> None:
     xs = rx.empty()
-    values = []
 
-    async def asend(value) -> None:
-        values.append(value)
+    ys = pipe(xs, rx.take(42))
 
-    ys = take(42, xs)
-
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
     with pytest.raises(CancelledError):
-        await run(ys, AsyncTestObserver(asend))
+        await rx.run(ys, obv)
 
-    assert values == []
+    assert obv.values == [(0, OnCompleted)]
 
 
 @pytest.mark.asyncio
 async def test_take_negative() -> None:
     xs = rx.from_iterable([1, 2, 3, 4, 5])
-    values = []
-
-    async def asend(value) -> None:
-        values.append(value)
 
     with pytest.raises(ValueError):
-        take(-1, xs)
+        pipe(xs, rx.take(-1))
 
 
 @pytest.mark.asyncio
 async def test_take_normal() -> None:
     xs = rx.from_iterable([1, 2, 3, 4, 5])
-    values = []
 
-    async def asend(value) -> None:
-        values.append(value)
+    ys = pipe(xs, rx.take(2))
 
-    ys = take(2, xs)
-
-    result = await run(ys, AsyncTestObserver(asend))
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    result = await rx.run(ys, obv)
 
     assert result == 2
-    assert values == [1, 2]
+    assert obv.values == [(0, OnNext(1)), (0, OnNext(2)), (0, OnCompleted)]

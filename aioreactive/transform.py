@@ -1,14 +1,12 @@
-from typing import Awaitable, Callable, Tuple, TypeVar, cast
+from typing import Awaitable, Callable, Tuple, TypeVar
 
 from expression.collections import seq
-from expression.core import (MailboxProcessor, Nothing, Option, Result, Some,
-                             TailCall, compose, pipe, recursive_async)
+from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, compose, pipe, recursive_async
 from expression.system import AsyncDisposable
 
 from .combine import merge_inner, zip_seq
 from .create import fail
-from .msg import (CompletedMsg, DisposeMsg, InnerCompletedMsg,
-                  InnerObservableMsg, Msg)
+from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Msg
 from .observables import AsyncAnonymousObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, auto_detach_observer
 from .types import AsyncObserver, Stream
@@ -110,7 +108,10 @@ def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
     invoking the mapper function and incorporating the element's index
     on each element of the source.
     """
-    return compose(zip_seq(seq.infinite()), starmap(mapper))
+    return compose(
+        zip_seq(seq.infinite()),
+        starmap(mapper),
+    )
 
 
 def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
