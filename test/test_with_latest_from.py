@@ -1,19 +1,20 @@
-import logging
-import pytest
 import asyncio
+import logging
+from asyncio.exceptions import CancelledError
+from typing import Tuple
 
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import AsyncStream, run, AsyncAnonymousObserver, subscribe
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.with_latest_from import with_latest_from
-from aioreactive.operators.never import never
-from aioreactive.operators.empty import empty
+import aioreactive as rx
+import pytest
+from aioreactive.notification import OnCompleted, OnNext
+from aioreactive.testing import AsyncSubject, AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.types import AsyncObservable, AsyncObserver
+from expression.core import pipe
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -22,18 +23,14 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_withlatestfrom_never_never():
-    xs = never()
-    ys = never()
+    xs: AsyncObservable[int] = rx.never()
+    ys: AsyncObservable[int] = rx.never()
     result = []
 
-    async def asend(value):
-        nonlocal result
-        asyncio.sleep(0.1)
-        result.append(value)
+    zs = pipe(xs, rx.with_latest_from(ys))
 
-    zs = with_latest_from(lambda x, y: x + y, ys, xs)
-
-    await subscribe(zs, AsyncAnonymousObserver(asend))
+    obv: AsyncObserver[Tuple[int, int]] = AsyncTestObserver()
+    await zs.subscribe_async(obv)
     await asyncio.sleep(1)
 
     assert result == []
@@ -41,51 +38,37 @@ async def test_withlatestfrom_never_never():
 
 @pytest.mark.asyncio
 async def test_withlatestfrom_never_empty():
-    xs = empty()
-    ys = never()
-    result = []
+    xs: AsyncObservable[int] = rx.empty()
+    ys: AsyncObservable[int] = rx.never()
 
-    async def asend(value):
-        log.debug("test_withlatestfrom_never_empty:asend(%s)", value)
-        nonlocal result
-        asyncio.sleep(0.1)
-        result.append(value)
+    zs = pipe(xs, rx.with_latest_from(ys))
 
-    zs = with_latest_from(lambda x, y: x + y, ys, xs)
+    obv: AsyncTestObserver[Tuple[int, int]] = AsyncTestObserver()
+    with pytest.raises(CancelledError):
+        await rx.run(zs, obv)
 
-    try:
-        await run(zs, AsyncAnonymousObserver(asend))
-    except asyncio.CancelledError:
-        pass
-    assert result == []
+    assert obv.values == [(0, OnCompleted)]
 
 
 @pytest.mark.asyncio
 async def test_withlatestfrom_done():
-    xs = AsyncStream()
-    ys = AsyncStream()
-    result = []
+    xs: AsyncSubject[int] = AsyncSubject()
+    ys: AsyncSubject[int] = AsyncSubject()
 
-    async def asend(value):
-        log.debug("test_withlatestfrom_done:asend(%s)", value)
-        nonlocal result
-        asyncio.sleep(0.1)
-        result.append(value)
+    zs = pipe(xs, rx.with_latest_from(ys), rx.starmap(lambda x, y: x + y))
 
-    zs = with_latest_from(lambda x, y: x + y, ys, xs)
-
-    obv = AsyncAnonymousObserver(asend)
-    async with subscribe(zs, obv):
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    async with await zs.subscribe_async(obv):
         await xs.asend(1)
         await ys.asend(2)
         await xs.asend(3)
         await xs.aclose()
         await obv
 
-    assert result == [5]
+    assert obv.values == [(0, OnNext(5)), (0, OnCompleted)]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(test_withlatestfrom_done())
     loop.close()

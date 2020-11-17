@@ -31,10 +31,11 @@ async def main() -> None:
         label.config(dict(borderwidth=0, padx=0, pady=0))
 
         def mapper(x: int, y: int) -> Tuple[Label, int, int]:
+            """Map mouse-move pos to label and new pos for label."""
             return label, x + i * 12 + 15, y
 
         return pipe(
-            mousemoves,  # stream of mouse-moves for each char
+            mousemoves,  # stream of mouse-moves
             rx.delay(i / 10.0),  # delay each mouse-move based on index of char
             rx.starmap(mapper),  # place label based on mouse pos and index of char
         )
@@ -42,7 +43,7 @@ async def main() -> None:
     stream = pipe(
         labels,  # list of labels
         rx.from_iterable,  # stream of labels
-        rx.flat_mapi(handle_label),  # swap stream of chars with stream of mousemoves
+        rx.flat_mapi(handle_label),  # swap stream of labels with stream of labels + pos
     )
 
     async def asend(value: Tuple[Label, int, int]) -> None:

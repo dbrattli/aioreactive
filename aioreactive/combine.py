@@ -244,8 +244,8 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TS
         async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
-            @recursive_async
             async def worker(inbox: MailboxProcessor[Msg]) -> None:
+                @recursive_async
                 async def message_loop(latest: Option[TOther]) -> Result[TSource, Exception]:
                     cn = await inbox.receive()
 

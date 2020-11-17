@@ -10,6 +10,7 @@ from .notification import Notification
 from .types import AsyncObservable
 
 TSource = TypeVar("TSource")
+TOther = TypeVar("TOther")
 
 
 class Case(Generic[TSource]):
@@ -101,8 +102,13 @@ class SourceMsg(Msg, Generic[TSource]):
 
 
 @dataclass
-class OtherMsg(SourceMsg[TSource]):
-    pass
+class OtherMsg(Msg, Generic[TOther]):
+    value: Notification[TOther]
+
+    def __match__(self, pattern: Any) -> Iterable[Notification[TOther]]:
+        if isinstance(self, pattern):
+            return [self.value]
+        return []
 
 
 @dataclass

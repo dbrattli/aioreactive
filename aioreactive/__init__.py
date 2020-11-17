@@ -285,6 +285,26 @@ def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Str
     return flat_mapi(mapper)
 
 
+def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Stream[TSource, TResult]:
+    """Flap map async.
+
+    Asynchronously projects each element of an observable sequence into
+    an observable sequence and merges the resulting observable sequences
+    back into one observable sequence.
+
+
+    Args:
+        mapperCallable ([type]): [description]
+        Awaitable ([type]): [description]
+
+    Returns:
+        Stream[TSource, TResult]: [description]
+    """
+    from .transform import flat_map_async
+
+    return flat_map_async(mapper)
+
+
 def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
     from aioreactive.operators.from_async_iterable import from_async_iterable
 
