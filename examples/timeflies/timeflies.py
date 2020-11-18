@@ -3,7 +3,7 @@ from tkinter import Event, Frame, Label, Misc, Tk
 from typing import Tuple
 
 import aioreactive as rx
-from aioreactive import AsyncAnonymousObserver, AsyncTestSubject
+from aioreactive import AsyncAnonymousObserver, AsyncSubject
 from aioreactive.types import AsyncObservable
 from expression.core import MailboxProcessor, pipe
 
@@ -12,7 +12,7 @@ async def main() -> None:
     root = Tk()
     root.title("aioreactive")
 
-    mousemoves: AsyncTestSubject[Tuple[int, int]] = AsyncTestSubject()
+    mousemoves: AsyncSubject[Tuple[int, int]] = AsyncSubject()
 
     frame = Frame(root, width=800, height=600, bg="white")
 
