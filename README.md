@@ -2,12 +2,13 @@
 <img src="logo/logo.jpg" alt="drawing" width="200"/>
 
 # aioreactive - RxPY for asyncio using async and await
+[![PyPI](https://img.shields.io/pypi/v/aioreactive.svg)](https://pypi.python.org/pypi/aioreactive)
 ![Python package](https://github.com/dbrattli/aioreactive/workflows/Python%20package/badge.svg)
 ![Upload Python Package](https://github.com/dbrattli/aioreactive/workflows/Upload%20Python%20Package/badge.svg)
 [![codecov](https://codecov.io/gh/dbrattli/aioreactive/branch/master/graph/badge.svg)](https://codecov.io/gh/dbrattli/aioreactive)
 
 
-> *News: Project rebooted Nov. 2020. Currently being rebuilt based on [Expression](https://github.com/dbrattli/Expression)*
+> *NEWS: Project rebooted Nov. 2020. Rebuilt using [Expression](https://github.com/dbrattli/Expression).*
 
 Aioreactive is [RxPY](https://github.com/ReactiveX/RxPY) for asyncio.
 It's an asynchronous and reactive Python library for asyncio using async
@@ -403,13 +404,13 @@ implementation of `AsyncObservable`.
 Rx and RxPY has hundreds of different query operators, and we currently
 have no plans to implementing all of them for aioreactive.
 
-Many ideas from aioreactive might be ported back into "classic" RxPY.
+Many ideas from aioreactive have already been ported back into "classic" RxPY.
 
 # References
 
 Aioreactive was inspired by:
 
-* [AsyncRx](https://github.com/dbrattli/asyncrx) - Aioreactive is a port of AsyncRx from F#.
+* [AsyncRx](https://github.com/dbrattli/asyncrx) - Aioreactive is actually a direct port of AsyncRx from F#.
 * [Expression](https://github.com/dbrattli/Expression) - Functional programming for Python.
 * [Is it really Pythonic to continue using LINQ operators instead of plain old functions?](https://github.com/ReactiveX/RxPY/issues/94)
 * [Reactive Extensions (Rx)](http://reactivex.io) and [RxPY](https://github.com/ReactiveX/RxPY).
