@@ -15,7 +15,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_flap_map_done():
-    xs: rx.AsyncTestSubject[int] = rx.AsyncTestSubject()
+    xs: rx.AsyncSubject[int] = rx.AsyncSubject()
 
     def mapper(value: int) -> rx.AsyncObservable[int]:
         return rx.from_iterable([value])

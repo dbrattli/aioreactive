@@ -6,7 +6,6 @@ import pytest
 from aioreactive.notification import OnCompleted, OnError, OnNext
 from aioreactive.testing import AsyncTestObserver, AsyncTestSubject, VirtualTimeEventLoop, ca
 from expression.core import pipe
-from pytest import approx
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -50,7 +49,9 @@ async def test_delay_cancel_before_done():
         await xs.asend(20)
 
     await asyncio.sleep(1)
-    assert obv.values == [(ca(0.3), OnNext(10))]
+    assert obv.values == [
+        (ca(0.3), OnNext(10)),
+    ]
 
 
 @pytest.mark.asyncio

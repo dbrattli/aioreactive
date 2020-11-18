@@ -2,7 +2,7 @@ import asyncio
 from typing import TypeVar
 
 from aioreactive import AsyncObserver
-from aioreactive.subject import AsyncSingleTestSubject, AsyncTestSubject
+from aioreactive.subject import AsyncSingleSubject, AsyncSubject
 
 TSource = TypeVar("TSource")
 
@@ -78,11 +78,11 @@ class AsyncSubjectBase(AsyncObserver[TSource]):
         asyncio.ensure_future(task())
 
 
-class AsyncTestSubject(AsyncTestSubject[TSource], AsyncSubjectBase[TSource]):
+class AsyncTestSubject(AsyncSubject[TSource], AsyncSubjectBase[TSource]):
     pass
 
 
-class AsyncTestSingleSubject(AsyncSingleTestSubject[TSource], AsyncSubjectBase[TSource]):
+class AsyncTestSingleSubject(AsyncSingleSubject[TSource], AsyncSubjectBase[TSource]):
     def __init__(self):
         super().__init__()
 

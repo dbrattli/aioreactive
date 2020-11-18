@@ -7,7 +7,7 @@ from expression.system.disposable import AsyncDisposable
 
 from .observables import AsyncAnonymousObservable, AsyncIterableObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
-from .subject import AsyncSingleTestSubject, AsyncTestSubject
+from .subject import AsyncSingleSubject, AsyncSubject
 from .subscription import run
 from .types import AsyncObserver, Stream
 
@@ -686,5 +686,6 @@ __all__ = [
 ]
 
 from ._version import get_versions
-__version__ = get_versions()['version']
+
+__version__ = get_versions()["version"]
 del get_versions
