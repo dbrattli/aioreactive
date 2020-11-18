@@ -5,8 +5,7 @@ from typing import Optional
 import aioreactive as rx
 import pytest
 from aioreactive.notification import OnCompleted, OnError, OnNext
-from aioreactive.testing import (AsyncSingleSubject, AsyncTestObserver,
-                                 VirtualTimeEventLoop)
+from aioreactive.testing import AsyncTestObserver, AsyncTestSingleSubject, VirtualTimeEventLoop
 from aioreactive.types import AsyncObserver
 from expression.core import pipe
 from expression.system import AsyncDisposable, ObjectDisposedException
@@ -28,7 +27,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_stream_happy():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
     sink = AsyncTestObserver()
     await xs.subscribe_async(sink)
@@ -42,7 +41,7 @@ async def test_stream_happy():
 @pytest.mark.asyncio
 async def test_stream_throws():
     ex = MyException("ex")
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
     sink = AsyncTestObserver()
     with pytest.raises(MyException):
@@ -59,7 +58,7 @@ async def test_stream_throws():
 
 @pytest.mark.asyncio
 async def test_stream_send_after_close():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
     sink = AsyncTestObserver()
     await xs.subscribe_async(sink)
@@ -74,7 +73,7 @@ async def test_stream_send_after_close():
 
 @pytest.mark.asyncio
 async def test_stream_cancel():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
     sub = None
 
     def mapper(value: int) -> int:
@@ -95,7 +94,7 @@ async def test_stream_cancel():
 
 @pytest.mark.asyncio
 async def test_stream_cancel_asend():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
     sub: Optional[AsyncDisposable] = None
 
     async def asend(value: int) -> None:
@@ -121,7 +120,7 @@ async def test_stream_cancel_asend():
 
 @pytest.mark.asyncio
 async def test_stream_cancel_mapper():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
     sub: Optional[AsyncDisposable] = None
 
     async def mapper(value: int) -> int:
@@ -145,7 +144,7 @@ async def test_stream_cancel_mapper():
 
 @pytest.mark.asyncio
 async def test_stream_cancel_context():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
     sink = AsyncTestObserver()
     async with await xs.subscribe_async(sink):
@@ -160,7 +159,7 @@ async def test_stream_cancel_context():
 
 @pytest.mark.asyncio
 async def test_stream_cold_send():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
     sink = AsyncTestObserver()
 
@@ -178,7 +177,7 @@ async def test_stream_cold_send():
 
 @pytest.mark.asyncio
 async def test_stream_cold_throw():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
     error = MyException()
     sink = AsyncTestObserver()
 
@@ -196,7 +195,7 @@ async def test_stream_cold_throw():
 
 @pytest.mark.asyncio
 async def test_stream_cold_close():
-    xs: AsyncSingleSubject[int] = AsyncSingleSubject()
+    xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
     sink = AsyncTestObserver()
 

@@ -15,7 +15,6 @@ async def test_concat_happy():
     result = []
 
     async def asend(value: int) -> None:
-        log.debug("test_merge_done:send: ", value)
         result.append(value)
 
     zs = pipe(xs, rx.concat(ys))

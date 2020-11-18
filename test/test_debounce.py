@@ -1,16 +1,17 @@
-import pytest
 import asyncio
 import logging
 
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import subscribe, AsyncAnonymousObserver, AsyncStream
-from aioreactive.operators import debounce
+import aioreactive as rx
+import pytest
+from aioreactive.notification import OnCompleted, OnNext
+from aioreactive.testing import AsyncTestObserver, AsyncTestSubject, VirtualTimeEventLoop, ca
+from expression.core import pipe
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type:ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -19,46 +20,45 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_debounce():
-    xs = AsyncStream()
-    result = []
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
-    async def asend(value):
-        log.debug("test_debounce:asend(%s)", value)
-        nonlocal result
-        result.append(value)
+    ys = pipe(xs, rx.debounce(0.5))
 
-    ys = debounce(0.5, xs)
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    await ys.subscribe_async(obv)
 
-    obv = AsyncAnonymousObserver(asend)
-    sub = await subscribe(ys, obv)
-    await xs.asend(1)
-    await asyncio.sleep(0.6)
-    await xs.asend(2)
-    await xs.aclose()
+    await xs.asend(1)  # 0 -> 0.5
+    await asyncio.sleep(0.6)  # 0.6
+    await xs.asend(2)  # 0.6 -> 1.1
+    await asyncio.sleep(0.6)  # 1.2
+    await xs.aclose()  # 1.2
     await asyncio.sleep(0.6)
     await obv
 
-    assert result == [1, 2]
+    assert obv.values == [
+        (ca(0.5), OnNext(1)),
+        (ca(1.1), OnNext(2)),
+        (ca(1.2), OnCompleted),
+    ]
 
 
 @pytest.mark.asyncio
 async def test_debounce_filter():
-    xs = AsyncStream()
-    result = []
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
-    async def asend(value):
-        log.debug("test_debounce_filter:asend(%s)", value)
-        nonlocal result
-        result.append(value)
+    ys = pipe(xs, rx.debounce(0.5))
+    obv: AsyncTestObserver[int] = AsyncTestObserver()
+    await ys.subscribe_async(obv)
 
-    ys = debounce(0.5, xs)
-    obv = AsyncAnonymousObserver(asend)
-    sub = await subscribe(ys, obv)
     await xs.asend(1)
     await asyncio.sleep(0.3)
     await xs.asend(2)
+    await asyncio.sleep(0.6)
     await xs.aclose()
     await asyncio.sleep(0.6)
     await obv
 
-    assert result == [2]
+    assert obv.values == [
+        (ca(0.8), OnNext(2)),
+        (ca(0.9), OnCompleted),
+    ]

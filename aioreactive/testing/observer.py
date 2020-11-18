@@ -21,9 +21,7 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         - throws: (time, err)
         - close: (time,)
 
-    Note: we will not see the difference between sent and thrown
-    exceptions. This should however not be any problem, and we have
-    decided to keep it this way for simplicity.
+    Note: time is in integer milliseconds to avoid any rounding errors.
     """
 
     def __init__(
@@ -39,26 +37,32 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         self._throw = athrow
         self._close = aclose
 
+    def time(self):
+        return self._loop.time()
+
     async def asend(self, value: TSource):
         log.debug("AsyncAnonymousObserver:asend(%s)", value)
-        time = self._loop.time()
+        time = self.time()
         self._values.append((time, OnNext(value)))
 
+        await self._send(value)
         await super().asend(value)
 
     async def athrow(self, error: Exception):
         log.debug("AsyncAnonymousObserver:athrow(%s)", error)
-        time = self._loop.time()
+        time = self.time()
         self._values.append((time, OnError(error)))
 
+        await self._throw(error)
         await super().athrow(error)
 
     async def aclose(self):
         log.debug("AsyncAnonymousObserver:aclose()")
 
-        time = self._loop.time()
+        time = self.time()
         self._values.append((time, OnCompleted))
 
+        await self._close()
         await super().aclose()
 
     @property

@@ -36,15 +36,15 @@ class NotificationMatcher(Generic[TSource]):
         ...
 
     @overload
-    def case(self, pattern: "Type[_OnCompleted[TSource]]") -> Iterable[None]:
+    def case(self, pattern: "_OnCompleted[TSource]") -> Iterable[None]:
         ...
 
     def case(self, pattern: Any) -> Any:
         return self.match.case(pattern)
 
-    def __enter__(self) -> "Matcher[TSource]":
+    def __enter__(self) -> "NotificationMatcher[TSource]":
         """Enter context management."""
-        return self.match.__enter__()
+        return self
 
     def __exit__(
         self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
@@ -86,12 +86,12 @@ class Notification(ABC, Generic[TSource]):
         ...
 
     @overload
-    def match(self, pattern: "Type[_OnCompleted[TSource]]") -> Iterable[None]:
+    def match(self, pattern: "_OnCompleted[TSource]") -> Iterable[None]:
         ...
 
     def match(self, pattern: Optional[Any] = None) -> Any:
-        m: Matcher[Any] = Matcher(self)
-        return m.case(pattern) if pattern else NotificationMatcher(m)
+        m: NotificationMatcher[Any] = NotificationMatcher(Matcher(self))
+        return m.case(pattern) if pattern else m
 
     def __repr__(self) -> str:
         return str(self)
@@ -194,5 +194,5 @@ class _OnCompleted(Notification[TSource]):
         return "OnCompleted"
 
 
-OnCompleted: Notification[Any] = _OnCompleted()
+OnCompleted: _OnCompleted[Any] = _OnCompleted()
 """OnCompleted singleton instance."""

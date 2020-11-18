@@ -7,6 +7,7 @@ from aioreactive.notification import OnCompleted, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from aioreactive.types import AsyncObservable
 from expression.core import pipe
+from pytest import approx
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -30,7 +31,12 @@ async def test_pipe_map():
 
     obv: AsyncTestObserver[int] = AsyncTestObserver()
     await rx.run(ys, obv)
-    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnNext(30)), (0, OnCompleted)]
+    assert obv.values == [
+        (0, OnNext(10)),
+        (0, OnNext(20)),
+        (0, OnNext(30)),
+        (0, OnCompleted),
+    ]
 
 
 @pytest.mark.asyncio
@@ -48,7 +54,11 @@ async def test_pipe_simple_pipe():
 
     obv: AsyncTestObserver[int] = AsyncTestObserver()
     await rx.run(ys, obv)
-    assert obv.values == [(0, OnNext(20)), (0, OnNext(30))]
+    assert obv.values == [
+        (approx(0.2), OnNext(20)),
+        (approx(0.3), OnNext(30)),
+        (approx(0.3), OnCompleted),
+    ]
 
 
 @pytest.mark.asyncio

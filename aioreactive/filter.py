@@ -1,7 +1,7 @@
 from typing import Any, Awaitable, Callable, List, Optional, Tuple, TypeVar
 
 from expression.collections import seq
-from expression.core import Option, Result, aio, compose, fst, match, pipe
+from expression.core import Option, Result, aiotools, compose, fst, pipe
 from expression.core.fn import TailCall, recursive_async
 from expression.core.mailbox import MailboxProcessor
 from expression.system.disposable import AsyncDisposable
@@ -56,7 +56,7 @@ def choose(chooser: Callable[[TSource], Option[TResult]]) -> Stream[TSource, TRe
     def handler(next: Callable[[TResult], Awaitable[None]], xs: TSource) -> Awaitable[None]:
         for x in chooser(xs).to_list():
             return next(x)
-        return aio.empty()
+        return aiotools.empty()
 
     return transform(handler)
 
@@ -100,7 +100,7 @@ def filter(predicate: Callable[[TSource], bool]) -> Stream[TSource, TSource]:
     def handler(next: Callable[[TSource], Awaitable[None]], x: TSource) -> Awaitable[None]:
         if predicate(x):
             return next(x)
-        return aio.empty()
+        return aiotools.empty()
 
     return transform(handler)
 
@@ -115,10 +115,9 @@ def starfilter(predicate: Callable[..., bool]) -> Stream[TSource, Tuple[TSource,
     """
 
     def handler(next: Callable[[Tuple[TSource, ...]], Awaitable[None]], args: Tuple[TSource, ...]) -> Awaitable[None]:
-        print("handler")
         if predicate(*args):
             return next(args)
-        return aio.empty()
+        return aiotools.empty()
 
     return transform(handler)
 
@@ -169,7 +168,7 @@ def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[
                 n = await inbox.receive()
 
                 async def get_latest() -> Notification[TSource]:
-                    with match(n) as m:
+                    with n.match() as m:
                         for x in m.case(OnNext):
                             if n == latest:
                                 break

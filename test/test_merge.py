@@ -3,7 +3,7 @@ import logging
 import aioreactive as rx
 import pytest
 from aioreactive.notification import OnCompleted, OnNext
-from aioreactive.testing import AsyncSubject, AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.testing import AsyncTestObserver, AsyncTestSubject, VirtualTimeEventLoop
 from aioreactive.types import AsyncObservable
 from expression.core import pipe
 
@@ -19,7 +19,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_merge_done():
-    xs: AsyncSubject[AsyncObservable[int]] = AsyncSubject()
+    xs: AsyncTestSubject[AsyncObservable[int]] = AsyncTestSubject()
 
     ys = pipe(xs, rx.merge_inner())
 
@@ -35,9 +35,9 @@ async def test_merge_done():
 
 @pytest.mark.asyncio
 async def test_merge_streams():
-    xs: AsyncSubject[AsyncObservable[int]] = AsyncSubject()
-    s1: AsyncSubject[int] = AsyncSubject()
-    s2: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[AsyncObservable[int]] = AsyncTestSubject()
+    s1: AsyncTestSubject[int] = AsyncTestSubject()
+    s2: AsyncTestSubject[int] = AsyncTestSubject()
 
     ys = pipe(xs, rx.merge_inner())
 
@@ -72,7 +72,7 @@ async def test_merge_streams():
 
 @pytest.mark.asyncio
 async def test_merge_streams_concat():
-    s1: AsyncSubject[int] = AsyncSubject()
+    s1: AsyncTestSubject[int] = AsyncTestSubject()
     s2 = rx.from_iterable([1, 2, 3])
 
     xs = rx.from_iterable([s1, s2])

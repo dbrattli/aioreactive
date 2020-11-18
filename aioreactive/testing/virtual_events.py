@@ -46,7 +46,7 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
         self._current_handle = None
         self._debug = False
 
-        self._time = 0
+        self._time: float = 0.0
 
     def time(self):
         return self._time
@@ -57,7 +57,7 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
         resulting callbacks, and finally schedules 'call_later'
         callbacks.
         """
-        log.debug("run_once()")
+        # log.debug("run_once()")
 
         sched_count = len(self._scheduled)
         if (
@@ -91,8 +91,8 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
             handle = self._scheduled[0]
             handle = heapq.heappop(self._scheduled)
             handle._scheduled = False
-            log.debug("Advancing time: %s", handle._when)
-            self._time = handle._when
+            log.debug("Advancing time from %s to %s", self._time, handle._when)
+            self._time = max(handle._when, self._time)
             self._ready.append(handle)
 
         # This is the only place where callbacks are actually *called*.

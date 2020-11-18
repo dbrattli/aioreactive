@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 TSource = TypeVar("TSource")
 
 
-class AsyncSingleSubject(AsyncObserver[TSource], AsyncObservable[TSource], AsyncDisposable):
+class AsyncSingleTestSubject(AsyncObserver[TSource], AsyncObservable[TSource], AsyncDisposable):
 
     """An stream with a single sink.
 
@@ -158,4 +158,4 @@ class AsyncMultiSubject(AsyncObserver[TSource], AsyncObservable[TSource], AsyncD
 
 
 # Alias
-AsyncSubject = AsyncMultiSubject
+AsyncTestSubject = AsyncMultiSubject

@@ -6,7 +6,7 @@ from typing import Tuple
 import aioreactive as rx
 import pytest
 from aioreactive.notification import OnCompleted, OnNext
-from aioreactive.testing import AsyncSubject, AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.testing import AsyncTestSubject, AsyncTestObserver, VirtualTimeEventLoop
 from aioreactive.types import AsyncObservable, AsyncObserver
 from expression.core import pipe
 
@@ -52,8 +52,8 @@ async def test_withlatestfrom_never_empty():
 
 @pytest.mark.asyncio
 async def test_withlatestfrom_done():
-    xs: AsyncSubject[int] = AsyncSubject()
-    ys: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
+    ys: AsyncTestSubject[int] = AsyncTestSubject()
 
     zs = pipe(xs, rx.with_latest_from(ys), rx.starmap(lambda x, y: x + y))
 

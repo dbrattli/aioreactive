@@ -210,6 +210,8 @@ ones.
 * **merge_seq** -- Merge a sequence of observables.
 * **run** -- Awaits the future returned by subscribe. Returns when the subscription closes.
 * **slice** -- Slices an observable.
+* **starfilter** -- Filters an observable with a predicate and spreads the arguments.
+* **starmap** -- Transforms and async observable and spreads the arguments to the mapper.
 * **switch_latest** -- Merges the latest stream in an observable of streams.
 * **unit** -- Converts a value or future to an observable.
 * **with_latest_from** -- Combines two observables into one.
@@ -223,9 +225,10 @@ supports both method chaining or forward pipe programming styles.
 ## Pipe forward programming style
 
 `AsyncObservable` may compose operators using forward pipelining with
-the `pipe` operator provided by the [Expression]() library. This works by having the operators partially
-applied with their arguments before being given the source stream
-argument.
+the `pipe` operator provided by the amazing
+[Expression](https://github.com/dbrattli/Expression) library. This works
+by having the operators partially applied with their arguments before
+being given the source stream as the last curried argument.
 
 ```python
 ys = pipe(xs, filter(predicate), map(mapper), flat_map(request))

@@ -8,6 +8,7 @@ import pytest
 from aioreactive.notification import OnCompleted, OnError, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from expression.system.disposable import AsyncDisposable
+from pytest import approx
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -44,7 +45,7 @@ async def test_unit_observer_throws():
         await obv
     except Exception as ex:
         assert ex == error
-    assert obv.values == [(0, OnNext(42))]
+    assert obv.values == [(0, OnNext(42)), (0, OnError(error))]
 
 
 @pytest.mark.asyncio
@@ -60,10 +61,12 @@ async def test_unit_close():
     obv: AsyncTestObserver[int] = AsyncTestObserver(asend)
     sub = await xs.subscribe_async(obv)
 
-    with pytest.raises(CancelledError):
-        await obv
+    await obv
 
-    assert obv.values == [(0, OnNext(42)), (0, OnCompleted)]
+    assert obv.values == [
+        (0, OnNext(42)),
+        (0, OnCompleted),
+    ]
 
 
 @pytest.mark.asyncio
@@ -74,7 +77,10 @@ async def test_unit_happy_resolved_future():
 
     obv: AsyncTestObserver[int] = AsyncTestObserver()
     await rx.run(xs, obv)
-    assert obv.values == [(0, OnNext(42)), (0, OnCompleted)]
+    assert obv.values == [
+        (0, OnNext(42)),
+        (0, OnCompleted),
+    ]
 
 
 @pytest.mark.asyncio
@@ -87,7 +93,10 @@ async def test_unit_happy_future_resolve():
         fut.set_result(42)
         await obv
 
-    assert obv.values == [(0, 42), (0,)]
+    assert obv.values == [
+        (0, OnNext(42)),
+        (0, OnCompleted),
+    ]
 
 
 @pytest.mark.asyncio
@@ -111,8 +120,10 @@ async def test_unit_future_cancel():
 
     obv = AsyncTestObserver()
     async with await xs.subscribe_async(obv):
+        await asyncio.sleep(1)
+        print("cancelling")
         fut.cancel()
         with pytest.raises(asyncio.CancelledError):
             await obv
 
-    assert obv.values == [(0, OnCompleted)]
+    assert obv.values == [(approx(1), OnCompleted)]

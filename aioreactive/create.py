@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Awaitable, Callable, Iterable, Tuple, TypeVar
 
-from expression.core import Ok, Result, aio, recursive_async
+from expression.core import Ok, Result, aiotools, recursive_async
 from expression.core.fn import TailCall
 from expression.system import AsyncDisposable, CancellationToken, CancellationTokenSource
 
@@ -19,14 +19,17 @@ def canceller() -> Tuple[AsyncDisposable, CancellationToken]:
     cts = CancellationTokenSource()
 
     async def cancel() -> None:
+        log.debug("cancller, cancelling!")
         cts.cancel()
 
-    return (AsyncDisposable.create(cancel), cts.token)
+    return AsyncDisposable.create(cancel), cts.token
 
 
 def create(subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]]) -> AsyncObservable[TSource]:
-    """Creates an async observable (`AsyncObservable{'TSource}`) from the
-    given subscribe function.
+    """Create an async observable.
+
+    Creates an `AsyncObservable[TSource]` from the given subscribe
+    function.
     """
     return AsyncAnonymousObservable(subscribe)
 
@@ -43,7 +46,7 @@ def of_async_worker(
         disposable, token = canceller()
         safe_obv = safe_observer(aobv, disposable)
 
-        aio.start(worker(safe_obv, token), token)
+        aiotools.start(worker(safe_obv, token), token)
         return disposable
 
     return AsyncAnonymousObservable(subscribe_async)
@@ -55,10 +58,12 @@ def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
     async def worker(obv: AsyncObserver[TSource], _: CancellationToken) -> None:
         try:
             result = await workflow
+            # Note to self. If workflow is or gets cancelled we will jump straight to `finally`.
             await obv.asend(result)
-            await obv.aclose()
         except Exception as ex:
             await obv.athrow(ex)
+        finally:
+            await obv.aclose()
 
     return of_async_worker(worker)
 
@@ -106,14 +111,18 @@ def fail(error: Exception) -> AsyncObservable[TSource]:
 
 
 def of_seq(xs: Iterable[TSource]) -> AsyncObservable[TSource]:
-    """Returns the async observable sequence whose elements are pulled
-    from the given enumerable sequence."""
+    """Create async observable from sequence.
+
+    Returns the async observable sequence whose elements are pulled from
+    the given enumerable sequence."""
 
     async def worker(obv: AsyncObserver[TSource], token: CancellationToken) -> None:
         log.debug("of_seq:worker()")
         for x in xs:
+            token.throw_if_cancellation_requested()
+            log.debug("of_seq:asend(%s)", x)
+
             try:
-                log.debug("of_seq:asend(%s)", x)
                 await obv.asend(x)
             except Exception as ex:
                 await obv.athrow(ex)
@@ -157,7 +166,7 @@ def interval(seconds: float, period: float) -> AsyncObservable[int]:
 
             return TailCall(period, next + 1)
 
-        aio.start(handler(seconds, 0), token)
+        aiotools.start(handler(seconds, 0), token)
         return cancel
 
     return AsyncAnonymousObservable(subscribe_async)

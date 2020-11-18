@@ -1,17 +1,18 @@
-import pytest
 import asyncio
 import logging
 
-from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.core import subscribe
-from aioreactive.operators import delay
-from aioreactive.testing import AsyncStream, AsyncTestObserver
+import aioreactive as rx
+import pytest
+from aioreactive.notification import OnCompleted, OnError, OnNext
+from aioreactive.testing import AsyncTestObserver, AsyncTestSubject, VirtualTimeEventLoop, ca
+from expression.core import pipe
+from pytest import approx
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()
+@pytest.yield_fixture()  # type:ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -20,57 +21,55 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_delay_done():
-    xs = AsyncStream()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
-    ys = delay(0.5, xs)
+    ys = pipe(xs, rx.delay(1.0))
     obv = AsyncTestObserver()
-    async with subscribe(ys, obv):
+    async with await ys.subscribe_async(obv):
         await xs.asend_later(0, 10)
-        await xs.asend_later(1, 20)
-        await xs.aclose_later(1)
+        await xs.asend_later(1.0, 20)
+        await xs.aclose_later(1.0)
         await obv
 
     assert obv.values == [
-        (0.5, 10),
-        (1.5, 20),
-        (2.5,)
+        (ca(1), OnNext(10)),
+        (ca(2), OnNext(20)),
+        (ca(3), OnCompleted),
     ]
 
 
 @pytest.mark.asyncio
 async def test_delay_cancel_before_done():
-    xs = AsyncStream()
-    result = []
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
-    async def asend(value):
-        nonlocal result
-        result.append(value)
-
-    ys = delay(0.3, xs)
-    async with subscribe(ys, AsyncTestObserver(asend)):
+    ys = pipe(xs, rx.delay(0.3))
+    obv = AsyncTestObserver()
+    async with await ys.subscribe_async(obv):
         await xs.asend(10)
         await asyncio.sleep(1.5)
         await xs.asend(20)
 
     await asyncio.sleep(1)
-    assert result == [10]
+    assert obv.values == [(ca(0.3), OnNext(10))]
 
 
 @pytest.mark.asyncio
 async def test_delay_throw():
-    xs = AsyncStream()
-    result = []
+    error = Exception("ex")
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
-    async def asend(value):
-        nonlocal result
-        result.append(value)
+    ys = pipe(xs, rx.delay(0.3))
 
-    ys = delay(0.3, xs)
-    await subscribe(ys, AsyncTestObserver(asend))
+    obv = AsyncTestObserver()
+    await ys.subscribe_async(obv)
     await xs.asend(10)
-    await asyncio.sleep(1.5)
+    await asyncio.sleep(1)
     await xs.asend(20)
-    await xs.athrow(Exception('ex'))
+    await xs.athrow(error)
     await asyncio.sleep(1)
 
-    assert result == [10]
+    assert obv.values == [
+        (ca(0.3), OnNext(10)),
+        (ca(1.3), OnNext(20)),
+        (ca(1.6), OnError(error)),
+    ]

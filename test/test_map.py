@@ -66,7 +66,7 @@ async def test_map_mapper_throws():
 
 @pytest.mark.asyncio
 async def test_map_subscription_cancel():
-    xs: rx.AsyncSubject[int] = rx.AsyncSubject()
+    xs: rx.AsyncTestSubject[int] = rx.AsyncTestSubject()
     sub: Optional[AsyncDisposable] = None
     result = []
 

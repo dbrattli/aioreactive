@@ -7,7 +7,7 @@ from expression.system.disposable import AsyncDisposable
 
 from .observables import AsyncAnonymousObservable, AsyncIterableObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
-from .subject import AsyncSingleSubject, AsyncSubject
+from .subject import AsyncSingleTestSubject, AsyncTestSubject
 from .subscription import run
 from .types import AsyncObserver, Stream
 
@@ -136,15 +136,25 @@ class AsyncRx(AsyncObservable[TSource]):
 
         return AsyncRx(distinct_until_changed(self))
 
-    def filter(self, predicate: Callable[[TSource], TSource]) -> "AsyncRx[TSource]":
+    def filter(self, predicate: Callable[[TSource], bool]) -> "AsyncRx[TSource]":
         from .filter import filter
 
-        return AsyncRx(pipe(self, filter(predicate), AsyncRx.create))
+        return AsyncRx(pipe(self, filter(predicate)))
+
+    def filter_async(self, predicate: Callable[[TSource], Awaitable[bool]]) -> "AsyncRx[TSource]":
+        from .filter import filter_async
+
+        return AsyncRx(pipe(self, filter_async(predicate)))
 
     def flat_map(self, selector: Callable[[TSource], AsyncObservable[TResult]]) -> "AsyncRx[TResult]":
         from .transform import flat_map
 
         return pipe(self, flat_map(selector), AsyncRx.create)
+
+    def flat_map_async(self, selector: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> "AsyncRx[TResult]":
+        from .transform import flat_map_async
+
+        return pipe(self, flat_map_async(selector), AsyncRx.create)
 
     def map(self, selector: Callable[[TSource], TResult]) -> "AsyncRx[TResult]":
         from .transform import map
@@ -156,7 +166,7 @@ class AsyncRx(AsyncObservable[TSource]):
         from .create import of_seq
 
         source = of_seq([self, other])
-        return AsyncRx(pipe(source, merge_inner(0), AsyncRx.create))
+        return pipe(source, merge_inner(0), AsyncRx.create)
 
     def skip(self, count: int) -> AsyncObservable[TSource]:
         """Skip items from start of the stream.
@@ -173,6 +183,28 @@ class AsyncRx(AsyncObservable[TSource]):
         from .filter import skip
 
         return AsyncRx(pipe(self, skip(count)))
+
+    def starfilter(self, predicate: Callable[..., bool]) -> AsyncObservable[Tuple[TSource, int]]:
+        """Filter and spread the arguments to the predicate.
+
+        Filters the elements of an observable sequence based on a predicate.
+        Returns:
+            An observable sequence that contains elements from the input
+            sequence that satisfy the condition.
+        """
+        from .filter import starfilter
+
+        return AsyncRx(pipe(self, starfilter(predicate)))
+
+    def starmap(self, mapper: Callable[..., TResult]) -> AsyncObservable[TResult]:
+        """Map and spread the arguments to the mapper.
+
+        Returns an observable sequence whose elements are the result of
+        invoking the mapper function on each element of the source."""
+
+        from .transform import starmap
+
+        return AsyncRx(pipe(self, starmap(mapper)))
 
     def take(self, count: int) -> AsyncObservable[TSource]:
         """Take the first elements from the stream.
@@ -404,16 +436,6 @@ def map(fn: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
     return _map(fn)
 
 
-def starmap(mapper: Callable[..., TResult]) -> Stream[TSource, TResult]:
-    """Map and spread the arguments to the mapper.
-
-    Returns an observable sequence whose elements are the result of
-    invoking the mapper function on each element of the source."""
-    from .transform import starmap
-
-    return starmap(mapper)
-
-
 def map_async(mapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSource, TResult]:
     """Map asynchrnously.
 
@@ -586,6 +608,30 @@ def skip(count: int) -> Stream[TSource, TSource]:
     return skip(count)
 
 
+def starfilter(predicate: Callable[..., bool]) -> Stream[TSource, Tuple[TSource, int]]:
+    """Filter and spread the arguments to the predicate.
+
+    Filters the elements of an observable sequence based on a predicate.
+    Returns:
+        An observable sequence that contains elements from the input
+        sequence that satisfy the condition.
+    """
+    from .filter import starfilter
+
+    return starfilter(predicate)
+
+
+def starmap(mapper: Callable[..., TResult]) -> Stream[TSource, TResult]:
+    """Map and spread the arguments to the mapper.
+
+    Returns an observable sequence whose elements are the result of
+    invoking the mapper function on each element of the source."""
+
+    from .transform import starmap
+
+    return starmap(mapper)
+
+
 def timer(due_time: float) -> AsyncObservable[int]:
     """Returns an observable sequence that triggers the value 0
     after the given duetime in milliseconds."""
@@ -620,7 +666,7 @@ __all__ = [
     "concat_seq" "delay",
     "empty",
     "filter",
-    "filter_async",
+    "filteri" "filter_async",
     "from_async",
     "from_iterable",
     "map",
@@ -632,6 +678,8 @@ __all__ = [
     "retry",
     "run",
     "single",
+    "starfilter",
+    "starmap",
     "Stream",
     "switch_latest",
     "to_async_iterable",

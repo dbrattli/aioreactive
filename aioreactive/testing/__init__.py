@@ -3,7 +3,8 @@
 Contains utilities for unit testing async observables.
 """
 from .observer import AsyncTestObserver
-from .subject import AsyncSingleSubject, AsyncSubject
+from .subject import AsyncTestSingleSubject, AsyncTestSubject
+from .utils import ca
 from .virtual_events import VirtualTimeEventLoop
 
-__all__ = ["VirtualTimeEventLoop", "AsyncTestObserver", "AsyncSingleSubject", "AsyncSubject"]
+__all__ = ["ca", "VirtualTimeEventLoop", "AsyncTestObserver", "AsyncTestSingleSubject", "AsyncTestSubject"]

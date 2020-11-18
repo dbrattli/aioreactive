@@ -5,7 +5,7 @@ from typing import Optional
 import aioreactive as rx
 import pytest
 from aioreactive.notification import OnCompleted, OnError, OnNext
-from aioreactive.testing import AsyncSubject, AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.testing import AsyncTestSubject, AsyncTestObserver, VirtualTimeEventLoop
 from expression.core import pipe
 from expression.system.disposable import AsyncDisposable
 
@@ -26,7 +26,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_stream_happy() -> None:
-    xs: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
     obv = AsyncTestObserver()
     await xs.subscribe_async(obv)
@@ -40,7 +40,7 @@ async def test_stream_happy() -> None:
 @pytest.mark.asyncio
 async def test_stream_throws() -> None:
     ex = MyException("ex")
-    xs: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
     obv = AsyncTestObserver()
     with pytest.raises(MyException):
@@ -59,7 +59,7 @@ async def test_stream_throws() -> None:
 
 @pytest.mark.asyncio
 async def test_stream_send_after_close() -> None:
-    xs: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
     obv = AsyncTestObserver()
     await xs.subscribe_async(obv)
@@ -75,7 +75,7 @@ async def test_stream_send_after_close() -> None:
 
 @pytest.mark.asyncio
 async def test_stream_cancel() -> None:
-    xs: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
     subscription: Optional[AsyncDisposable] = None
 
     def mapper(value: int) -> int:
@@ -94,7 +94,7 @@ async def test_stream_cancel() -> None:
 
 @pytest.mark.asyncio
 async def test_stream_cancel_asend() -> None:
-    xs: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
     subscription: Optional[AsyncDisposable] = None
 
     async def asend(value: int) -> None:
@@ -119,7 +119,7 @@ async def test_stream_cancel_asend() -> None:
 
 @pytest.mark.asyncio
 async def test_stream_cancel_mapper():
-    xs: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
     subscription: Optional[AsyncDisposable] = None
 
     def mapper(value: int) -> int:
@@ -144,7 +144,7 @@ async def test_stream_cancel_mapper():
 
 @pytest.mark.asyncio
 async def test_stream_cancel_context():
-    xs: AsyncSubject[int] = AsyncSubject()
+    xs: AsyncTestSubject[int] = AsyncTestSubject()
 
     obv = AsyncTestObserver()
     async with await xs.subscribe_async(obv):
