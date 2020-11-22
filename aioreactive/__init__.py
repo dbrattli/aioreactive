@@ -60,7 +60,7 @@ class AsyncRx(AsyncObservable[TSource]):
 
          Returne a sliced source stream."""
 
-        from .filter import slice as _slice
+        from .filtering import slice as _slice
 
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step
@@ -134,17 +134,17 @@ class AsyncRx(AsyncObservable[TSource]):
         return AsyncRx(delay(seconds)(self))
 
     def distinct_until_changed(self) -> AsyncObservable[TSource]:
-        from .filter import distinct_until_changed
+        from .filtering import distinct_until_changed
 
         return AsyncRx(distinct_until_changed(self))
 
     def filter(self, predicate: Callable[[TSource], bool]) -> "AsyncRx[TSource]":
-        from .filter import filter
+        from .filtering import filter as _filter
 
-        return AsyncRx(pipe(self, filter(predicate)))
+        return AsyncRx(pipe(self, _filter(predicate)))
 
     def filter_async(self, predicate: Callable[[TSource], Awaitable[bool]]) -> "AsyncRx[TSource]":
-        from .filter import filter_async
+        from .filtering import filter_async
 
         return AsyncRx(pipe(self, filter_async(predicate)))
 
@@ -182,7 +182,7 @@ class AsyncRx(AsyncObservable[TSource]):
         Returns:
             Stream[TSource, TSource]: [description]
         """
-        from .filter import skip
+        from .filtering import skip
 
         return AsyncRx(pipe(self, skip(count)))
 
@@ -194,7 +194,7 @@ class AsyncRx(AsyncObservable[TSource]):
             An observable sequence that contains elements from the input
             sequence that satisfy the condition.
         """
-        from .filter import starfilter
+        from .filtering import starfilter
 
         return AsyncRx.create(pipe(self, starfilter(predicate)))
 
@@ -220,7 +220,7 @@ class AsyncRx(AsyncObservable[TSource]):
         Returns:
             Stream[TSource, TSource]: [description]
         """
-        from .filter import take
+        from .filtering import take
 
         return AsyncRx(pipe(self, take(count)))
 
@@ -236,7 +236,7 @@ class AsyncRx(AsyncObservable[TSource]):
         Returns:
             Stream[TSource, TSource]: [description]
         """
-        from .filter import take_last
+        from .filtering import take_last
 
         return AsyncRx(pipe(self, take_last(count)))
 
@@ -252,7 +252,7 @@ class AsyncRx(AsyncObservable[TSource]):
         Returns:
             Stream[TSource, TSource]: [description]
         """
-        from .filter import take_until
+        from .filtering import take_until
 
         return AsyncRx(pipe(self, take_until(other)))
 
@@ -276,13 +276,13 @@ def as_chained(source: AsyncObservable[TSource]) -> AsyncRx[TSource]:
 
 
 def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSource]:
-    from .filter import choose
+    from .filtering import choose
 
     return choose(chooser)
 
 
 def choose_async(chooser: Callable[[TSource], Awaitable[Option[TSource]]]) -> Stream[TSource, TSource]:
-    from .filter import choose_async
+    from .filtering import choose_async
 
     return choose_async(chooser)
 
@@ -354,7 +354,7 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
 
 
 def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
-    from .filter import distinct_until_changed
+    from .filtering import distinct_until_changed
 
     return distinct_until_changed(source)
 
@@ -366,15 +366,18 @@ def empty() -> "AsyncObservable[TSource]":
 
 
 def filter(predicate: Callable[[TSource], bool]) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
-    from .filter import filter
+    from .filtering import filter as _filter
 
-    return filter(predicate)
+    return _filter(predicate)
+
+
+print(filter)
 
 
 def filter_async(
     predicate: Callable[[TSource], Awaitable[bool]]
 ) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
-    from .filter import filter_async
+    from .filtering import filter_async
 
     return filter_async(predicate)
 
@@ -552,7 +555,7 @@ def skip(count: int) -> Stream[TSource, TSource]:
     Returns:
         Stream[TSource, TSource]: [description]
     """
-    from .filter import skip
+    from .filtering import skip
 
     return skip(count)
 
@@ -565,7 +568,7 @@ def starfilter(predicate: Callable[..., bool]) -> Stream[TSource, Tuple[Any, ...
         An observable sequence that contains elements from the input
         sequence that satisfy the condition.
     """
-    from .filter import starfilter
+    from .filtering import starfilter
 
     return starfilter(predicate)
 
@@ -599,7 +602,7 @@ def take(count: int) -> Stream[TSource, TSource]:
     Returns:
         Stream[TSource, TSource]: [description]
     """
-    from .filter import take
+    from .filtering import take
 
     return take(count)
 
@@ -616,7 +619,7 @@ def take_last(count: int) -> Stream[TSource, TSource]:
     Returns:
         Stream[TSource, TSource]: [description]
     """
-    from .filter import take_last
+    from .filtering import take_last
 
     return take_last(count)
 
@@ -633,7 +636,7 @@ def take_until(other: AsyncObservable[TResult]) -> Stream[TSource, TSource]:
     Returns:
         Stream[TSource, TSource]: [description]
     """
-    from .filter import take_until
+    from .filtering import take_until
 
     return take_until(other)
 
