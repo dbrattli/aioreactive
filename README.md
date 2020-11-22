@@ -150,10 +150,12 @@ The for-loop may be wrapped with async-with to control the lifetime of
 the subscription:
 
 ```python
-xs = from_iterable([1, 2, 3])
+import aioreactive as rx
+
+xs = rx.from_iterable([1, 2, 3])
 result = []
 
-obv = AsyncIteratorObserver()
+obv = rx.AsyncIteratorObserver()
 async with await xs.subscribe(obv) as subscription:
     async for x in obv:
         result.append(x)
@@ -167,9 +169,11 @@ An async stream is both an async observer and an async observable.
 Aioreactive lets you create streams explicitly.
 
 ```python
-stream = AsyncStream()  # Alias for AsyncMultiStream
+import aioreactive as rx
 
-sink = AsyncAnonymousObserver()
+stream = AsyncSubject()  # Alias for AsyncMultiStream
+
+sink = rx.AsyncAnonymousObserver()
 await stream.subscribe_async(sink)
 await stream.asend(42)
 ```
