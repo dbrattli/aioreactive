@@ -239,13 +239,12 @@ Longer pipelines may break lines as for binary operators:
 
 ```python
 import aioreactve as rx
-from aioreactive.core import AsyncStream
 
 async def main():
-    stream = AsyncStream()
-    obv = AsyncIteratorObserver()
+    stream = rx.AsyncSubject()
+    obv = rx.AsyncIteratorObserver()
 
-    xs = compose(
+    xs = pipe(
         stream,
         rx.map(lambda x: x["term"]),
         rx.filter(lambda text: len(text) > 2),
