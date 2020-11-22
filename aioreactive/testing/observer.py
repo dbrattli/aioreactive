@@ -1,13 +1,19 @@
 import logging
-from typing import Awaitable, Callable, List, Tuple, TypeVar
+from typing import Awaitable, Callable, Generic, List, Tuple, TypeVar, cast
 
 from aioreactive import AsyncAwaitableObserver
 from aioreactive.notification import Notification, OnCompleted, OnError, OnNext
 from aioreactive.utils import anoop
 
+log = logging.getLogger(__name__)
+
+
 TSource = TypeVar("TSource")
 
-log = logging.getLogger(__name__)
+
+class Test(Generic[TSource]):
+    def __init__(self) -> None:
+        self.value: List[Tuple[float, TSource]] = []
 
 
 class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
@@ -31,7 +37,8 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         aclose: Callable[[], Awaitable[None]] = anoop,
     ):
         super().__init__(asend, athrow, aclose)
-        self._values: List[Tuple[float, Notification[TSource]]] = []
+
+        self._values = cast(List[Tuple[float, Notification[TSource]]], [])  # FIXME: Pylance confusion?
 
         self._send = asend
         self._throw = athrow
@@ -66,5 +73,5 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         await super().aclose()
 
     @property
-    def values(self):
+    def values(self) -> List[Tuple[float, Notification[TSource]]]:
         return self._values

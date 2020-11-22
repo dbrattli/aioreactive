@@ -97,10 +97,13 @@ class AsyncRx(AsyncObservable[TSource]):
 
         return AsyncRx(single(value))
 
+    def as_async_observable(self) -> AsyncObservable[TSource]:
+        return AsyncAnonymousObservable(self.subscribe_async)
+
     def combine_latest(self, other: TOther) -> "AsyncRx[Tuple[TSource, TOther]]":
         from .combine import combine_latest
 
-        return pipe(self, combine_latest(other), AsyncRx.create)
+        return AsyncRx.create(pipe(self, combine_latest(other)))
 
     def concat(self, other: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         from .combine import concat_seq
@@ -194,7 +197,7 @@ class AsyncRx(AsyncObservable[TSource]):
         """
         from .filter import starfilter
 
-        return AsyncRx(pipe(self, starfilter(predicate)))
+        return AsyncRx.create(pipe(self, starfilter(predicate)))
 
     def starmap(self, mapper: Callable[..., TResult]) -> AsyncObservable[TResult]:
         """Map and spread the arguments to the mapper.
@@ -262,7 +265,11 @@ class AsyncRx(AsyncObservable[TSource]):
     def with_latest_from(self, other: AsyncObservable[TOther]) -> "AsyncRx[Tuple[TSource, TOther]]":
         from .combine import with_latest_from
 
-        return AsyncRx(pipe(self, with_latest_from(other)))
+        return AsyncRx.create(pipe(self, with_latest_from(other)))
+
+
+def as_async_observable(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+    return AsyncAnonymousObservable(source.subscribe_async)
 
 
 def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSource]:
@@ -416,7 +423,7 @@ def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult
 def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
     from aioreactive.operators.from_async_iterable import from_async_iterable
 
-    from .create import of
+    from .create import from_async_iterable
 
     return AsyncRx(from_async_iterable(iter))
 
@@ -522,7 +529,7 @@ def subscribe_async(obv: AsyncObserver[TSource]) -> Callable[[AsyncObservable[TS
     return subscribe_async(obv)
 
 
-def switch_latest() -> Stream[TSource, TSource]:
+def switch_latest() -> Stream[AsyncObservable[TSource], TSource]:
     from .transform import switch_latest
 
     return switch_latest
@@ -685,6 +692,7 @@ __all__ = [
     "to_async_iterable",
 ]
 
+# type: ignore
 from ._version import get_versions
 
 __version__ = get_versions()["version"]

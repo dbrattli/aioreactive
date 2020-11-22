@@ -191,8 +191,8 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
                         cn = cast(OtherMsg[TOther], cn)
                         other_value = await get_value(cn.value)
 
-                    def binder(s: TSource) -> Option[Tuple[TSource, TResult]]:
-                        def mapper(o: TOther) -> Tuple[TSource, TResult]:
+                    def binder(s: TSource) -> Option[Tuple[TSource, TOther]]:
+                        def mapper(o: TOther) -> Tuple[TSource, TOther]:
                             return (s, o)
 
                         return other_value.map(mapper)
@@ -265,8 +265,8 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TS
                         cn = cast(OtherMsg[TOther], cn)
                         latest = await get_value(cn.value)
 
-                    def binder(s: TSource) -> Option[Tuple[TSource, TResult]]:
-                        def mapper(o: TOther) -> Tuple[TSource, TResult]:
+                    def binder(s: TSource) -> Option[Tuple[TSource, TOther]]:
+                        def mapper(o: TOther) -> Tuple[TSource, TOther]:
                             return (s, o)
 
                         return latest.map(mapper)

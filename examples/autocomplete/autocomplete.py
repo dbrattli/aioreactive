@@ -8,21 +8,26 @@ Requirements:
 > pip3 install aiohttp
 > pip3 install aiohttp_jinja2
 """
-
 import asyncio
 import json
 import os
+from asyncio.events import AbstractEventLoop
+from typing import Any, Callable, Dict
 
 import aiohttp
 import aiohttp_jinja2
+import aioreactive as rx
 import jinja2
 from aiohttp import web
-from aioreactive.core import AsyncAnonymousObserver, AsyncObservable, AsyncStream, subscribe
-from aioreactive.operators import op
+from aiohttp.http_websocket import WSMessage
+from aiohttp.web_request import Request
+from aiohttp.web_ws import WebSocketResponse
 from expression.core import pipe
 
+Msg = Dict[str, str]
 
-async def search_wikipedia(term):
+
+async def search_wikipedia(term: str) -> rx.AsyncObservable[str]:
     """Search Wikipedia for a given term"""
     url = "http://en.wikipedia.org/w/api.php"
 
@@ -30,35 +35,39 @@ async def search_wikipedia(term):
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as resp:
-            return AsyncObservable.unit(await resp.text())
+            json_response = await resp.text()
+            return rx.single(json_response)
 
 
-async def websocket_handler(request):
+async def websocket_handler(request: Request) -> WebSocketResponse:
     print("WebSocket opened")
 
-    stream = AsyncStream()
+    stream: rx.AsyncObservable[Msg] = rx.AsyncSubject()
 
+    mapper: Callable[[Msg], str] = lambda x: x["term"]
     xs = pipe(
         stream,
-        op.map(lambda x: x["term"]),
-        op.filter(lambda text: len(text) > 2),
-        op.debounce(0.5),
-        op.distinct_until_changed(),
-        op.flat_map(search_wikipedia),
+        rx.map(mapper),
+        rx.filter(lambda text: len(text) > 2),
+        rx.debounce(0.5),
+        rx.distinct_until_changed,
+        rx.flat_map_async(search_wikipedia),
     )
 
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    async def asend(value) -> None:
-        ws.send_str(value)
+    async def asend(value: str) -> None:
+        print("asend: ", value)
+        await ws.send_str(value)
 
-    async def athrow(ex) -> None:
+    async def athrow(ex: Exception) -> None:
         print(ex)
 
-    await subscribe(xs, AsyncAnonymousObserver(asend, athrow))
+    await xs.subscribe_async(rx.AsyncAnonymousObserver(asend, athrow))
 
     async for msg in ws:
+        msg: WSMessage
         if msg.type == aiohttp.WSMsgType.TEXT:
             obj = json.loads(msg.data)
             await stream.asend(obj)
@@ -71,11 +80,11 @@ async def websocket_handler(request):
 
 
 @aiohttp_jinja2.template("index.html")
-async def index(request):
+async def index(request: Request) -> Dict[str, Any]:
     return dict()
 
 
-async def init(loop):
+async def init(loop: AbstractEventLoop):
     port = os.environ.get("PORT", 8080)
     host = "localhost"
     app = web.Application(loop=loop)
@@ -90,9 +99,9 @@ async def init(loop):
 
 
 def main():
-    loop = asyncio.get_event_loop()
+    loop: AbstractEventLoop = asyncio.get_event_loop()
     app, host, port = loop.run_until_complete(init(loop))
-    web.run_app(app, host=host, port=port)
+    web.run_app(app, host=host, port=int(port))
 
 
 if __name__ == "__main__":

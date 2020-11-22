@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable, Tuple, TypeVar
+from typing import Any, Awaitable, Callable, Tuple, TypeVar, overload
 
 from expression.collections import seq
 from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, compose, pipe, recursive_async
@@ -53,7 +53,12 @@ def map_async(amapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSourc
     return transform(handler)
 
 
-def starmap_async(amapper: Callable[..., Awaitable[TResult]]) -> Stream[TSource, TResult]:
+@overload
+def starmap_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+    ...
+
+
+def starmap_async(amapper: Callable[..., Awaitable[Any]]) -> Stream[TSource, Any]:
     """Map async spreading arguments to the async mapper.
 
     Returns an observable sequence whose elements are the result of
@@ -79,13 +84,18 @@ def map(mapper: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
     return transform(handler)
 
 
-def starmap(mapper: Callable[..., TResult]) -> Stream[TSource, TResult]:
+@overload
+def starmap(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
+    ...
+
+
+def starmap(mapper: Callable[..., Any]) -> Stream[TSource, Any]:
     """Map and spread the arguments to the mapper.
 
     Returns an observable sequence whose elements are the result of
     invoking the mapper function on each element of the source."""
 
-    def handler(next: Callable[[TResult], Awaitable[None]], args: Tuple[TSource, ...]) -> Awaitable[None]:
+    def handler(next: Callable[[TResult], Awaitable[None]], args: Tuple[Any, ...]) -> Awaitable[None]:
         return next(mapper(*args))
 
     return transform(handler)
@@ -213,10 +223,10 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
     observable sequence
 
     Args:
-        source (AsyncObservable[AsyncObservable[TSource]]): [description]
+        source: The source observable of obsevables sequence.
 
     Returns:
-        AsyncObservable[TSource]: [description]
+        The transformed observable sequence.
     """
 
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
@@ -383,7 +393,7 @@ def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TS
     return _catch
 
 
-def retry(retry_count: int) -> Stream[TSource, TResult]:
+def retry(retry_count: int) -> Stream[TSource, TSource]:
     def _retry(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         count = retry_count
 

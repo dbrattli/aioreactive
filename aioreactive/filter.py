@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, List, Optional, Tuple, TypeVar
+from typing import Any, Awaitable, Callable, List, Optional, Tuple, TypeVar, overload
 
 from expression.collections import seq
 from expression.core import Option, Result, aiotools, compose, fst, pipe
@@ -105,7 +105,12 @@ def filter(predicate: Callable[[TSource], bool]) -> Stream[TSource, TSource]:
     return transform(handler)
 
 
-def starfilter(predicate: Callable[..., bool]) -> Stream[TSource, Tuple[TSource, int]]:
+@overload
+def starfilter(predicate: Callable[[TSource, int], bool]) -> Stream[Tuple[TSource, int], Tuple[TSource, int]]:
+    ...
+
+
+def starfilter(predicate: Callable[..., bool]) -> Stream[Tuple[Any, ...], Tuple[Any, ...]]:
     """Filter and spread the arguments to the predicate.
 
     Filters the elements of an observable sequence based on a predicate.
@@ -128,15 +133,12 @@ def filteri(predicate: Callable[[TSource, int], bool]) -> Stream[TSource, TSourc
     Filters the elements of an observable sequence based on a predicate
     and incorporating the element's index on each element of the source.
 
-    Returns:
-        An observable sequence that contains elements from the input
-        sequence that satisfy the condition.
-
     Args:
         predicate: Function to test each element.
 
     Returns:
-        The filtered stream.
+        An observable sequence that contains elements from the input
+        sequence that satisfy the condition.
     """
 
     return compose(
