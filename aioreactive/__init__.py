@@ -1,5 +1,17 @@
-"""Aioreactive module"""
+"""Aioreactive module.
 
+Contains the AsyncRx chained obserable that allows method chaining of all operators.
+
+Also contains all operators as plain functions.
+
+To use this module:
+
+Example:
+    >>> import aioreactive as rx
+    >>> xs = rx.from_iterable([1, 2, 3])
+    >>> ...
+
+"""
 from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar, Union
 
 from expression.core import Option, pipe
@@ -31,34 +43,48 @@ class AsyncRx(AsyncObservable[TSource]):
         self._source = source
 
     async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+        """Subscribe to the async observable.
+
+        Uses the given observer to subscribe asynchronously to the async
+        observable.
+
+        Args:
+            observer: The async observer to subscribe.
+
+        Returns:
+            An async disposable that can be used to dispose the
+            subscription.
+        """
         return await self._source.subscribe_async(observer)
 
     def __getitem__(self, key: Union[slice, int]) -> "AsyncRx[TSource]":
         """Slices the given source stream using Python slice notation.
-         The arguments to slice is start, stop and step given within
-         brackets [] and separated with the ':' character. It is
-         basically a wrapper around the operators skip(), skip_last(),
-         take(), take_last() and filter().
+        The arguments to slice is start, stop and step given within
+        brackets [] and separated with the ':' character. It is
+        basically a wrapper around the operators skip(), skip_last(),
+        take(), take_last() and filter().
 
-         This marble diagram helps you remember how slices works with
-         streams. Positive numbers is relative to the start of the
-         events, while negative numbers are relative to the end
-         (on_completed) of the stream.
+        This marble diagram helps you remember how slices works with
+        streams. Positive numbers is relative to the start of the
+        events, while negative numbers are relative to the end
+        (on_completed) of the stream.
 
          r---e---a---c---t---i---v---e---|
          0   1   2   3   4   5   6   7   8
         -8  -7  -6  -5  -4  -3  -2  -1
 
-         Example:
-         result = source[1:10]
-         result = source[1:-2]
-         result = source[1:-1:2]
+        Example:
+        >>> result = source[1:10]
+        >>> result = source[1:-2]
+        >>> result = source[1:-1:2]
 
-         Keyword arguments:
-         self -- Source to slice
-         key -- Slice object
+        Args:
+            self: Source to slice
+            key: A slice object
 
-         Returne a sliced source stream."""
+        Returns:
+            The sliced source stream.
+        """
 
         from .filtering import slice as _slice
 
@@ -80,15 +106,11 @@ class AsyncRx(AsyncObservable[TSource]):
 
     @classmethod
     def empty(cls) -> "AsyncRx[TSource]":
-        from .create import empty
-
         return AsyncRx(empty())
 
     @classmethod
     def from_iterable(cls, iter: Iterable[TSource]) -> "AsyncRx[TSource]":
-        from .create import of_seq
-
-        return AsyncRx(of_seq(iter))
+        return AsyncRx(from_iterable(iter))
 
     @classmethod
     def single(cls, value: TSource) -> "AsyncRx[TSource]":
@@ -158,6 +180,24 @@ class AsyncRx(AsyncObservable[TSource]):
 
         return pipe(self, flat_map_async(selector), AsyncRx.create)
 
+    def flat_map_latest_async(
+        self, mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]
+    ) -> "AsyncRx[TResult]":
+        """Flat map latest async.
+
+        Asynchronosly transforms the items emitted by an source sequence
+        into observable streams, and mirror those items emitted by the
+        most-recently transformed observable sequence.
+
+        Args:
+            mapper (Callable[[TSource]): [description]
+            Awaitable ([type]): [description]
+
+        Returns:
+            Stream[TSource, TResult]: [description]
+        """
+        return AsyncRx(pipe(self, flat_map_latest_async(mapper)))
+
     def map(self, selector: Callable[[TSource], TResult]) -> "AsyncRx[TResult]":
         from .transform import map
 
@@ -182,8 +222,6 @@ class AsyncRx(AsyncObservable[TSource]):
         Returns:
             Stream[TSource, TSource]: [description]
         """
-        from .filtering import skip
-
         return AsyncRx(pipe(self, skip(count)))
 
     def starfilter(self, predicate: Callable[..., bool]) -> AsyncObservable[Tuple[TSource, int]]:
@@ -194,17 +232,15 @@ class AsyncRx(AsyncObservable[TSource]):
             An observable sequence that contains elements from the input
             sequence that satisfy the condition.
         """
-        from .filtering import starfilter
-
         return AsyncRx.create(pipe(self, starfilter(predicate)))
 
     def starmap(self, mapper: Callable[..., TResult]) -> AsyncObservable[TResult]:
         """Map and spread the arguments to the mapper.
 
-        Returns an observable sequence whose elements are the result of
-        invoking the mapper function on each element of the source."""
-
-        from .transform import starmap
+        Returns:
+            An observable sequence whose elements are the result of
+            invoking the mapper function on each element of the source.
+        """
 
         return AsyncRx(pipe(self, starmap(mapper)))
 
@@ -300,13 +336,15 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
     value before seconds has elapsed.
 
     Example:
-    partial = debounce(5) # 5 seconds
+        >>> partial = debounce(5) # 5 seconds
 
-    Keyword arguments:
-    seconds -- Duration of the throttle period for each value
+    Args:
+        seconds: Duration of the throttle period for each value
 
-    Returns a partially applied function that takes a source stream to
-    debounce."""
+    Returns:
+        A partially applied debounce function that takes the source
+        observable to debounce.
+    """
 
     from .timeshift import debounce
 
@@ -391,10 +429,13 @@ def from_async(worker: Awaitable[TSource]) -> AsyncObservable[TSource]:
 def from_iterable(iterable: Iterable[TSource]) -> AsyncObservable[TSource]:
     """Convert an iterable to a source stream.
 
-    1 - xs = from_iterable([1,2,3])
+    Example:
+        >>> xs = from_iterable([1,2,3])
 
-    Returns the source stream whose elements are pulled from the given
-    (async) iterable sequence."""
+    Returns:
+        The source stream whose elements are pulled from the given
+        (async) iterable sequence.
+    """
     from .create import of_seq
 
     return of_seq(iterable)
@@ -430,6 +471,25 @@ def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult
     from .transform import flat_map_async
 
     return flat_map_async(mapper)
+
+
+def flat_map_latest_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Stream[TSource, TResult]:
+    """Flat map latest async.
+
+    Asynchronosly transforms the items emitted by an source sequence
+    into observable streams, and mirror those items emitted by the
+    most-recently transformed observable sequence.
+
+    Args:
+        mapper (Callable[[TSource]): [description]
+        Awaitable ([type]): [description]
+
+    Returns:
+        Stream[TSource, TResult]: [description]
+    """
+    from .transform import flat_map_latest_async
+
+    return flat_map_latest_async(mapper)
 
 
 def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
@@ -553,7 +613,7 @@ def skip(count: int) -> Stream[TSource, TSource]:
         count (int): Items to skip
 
     Returns:
-        Stream[TSource, TSource]: [description]
+        The result stream with skipped items.
     """
     from .filtering import skip
 
@@ -643,7 +703,8 @@ def take_until(other: AsyncObservable[TResult]) -> Stream[TSource, TSource]:
 
 def timer(due_time: float) -> AsyncObservable[int]:
     """Returns an observable sequence that triggers the value 0
-    after the given duetime in milliseconds."""
+    after the given duetime in milliseconds.
+    """
     from .create import timer
 
     return timer(due_time)
@@ -684,6 +745,11 @@ __all__ = [
     "filteri" "filter_async",
     "from_async",
     "from_iterable",
+    "flat_map",
+    "flat_mapi",
+    "flat_map_async",
+    "flat_mapi_async",
+    "flat_map_latest_async",
     "map",
     "map_async",
     "merge",
@@ -700,8 +766,10 @@ __all__ = [
     "to_async_iterable",
 ]
 
-# type: ignore
+
+# flake8: noqa
 from ._version import get_versions
 
-__version__ = get_versions()["version"]
+__version__ = get_versions()["version"]  # type: ignore
+
 del get_versions

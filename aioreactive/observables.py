@@ -44,6 +44,9 @@ class AsyncIterableObservable(AsyncIterable[TSource], AsyncObservable[TSource]):
         Transforms the async source to an async iterable. The source
         will await for the iterator to pick up the value before
         continuing to avoid queuing values.
+
+        Returns:
+            An async iterator.
         """
 
         obv: AsyncIteratorObserver[TSource] = AsyncIteratorObserver(self)
