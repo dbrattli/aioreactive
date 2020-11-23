@@ -195,15 +195,21 @@ streamed into an observer.
     Observable -> Operator -> Operator -> Operator -> Observer
 
 Aioreactive contains many of the same operators as you know from RxPY.
-Our goal is not to implement them all, but to have the most essential
+Our goal is not to implement them all, but to provide the most essential
 ones.
 
 * **concat** -- Concatenates two or more observables.
+* **choose** -- Filters and/or transforms the observable.
+* **choose_asnc** -- Asynchronously filters and/or transforms the observable.
 * **debounce** -- Throttles an observable.
 * **delay** -- delays the items within an observable.
 * **distinct_until_changed** -- an observable with continuously distinct values.
 * **filter** -- filters an observable.
+* **filteri** -- filters an observable with index.
 * **flat_map** -- transforms an observable into a stream of observables and flattens the resulting observable.
+* **flat_map_latest** -- transforms an observable into a stream of
+  observables and flattens the resulting observable by producing values
+  from the latest observable.
 * **from_iterable** -- Create an observable from an (async) iterable.
 * **subscribe** -- Subscribes an observer to an observable. Returns a subscription.
 * **map** -- transforms an observable.
@@ -284,7 +290,7 @@ async def test_slice_special():
 
 # Fluent and chained programming style
 
-An alternative to pipelining is to use classic and fluent method
+An alternative to pipelining is to use the classic and fluent method
 chaining as we know from [ReactiveX](http://reactivex.io).
 
 An `AsyncObservable` created from class methods such as
@@ -322,9 +328,9 @@ async def test_observable_simple_pipe():
 Aioreactive also provides a virtual time event loop
 (`VirtualTimeEventLoop`) that enables you to write asyncio unit-tests
 that run in virtual time. Virtual time means that time is emulated, so
-tests run as quickly as possible even if they sleep or awaits long lived
+tests run as quickly as possible even if they sleep or awaits long-lived
 operations. A test using virtual time still gives the same result as it
-would have done if it had been run in real time.
+would have done if it had been run in real-time.
 
 For example the following test still gives the correct result even if it
 takes 0 seconds to run:
@@ -351,7 +357,7 @@ async def test_call_later():
     assert result == [2, 3, 1]
 ```
 
-The `aioreactive.testing` module provides a test `AsyncSubject` that may
+The aioreactive testing module provides a test `AsyncSubject` that may
 delay sending values, and a test `AsyncTestObserver` that records all
 events. These two classes helps you with testing in virtual time.
 

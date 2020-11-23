@@ -121,6 +121,38 @@ class AsyncRx(AsyncObservable[TSource]):
     def as_async_observable(self) -> AsyncObservable[TSource]:
         return AsyncAnonymousObservable(self.subscribe_async)
 
+    def choose(self, chooser: Callable[[TSource], Option[TSource]]) -> AsyncObservable[TSource]:
+        """Choose.
+
+        Applies the given function to each element of the stream and returns
+        the stream comprised of the results for each element where the
+        function returns Some with some value.
+
+        Args:
+            chooser: A function to transform or filter the stream
+                by returning `Some(value)` or `Nothing`.
+
+        Returns:
+            The filtered and/or transformed stream.
+        """
+        return AsyncRx(pipe(self, choose(chooser)))
+
+    def choose_async(self, chooser: Callable[[TSource], Awaitable[Option[TSource]]]) -> AsyncObservable[TSource]:
+        """Choose async.
+
+        Applies the given async function to each element of the stream and
+        returns the stream comprised of the results for each element where
+        the function returns Some with some value.
+
+        Args:
+            chooser: A function to transform or filter the stream
+                asynchronously by returning `Some(value)` or `Nothing`.
+
+        Returns:
+            The filtered and transformed stream.
+        """
+        return AsyncRx(pipe(self, choose_async(chooser)))
+
     def combine_latest(self, other: TOther) -> "AsyncRx[Tuple[TSource, TOther]]":
         from .combine import combine_latest
 
@@ -161,9 +193,39 @@ class AsyncRx(AsyncObservable[TSource]):
         return AsyncRx(distinct_until_changed(self))
 
     def filter(self, predicate: Callable[[TSource], bool]) -> "AsyncRx[TSource]":
+        """Filter stream.
+
+        Filters the elements of an observable sequence based on a predicate.
+        Returns an observable sequence that contains elements from the input
+        sequence that satisfy the condition.
+
+        Args:
+            predicate:
+                A function to filter the stream by returning `True` to
+                keep the item, or `False` to filter and remove the item.
+
+        Returns:
+            The filtered stream.
+        """
+
         from .filtering import filter as _filter
 
         return AsyncRx(pipe(self, _filter(predicate)))
+
+    def filteri(self, predicate: Callable[[TSource, int], bool]) -> AsyncObservable[TSource]:
+        """Filter with index.
+
+        Filters the elements of an observable sequence based on a predicate
+        and incorporating the element's index on each element of the source.
+
+        Args:
+            predicate: Function to test each element.
+
+        Returns:
+            An observable sequence that contains elements from the input
+            sequence that satisfy the condition.
+        """
+        return AsyncRx(pipe(self, filteri(predicate)))
 
     def filter_async(self, predicate: Callable[[TSource], Awaitable[bool]]) -> "AsyncRx[TSource]":
         from .filtering import filter_async
@@ -312,12 +374,40 @@ def as_chained(source: AsyncObservable[TSource]) -> AsyncRx[TSource]:
 
 
 def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSource]:
+    """Choose.
+
+    Applies the given function to each element of the stream and returns
+    the stream comprised of the results for each element where the
+    function returns Some with some value.
+
+    Args:
+        chooser: A function to transform or filter the stream
+            by returning `Some(value)` or `Nothing`.
+
+    Returns:
+        The filtered and/or transformed stream.
+    """
+
     from .filtering import choose
 
     return choose(chooser)
 
 
 def choose_async(chooser: Callable[[TSource], Awaitable[Option[TSource]]]) -> Stream[TSource, TSource]:
+    """Choose async.
+
+    Applies the given async function to each element of the stream and
+    returns the stream comprised of the results for each element where
+    the function returns Some with some value.
+
+    Args:
+        chooser: An async function to transform or filter the stream
+            by returning `Some(value)` or `Nothing`.
+
+    Returns:
+        The filtered and/or transformed stream.
+    """
+
     from .filtering import choose_async
 
     return choose_async(chooser)
@@ -404,12 +494,41 @@ def empty() -> "AsyncObservable[TSource]":
 
 
 def filter(predicate: Callable[[TSource], bool]) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
+    """Filter stream.
+
+    Filters the elements of an observable sequence based on a predicate.
+    Returns an observable sequence that contains elements from the input
+    sequence that satisfy the condition.
+
+    Args:
+        predicate:
+            A function to filter the stream by returning `True` to
+            keep the item, or `False` to filter and remove the item.
+
+    Returns:
+        The filtered stream.
+    """
     from .filtering import filter as _filter
 
     return _filter(predicate)
 
 
-print(filter)
+def filteri(predicate: Callable[[TSource, int], bool]) -> Stream[TSource, TSource]:
+    """Filter with index.
+
+    Filters the elements of an observable sequence based on a predicate
+    and incorporating the element's index on each element of the source.
+
+    Args:
+        predicate: Function to test each element.
+
+    Returns:
+        An observable sequence that contains elements from the input
+        sequence that satisfy the condition.
+    """
+    from .filtering import filteri
+
+    return filteri(predicate)
 
 
 def filter_async(
@@ -742,7 +861,8 @@ __all__ = [
     "concat_seq" "delay",
     "empty",
     "filter",
-    "filteri" "filter_async",
+    "filteri",
+    "filter_async",
     "from_async",
     "from_iterable",
     "flat_map",

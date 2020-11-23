@@ -18,19 +18,6 @@ TResult = TypeVar("TResult")
 
 
 def choose_async(chooser: Callable[[TSource], Awaitable[Option[TResult]]]) -> Stream[TSource, TResult]:
-    """Choose async.
-
-    Applies the given async function to each element of the stream and
-    returns the stream comprised of the results for each element where
-    the function returns Some with some value.
-
-    Args:
-        chooser (Callable[[TSource], Awaitable[Option[TResult]]]): [description]
-
-    Returns:
-        Stream[TSource, TResult]: [description]
-    """
-
     async def handler(next: Callable[[TResult], Awaitable[None]], xs: TSource) -> None:
         result = await chooser(xs)
         for x in result.to_list():
@@ -40,19 +27,6 @@ def choose_async(chooser: Callable[[TSource], Awaitable[Option[TResult]]]) -> St
 
 
 def choose(chooser: Callable[[TSource], Option[TResult]]) -> Stream[TSource, TResult]:
-    """Choose.
-
-    Applies the given function to each element of the stream and returns
-    the stream comprised of the results for each element where the
-    function returns Some with some value.
-
-    Args:
-        chooser (Callable[[TSource], Option[TResult]]): [description]
-
-    Returns:
-        Stream[TSource, TResult]: [description]
-    """
-
     def handler(next: Callable[[TResult], Awaitable[None]], xs: TSource) -> Awaitable[None]:
         for x in chooser(xs).to_list():
             return next(x)
@@ -83,20 +57,6 @@ def filter_async(predicate: Callable[[TSource], Awaitable[bool]]) -> Stream[TSou
 
 
 def filter(predicate: Callable[[TSource], bool]) -> Stream[TSource, TSource]:
-    """Filter stream.
-
-    Filters the elements of an observable sequence based on a predicate.
-    Returns an observable sequence that contains elements from the input
-    sequence that satisfy the condition.
-
-
-    Args:
-        predicate (Callable[[TSource], bool]): [description]
-
-    Returns:
-        Stream[TSource, TSource]: [description]
-    """
-
     def handler(next: Callable[[TSource], Awaitable[None]], x: TSource) -> Awaitable[None]:
         if predicate(x):
             return next(x)
@@ -128,19 +88,6 @@ def starfilter(predicate: Callable[..., bool]) -> Stream[Tuple[Any, ...], Tuple[
 
 
 def filteri(predicate: Callable[[TSource, int], bool]) -> Stream[TSource, TSource]:
-    """Filter with index.
-
-    Filters the elements of an observable sequence based on a predicate
-    and incorporating the element's index on each element of the source.
-
-    Args:
-        predicate: Function to test each element.
-
-    Returns:
-        An observable sequence that contains elements from the input
-        sequence that satisfy the condition.
-    """
-
     return compose(
         zip_seq(seq.infinite()),
         starfilter(predicate),
