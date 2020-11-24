@@ -1,7 +1,7 @@
 
 <img src="logo/logo.jpg" alt="drawing" width="200"/>
 
-# aioreactive - RxPY for asyncio using async and await
+# aioreactive - ReactiveX for asyncio using async and await
 [![PyPI](https://img.shields.io/pypi/v/aioreactive.svg)](https://pypi.python.org/pypi/aioreactive)
 ![Python package](https://github.com/dbrattli/aioreactive/workflows/Python%20package/badge.svg)
 ![Upload Python Package](https://github.com/dbrattli/aioreactive/workflows/Upload%20Python%20Package/badge.svg)
@@ -141,7 +141,7 @@ async for x in obv:
 
 They effectively transform us from an async push model to an async pull
 model, and lets us use the awesome new language features such as `async
-for` and `async-with`. We do this without any queueing as push by the
+for` and `async-with`. We do this without any queueing, as a push by the
 `AsyncObservable` will await the pull by the `AsyncIterator.  This
 effectively applies so-called "back-pressure" up the subscription as the
 producer will await the iterator to pick up the item send.
