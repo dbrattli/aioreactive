@@ -1,14 +1,14 @@
 import dataclasses
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, Iterable, NewType, Tuple, TypeVar, cast
+from typing import Any, Callable, Generic, Iterable, Tuple, TypeVar, cast
 
 from expression.collections import FrozenList, Map, frozenlist, map
-from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, pipe, recursive_async
+from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, match, pipe, recursive_async
 from expression.system import AsyncDisposable
 
 from .create import of_seq
-from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Msg, OtherMsg, SourceMsg
+from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Key, Msg, OtherMsg, SourceMsg
 from .notification import Notification, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
@@ -18,8 +18,6 @@ TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
 TOther = TypeVar("TOther")
 
-
-Key = NewType("Key", int)
 
 log = logging.getLogger(__name__)
 
@@ -63,42 +61,41 @@ def merge_inner(max_concurrent: int = 0) -> Callable[[AsyncObservable[TSource]],
 
                 async def update(msg: Msg, model: Model[TSource]) -> Model[TSource]:
                     log.debug("update: %s, model: %s", msg, model)
-                    if isinstance(msg, InnerObservableMsg):
-                        msg = cast(InnerObservableMsg[TSource], msg)
-                        xs: AsyncObservable[TSource] = msg.inner_observable
-                        if max_concurrent == 0 or len(model.subscriptions) < max_concurrent:
-                            inner = await xs.subscribe_async(obv(model.key))
-                            return model.replace(
-                                subscriptions=model.subscriptions.add(model.key, inner),
-                                key=Key(model.key + 1),
-                            )
-                        else:
-                            return model.replace(queue=model.queue.append(frozenlist.singleton(xs)))
-                    elif isinstance(msg, InnerCompletedMsg):
-                        key = Key(msg.key)
-                        subscriptions = model.subscriptions.remove(key)
-                        if len(model.queue):
-                            xs = model.queue[0]
-                            inner = await xs.subscribe_async(obv(model.key))
+                    with match(msg) as m:
+                        for xs in InnerObservableMsg.case(m):
+                            if max_concurrent == 0 or len(model.subscriptions) < max_concurrent:
+                                inner = await xs.subscribe_async(obv(model.key))
+                                return model.replace(
+                                    subscriptions=model.subscriptions.add(model.key, inner),
+                                    key=Key(model.key + 1),
+                                )
+                            else:
+                                return model.replace(queue=model.queue.append(frozenlist.singleton(xs)))
+                        for key in InnerCompletedMsg.case(m):
+                            subscriptions = model.subscriptions.remove(key)
+                            if len(model.queue):
+                                xs = model.queue[0]
+                                inner = await xs.subscribe_async(obv(model.key))
 
-                            return model.replace(
-                                subscriptions=subscriptions.add(model.key, inner),
-                                key=model.key + 1,
-                                queue=model.queue.tail(),
-                            )
-                        elif len(subscriptions):
-                            return model.replace(subscriptions=subscriptions)
-                        else:
-                            if model.is_stopped:
+                                return model.replace(
+                                    subscriptions=subscriptions.add(model.key, inner),
+                                    key=model.key + 1,
+                                    queue=model.queue.tail(),
+                                )
+                            elif len(subscriptions):
+                                return model.replace(subscriptions=subscriptions)
+                            else:
+                                if model.is_stopped:
+                                    await safe_obv.aclose()
+                                return model.replace(subscriptions=map.empty)
+                        while CompletedMsg.case(m):
+                            if not model.subscriptions:
+                                log.debug("merge_inner: closing!")
                                 await safe_obv.aclose()
-                            return model.replace(subscriptions=map.empty)
-                    elif msg is CompletedMsg:
-                        if not model.subscriptions:
-                            log.debug("merge_inner: closing!")
-                            await safe_obv.aclose()
 
-                        return model.replace(is_stopped=True)
-                    else:
+                            return model.replace(is_stopped=True)
+
+                        # default case
                         for key, dispose in model.subscriptions:
                             await dispose.dispose_async()
                         return initial_model.replace(is_stopped=True)

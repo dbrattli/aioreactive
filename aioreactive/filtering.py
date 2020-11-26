@@ -1,15 +1,17 @@
-from typing import Any, Awaitable, Callable, List, Optional, Tuple, TypeVar, overload
+from typing import (Any, Awaitable, Callable, List, Optional, Tuple, TypeVar,
+                    overload)
 
 from expression.collections import seq
-from expression.core import Option, Result, aiotools, compose, fst, pipe
-from expression.core.fn import TailCall, recursive_async
-from expression.core.mailbox import MailboxProcessor
+from expression.core import (MailboxProcessor, Option, Result, TailCall,
+                             aiotools, compose, fst, match, pipe,
+                             recursive_async)
 from expression.system.disposable import AsyncDisposable
 
 from .combine import zip_seq
 from .notification import Notification, OnCompleted, OnError, OnNext
 from .observables import AsyncAnonymousObservable
-from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
+from .observers import (AsyncAnonymousObserver, AsyncNotificationObserver,
+                        auto_detach_observer)
 from .transform import map, transform
 from .types import AsyncObservable, AsyncObserver, Stream
 
@@ -117,8 +119,8 @@ def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[
                 n = await inbox.receive()
 
                 async def get_latest() -> Notification[TSource]:
-                    with n.match() as m:
-                        for x in m.case(OnNext):
+                    with match(n) as m:
+                        for x in OnNext.case(m):
                             if n == latest:
                                 break
                             try:
@@ -126,7 +128,7 @@ def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[
                             except Exception as ex:
                                 await safe_obv.athrow(ex)
                             break
-                        for err in m.case(OnError):
+                        for err in OnError.case(m):
                             await safe_obv.athrow(err)
                             break
                         while m.case(OnCompleted):

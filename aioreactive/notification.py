@@ -1,7 +1,6 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractclassmethod, abstractmethod
 from enum import Enum
-from types import TracebackType
-from typing import Any, Awaitable, Callable, Generic, Iterable, Optional, Type, TypeVar, overload
+from typing import Any, Awaitable, Callable, Generic, Iterable, TypeVar
 
 from expression.core import Matcher
 
@@ -15,43 +14,6 @@ class MsgKind(Enum):
     ON_NEXT = 1
     ON_ERROR = 2
     ON_COMPLETED = 3
-
-
-class NotificationMatcher(Generic[TSource]):
-    """Contains overloads to avoid type casting when pattern matching on
-    the message (`Msg`) class
-
-    Currently we wrap instead of inherit to make type checkers happy.
-    """
-
-    def __init__(self, match: Matcher[TSource]) -> None:
-        self.match = match
-
-    @overload
-    def case(self, pattern: "Type[OnNext[TSource]]") -> Iterable[TSource]:
-        ...
-
-    @overload
-    def case(self, pattern: "Type[OnError[TSource]]") -> Iterable[Exception]:
-        ...
-
-    @overload
-    def case(self, pattern: "_OnCompleted[TSource]") -> Iterable[None]:
-        ...
-
-    def case(self, pattern: Any) -> Any:
-        return self.match.case(pattern)
-
-    def __enter__(self) -> "NotificationMatcher[TSource]":
-        """Enter context management."""
-        return self
-
-    def __exit__(
-        self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
-    ) -> None:
-        """Exit context management."""
-
-        return self.match.__exit__(exctype, excinst, exctb)
 
 
 class Notification(ABC, Generic[TSource]):
@@ -73,25 +35,11 @@ class Notification(ABC, Generic[TSource]):
     async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
         raise NotImplementedError
 
-    @overload
-    def match(self) -> "NotificationMatcher[TSource]":
-        ...
+    @abstractclassmethod
+    def case(cls, matcher: Matcher) -> Iterable[Any]:
+        """Helper to cast the match result to correct type."""
 
-    @overload
-    def match(self, pattern: "Type[OnNext[TSource]]") -> Iterable[TSource]:
-        ...
-
-    @overload
-    def match(self, pattern: "Type[OnError[TSource]]") -> Iterable[Exception]:
-        ...
-
-    @overload
-    def match(self, pattern: "_OnCompleted[TSource]") -> Iterable[None]:
-        ...
-
-    def match(self, pattern: Optional[Any] = None) -> Any:
-        m: NotificationMatcher[Any] = NotificationMatcher(Matcher(self))
-        return m.case(pattern) if pattern else m
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return str(self)
@@ -115,6 +63,12 @@ class OnNext(Notification[TSource]):
 
     async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
         await obv.asend(self.value)
+
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[TSource]:
+        """Helper to cast the match result to correct type."""
+
+        return matcher.case(cls)
 
     def __match__(self, pattern: Any) -> Iterable[TSource]:
         if isinstance(self, pattern):
@@ -148,6 +102,12 @@ class OnError(Notification[TSource]):
 
     async def accept_observer(self, obv: AsyncObserver[TSource]):
         await obv.athrow(self.exception)
+
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[Exception]:
+        """Helper to cast the match result to correct type."""
+
+        return matcher.case(cls)
 
     def __match__(self, pattern: Any) -> Iterable[TSource]:
         if isinstance(self, pattern):
@@ -184,6 +144,12 @@ class _OnCompleted(Notification[TSource]):
 
     async def accept_observer(self, obv: AsyncObserver[TSource]):
         await obv.aclose()
+
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[bool]:
+        """Helper to cast the match result to correct type."""
+
+        return matcher.case(cls)
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, _OnCompleted):

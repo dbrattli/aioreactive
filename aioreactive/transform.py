@@ -1,12 +1,23 @@
 from typing import Any, Awaitable, Callable, Tuple, TypeVar, overload
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, compose, pipe, recursive_async
+from expression.core import (
+    MailboxProcessor,
+    Nothing,
+    Option,
+    Result,
+    Some,
+    TailCall,
+    compose,
+    match,
+    pipe,
+    recursive_async,
+)
 from expression.system import AsyncDisposable
 
 from .combine import merge_inner, zip_seq
 from .create import fail
-from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Msg
+from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Key, Msg
 from .observables import AsyncAnonymousObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, auto_detach_observer
 from .types import AsyncObserver, Stream
@@ -240,7 +251,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
                 await safe_obv.athrow(error)
 
             async def aclose() -> None:
-                pipe(id, InnerCompletedMsg, mb.post)
+                pipe(Key(id), InnerCompletedMsg, mb.post)
 
             return AsyncAnonymousObserver(asend, athrow, aclose)
 
@@ -251,35 +262,35 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
             ) -> Result[None, Exception]:
                 cmd = await inbox.receive()
 
-                m = cmd.match()
-                for xs in m.case(InnerObservableMsg):
-                    next_id = current_id + 1
-                    for disp in current.to_list():
-                        await disp.dispose_async()
-                    inner = await xs.subscribe_async(obv(inbox, next_id))
-                    current, current_id = Some(inner), next_id
-                    break
-                for xs in m.case(InnerObservableMsg):
-                    next_id = current_id + 1
-                    for disp in current.to_list():
-                        await disp.dispose_async()
-                    inner = await xs.subscribe_async(obv(inbox, next_id))
-                    current, current_id = Some(inner), next_id
-                    break
-                for idx in m.case(InnerCompletedMsg):
-                    if is_stopped and idx == current_id:
-                        await safe_obv.aclose()
+                with match(cmd) as m:
+                    for xs in InnerObservableMsg.case(m):
+                        next_id = current_id + 1
+                        for disp in current.to_list():
+                            await disp.dispose_async()
+                        inner = await xs.subscribe_async(obv(inbox, next_id))
+                        current, current_id = Some(inner), next_id
+                        break
+                    for xs in InnerObservableMsg.case(m):
+                        next_id = current_id + 1
+                        for disp in current.to_list():
+                            await disp.dispose_async()
+                        inner = await xs.subscribe_async(obv(inbox, next_id))
+                        current, current_id = Some(inner), next_id
+                        break
+                    for idx in InnerCompletedMsg.case(m):
+                        if is_stopped and idx == current_id:
+                            await safe_obv.aclose()
+                            current, is_stopped = Nothing, True
+                        break
+                    while m.case(CompletedMsg):
+                        if current.is_none():
+                            await safe_obv.aclose()
+                        break
+                    while m.case(DisposeMsg):
+                        if current.is_some():
+                            await current.value.dispose_async()
                         current, is_stopped = Nothing, True
-                    break
-                while m.case(CompletedMsg):
-                    if current.is_none():
-                        await safe_obv.aclose()
-                    break
-                while m.case(DisposeMsg):
-                    if current.is_some():
-                        await current.value.dispose_async()
-                    current, is_stopped = Nothing, True
-                    break
+                        break
 
                 return TailCall(current, is_stopped, current_id)
 

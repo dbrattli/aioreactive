@@ -1,11 +1,10 @@
 import asyncio
 import logging
-import time
 from datetime import datetime, timedelta
 from typing import Iterable, Tuple, TypeVar
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, Result, TailCall, aiotools, pipe, recursive_async, snd
+from expression.core import MailboxProcessor, Result, TailCall, aiotools, match, pipe, recursive_async, snd
 from expression.system import CancellationTokenSource
 
 from .combine import with_latest_from
@@ -48,11 +47,11 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
                         await asyncio.sleep(seconds)
 
                     async def matcher() -> None:
-                        with ns.match() as m:
-                            for x in m.case(OnNext):
+                        with match(ns) as m:
+                            for x in OnNext.case(m):
                                 await aobv.asend(x)
                                 return
-                            for err in m.case(OnError):
+                            for err in OnError.case(m):
                                 await aobv.athrow(err)
                                 return
                             while m.case(OnCompleted):
@@ -107,9 +106,9 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
                 async def message_loop(current_index: int) -> Result[TSource, Exception]:
                     n, index = await inbox.receive()
 
-                    with n.match() as m:
+                    with match(n) as m:
                         log.debug("debounce: %s, %d, %d", n, index, current_index)
-                        for x in m.case(OnNext):
+                        for x in OnNext.case(m):
                             if index == current_index:
                                 await safe_obv.asend(x)
                                 current_index = index

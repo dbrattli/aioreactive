@@ -1,7 +1,8 @@
 """Internal messages used by mailbox processors. Do not import or use.
 """
+from abc import abstractclassmethod
 from dataclasses import dataclass
-from typing import Any, Generic, Iterable, Optional, Type, TypeVar, overload
+from typing import Any, Generic, Iterable, NewType, TypeVar
 
 from expression.core import Matcher
 from expression.system import AsyncDisposable
@@ -12,39 +13,7 @@ from .types import AsyncObservable
 TSource = TypeVar("TSource")
 TOther = TypeVar("TOther")
 
-
-class Case(Generic[TSource]):
-    """Contains overloads to avoid type casting when pattern matching on
-    the message (`Msg`) class
-
-    Currently we wrap instead of inherit to make type checkers happy.
-    """
-
-    def __init__(self, match: Matcher[TSource]) -> None:
-        self.match = match
-
-    @overload
-    def case(self, pattern: "Type[InnerObservableMsg[TSource]]") -> Iterable[AsyncObservable[TSource]]:
-        ...
-
-    @overload
-    def case(self, pattern: "Type[SourceMsg[TSource]]") -> Iterable[AsyncObservable[TSource]]:
-        ...
-
-    @overload
-    def case(self, pattern: "Type[InnerCompletedMsg]") -> Iterable[int]:
-        ...
-
-    @overload
-    def case(self, pattern: "Type[CompletedMsg]") -> "Iterable[CompletedMsg]":
-        ...
-
-    @overload
-    def case(self, pattern: "Type[DisposeMsg]") -> "Iterable[DisposeMsg]":
-        ...
-
-    def case(self, pattern: Any):
-        return self.match.case(pattern)
+Key = NewType("Key", int)
 
 
 class Msg:
@@ -54,46 +23,19 @@ class Msg:
     later.
     """
 
-    @overload
-    def match(self) -> "Case[TSource]":
-        ...
-
-    @overload
-    def match(self, pattern: "Type[DisposableMsg]") -> Iterable[AsyncDisposable]:
-        ...
-
-    @overload
-    def match(self, pattern: "Type[SourceMsg[TSource]]") -> Iterable[Notification[TSource]]:
-        ...
-
-    @overload
-    def match(self, pattern: "Type[OtherMsg[TSource]]") -> Iterable[Notification[TSource]]:
-        ...
-
-    @overload
-    def match(self, pattern: "Type[InnerCompletedMsg]") -> Iterable[int]:
-        ...
-
-    @overload
-    def match(self, pattern: "Type[CompletedMsg]") -> "Iterable[CompletedMsg]":
-        ...
-
-    @overload
-    def match(self, pattern: "Type[DisposeMsg]") -> "Iterable[DisposeMsg]":
-        ...
-
-    @overload
-    def match(self, pattern: "Type[InnerObservableMsg[TSource]]") -> Iterable[AsyncObservable[TSource]]:
-        ...
-
-    def match(self, pattern: Optional[Any] = None) -> Any:
-        m: Matcher[Any] = Matcher(self)
-        return m.case(pattern) if pattern else Case(m)
+    @abstractclassmethod
+    def case(cls, matcher: Matcher) -> Any:
+        raise NotImplementedError
 
 
 @dataclass
 class SourceMsg(Msg, Generic[TSource]):
     value: Notification[TSource]
+
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[Notification[TSource]]:
+        """Helper to cast the match result to correct type."""
+        return matcher.case(cls)
 
     def __match__(self, pattern: Any) -> Iterable[Notification[TSource]]:
         if isinstance(self, pattern):
@@ -104,6 +46,12 @@ class SourceMsg(Msg, Generic[TSource]):
 @dataclass
 class OtherMsg(Msg, Generic[TOther]):
     value: Notification[TOther]
+
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[Notification[TOther]]:
+        """Helper to cast the match result to correct type."""
+
+        return matcher.case(cls)
 
     def __match__(self, pattern: Any) -> Iterable[Notification[TOther]]:
         if isinstance(self, pattern):
@@ -117,6 +65,12 @@ class DisposableMsg(Msg):
 
     disposable: AsyncDisposable
 
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[Notification[AsyncDisposable]]:
+        """Helper to cast the match result to correct type."""
+
+        return matcher.case(cls)
+
     def __match__(self, pattern: Any) -> Iterable[AsyncDisposable]:
         if isinstance(self, pattern):
             return [self.disposable]
@@ -129,6 +83,12 @@ class InnerObservableMsg(Msg, Generic[TSource]):
 
     inner_observable: AsyncObservable[TSource]
 
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[AsyncObservable[TSource]]:
+        """Helper to cast the match result to correct type."""
+
+        return matcher.case(cls)
+
     def __match__(self, pattern: Any) -> Iterable[AsyncObservable[TSource]]:
         if isinstance(self, pattern):
             return [self.inner_observable]
@@ -139,9 +99,15 @@ class InnerObservableMsg(Msg, Generic[TSource]):
 class InnerCompletedMsg(Msg):
     """Message notifying that the inner observable completed."""
 
-    key: int
+    key: Key
 
-    def __match__(self, pattern: Any) -> Iterable[int]:
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[Key]:
+        """Helper to cast the match result to correct type."""
+
+        return matcher.case(cls)
+
+    def __match__(self, pattern: Any) -> Iterable[Key]:
         if isinstance(self, pattern):
             return [self.key]
         return []
@@ -150,7 +116,11 @@ class InnerCompletedMsg(Msg):
 class CompletedMsg(Msg):
     """Message notifying that the observable sequence completed."""
 
-    pass
+    @classmethod
+    def case(cls, matcher: Matcher) -> Iterable[bool]:
+        """Helper to cast the match result to correct type."""
+
+        return matcher.case(cls)
 
 
 CompletedMsg_ = CompletedMsg()  # Singleton

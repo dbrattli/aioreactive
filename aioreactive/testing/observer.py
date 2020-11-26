@@ -1,5 +1,5 @@
 import logging
-from typing import Awaitable, Callable, Generic, List, Tuple, TypeVar, cast
+from typing import Awaitable, Callable, List, Tuple, TypeVar, cast
 
 from aioreactive import AsyncAwaitableObserver
 from aioreactive.notification import Notification, OnCompleted, OnError, OnNext
@@ -9,11 +9,6 @@ log = logging.getLogger(__name__)
 
 
 TSource = TypeVar("TSource")
-
-
-class Test(Generic[TSource]):
-    def __init__(self) -> None:
-        self.value: List[Tuple[float, TSource]] = []
 
 
 class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
