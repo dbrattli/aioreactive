@@ -95,9 +95,10 @@ def merge_inner(max_concurrent: int = 0) -> Callable[[AsyncObservable[TSource]],
 
                             return model.replace(is_stopped=True)
 
-                        # default case
-                        for key, dispose in model.subscriptions:
-                            await dispose.dispose_async()
+                        while m.default():
+                            for key, dispose in model.subscriptions:
+                                await dispose.dispose_async()
+
                         return initial_model.replace(is_stopped=True)
 
                 async def message_loop(model: Model[TSource]) -> None:
@@ -181,12 +182,14 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
                         await n.accept_observer(safe_obv)
                         return Nothing
 
-                    if isinstance(cn, SourceMsg):
-                        cn = cast(SourceMsg[TSource], cn)
-                        source_value = await get_value(cn.value)
-                    else:
-                        cn = cast(OtherMsg[TOther], cn)
-                        other_value = await get_value(cn.value)
+                    m = match(cn)
+                    for value in SourceMsg.case(m):
+                        source_value = await get_value(value)
+                        break
+
+                    for value in OtherMsg.case(m):
+                        other_value = await get_value(value)
+                        break
 
                     def binder(s: TSource) -> Option[Tuple[TSource, TOther]]:
                         def mapper(o: TOther) -> Tuple[TSource, TOther]:

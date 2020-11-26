@@ -115,7 +115,7 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
                             elif index > current_index:
                                 current_index = index
 
-                        for err in m.case(OnError):
+                        for err in OnError.case(m):
                             await safe_obv.athrow(err)
 
                         while m.case(OnCompleted):
