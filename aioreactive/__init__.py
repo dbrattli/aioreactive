@@ -31,10 +31,11 @@ TOther = TypeVar("TOther")
 class AsyncRx(AsyncObservable[TSource]):
     """An AsyncObservable class similar to classic Rx.
 
-    This class supports has all operators as methods and supports
+    This class provides all operators as methods and supports
     method chaining.
 
-    Subscribe is also a method.
+    Example:
+    >>> AsyncRx.from_iterable([1,2,3]).map(lambda x: x + 2).filter(lambda x: x < 3)
 
     All methods are lazy imported.
     """
@@ -111,6 +112,10 @@ class AsyncRx(AsyncObservable[TSource]):
     @classmethod
     def from_iterable(cls, iter: Iterable[TSource]) -> "AsyncRx[TSource]":
         return AsyncRx(from_iterable(iter))
+
+    @classmethod
+    def from_async_iterable(cls, iter: AsyncIterable[TSource]) -> "AsyncObservable[TSource]":
+        return AsyncRx(from_async_iterable(iter))
 
     @classmethod
     def single(cls, value: TSource) -> "AsyncRx[TSource]":
@@ -252,11 +257,12 @@ class AsyncRx(AsyncObservable[TSource]):
         most-recently transformed observable sequence.
 
         Args:
-            mapper (Callable[[TSource]): [description]
-            Awaitable ([type]): [description]
+            mapper: Function to transform each item into a new async
+                observable.
 
         Returns:
-            Stream[TSource, TResult]: [description]
+            An async observable that only merges values from the latest
+            async observable produced by the mapper.
         """
         return AsyncRx(pipe(self, flat_map_latest_async(mapper)))
 
@@ -611,12 +617,10 @@ def flat_map_latest_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[
     return flat_map_latest_async(mapper)
 
 
-def from_async_iterable(iter: Iterable[TSource]) -> "AsyncObservable[TSource]":
-    from aioreactive.operators.from_async_iterable import from_async_iterable
+def from_async_iterable(iter: AsyncIterable[TSource]) -> "AsyncObservable[TSource]":
+    from .create import of_async_iterable
 
-    from .create import from_async_iterable
-
-    return AsyncRx(from_async_iterable(iter))
+    return AsyncRx(of_async_iterable(iter))
 
 
 def interval(seconds: float, period: int) -> AsyncObservable[int]:

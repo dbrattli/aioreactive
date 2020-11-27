@@ -11,7 +11,7 @@ from expression.core import (
     compose,
     match,
     pipe,
-    recursive_async,
+    tailrec_async,
 )
 from expression.system import AsyncDisposable
 
@@ -256,7 +256,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
             return AsyncAnonymousObserver(asend, athrow, aclose)
 
         async def worker(inbox: MailboxProcessor[Msg]) -> None:
-            @recursive_async
+            @tailrec_async
             async def message_loop(
                 current: Option[AsyncDisposable], is_stopped: bool, current_id: int
             ) -> Result[None, Exception]:

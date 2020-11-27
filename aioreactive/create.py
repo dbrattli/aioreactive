@@ -1,8 +1,9 @@
 import asyncio
 import logging
-from typing import Awaitable, Callable, Iterable, Tuple, TypeVar
+from asyncio import Future
+from typing import AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
 
-from expression.core import Ok, Result, aiotools, recursive_async
+from expression.core import Ok, Result, aiotools, tailrec_async
 from expression.core.fn import TailCall
 from expression.system import AsyncDisposable, CancellationToken, CancellationTokenSource
 
@@ -66,6 +67,41 @@ def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
             await obv.aclose()
 
     return of_async_worker(worker)
+
+
+def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
+    """Convert an async iterable to a source stream.
+    2 - xs = from_async_iterable(async_iterable)
+    Returns the source stream whose elements are pulled from the
+    given (async) iterable sequence."""
+
+    async def subscribe_async(observer: AsyncObserver[TSource]) -> AsyncDisposable:
+        task: Optional[Future[TSource]] = None
+
+        async def cancel():
+            if task is not None:
+                task.cancel()
+
+        sub = AsyncDisposable.create(cancel)
+
+        async def worker() -> None:
+            async for value in iterable:
+                try:
+                    await observer.asend(value)
+                except Exception as ex:
+                    await observer.athrow(ex)
+                    return
+
+            await observer.aclose()
+
+        try:
+            task = asyncio.ensure_future(worker())
+        except Exception as ex:
+            log.debug("FromIterable:worker(), Exception: %s" % ex)
+            await observer.athrow(ex)
+        return sub
+
+    return AsyncAnonymousObservable(subscribe_async)
 
 
 def single(value: TSource) -> AsyncObservable[TSource]:
@@ -155,7 +191,7 @@ def interval(seconds: float, period: float) -> AsyncObservable[int]:
     async def subscribe_async(aobv: AsyncObserver[int]) -> AsyncDisposable:
         cancel, token = canceller()
 
-        @recursive_async
+        @tailrec_async
         async def handler(seconds: float, next: int) -> Result[None, Exception]:
             await asyncio.sleep(seconds)
             await aobv.asend(next)

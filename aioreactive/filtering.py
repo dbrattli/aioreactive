@@ -1,17 +1,24 @@
-from typing import (Any, Awaitable, Callable, List, Optional, Tuple, TypeVar,
-                    overload)
+from typing import Any, Awaitable, Callable, List, Optional, Tuple, TypeVar, overload
 
 from expression.collections import seq
-from expression.core import (MailboxProcessor, Option, Result, TailCall,
-                             aiotools, compose, fst, match, pipe,
-                             recursive_async)
+from expression.core import (
+    MailboxProcessor,
+    Option,
+    Result,
+    TailCall,
+    aiotools,
+    compose,
+    fst,
+    match,
+    pipe,
+    tailrec_async,
+)
 from expression.system.disposable import AsyncDisposable
 
 from .combine import zip_seq
 from .notification import Notification, OnCompleted, OnError, OnNext
 from .observables import AsyncAnonymousObservable
-from .observers import (AsyncAnonymousObserver, AsyncNotificationObserver,
-                        auto_detach_observer)
+from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
 from .transform import map, transform
 from .types import AsyncObservable, AsyncObserver, Stream
 
@@ -114,7 +121,7 @@ def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[
         safe_obv, auto_detach = auto_detach_observer(aobv)
 
         async def worker(inbox: MailboxProcessor[Notification[TSource]]) -> None:
-            @recursive_async
+            @tailrec_async
             async def message_loop(latest: Notification[TSource]) -> Result[Notification[TSource], Exception]:
                 n = await inbox.receive()
 

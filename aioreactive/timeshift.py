@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Iterable, Tuple, TypeVar
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, Result, TailCall, aiotools, match, pipe, recursive_async, snd
+from expression.core import MailboxProcessor, Result, TailCall, aiotools, match, pipe, tailrec_async, snd
 from expression.system import CancellationTokenSource
 
 from .combine import with_latest_from
@@ -37,7 +37,7 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
 
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], datetime]]) -> None:
-                @recursive_async
+                @tailrec_async
                 async def loop() -> Result[None, Exception]:
                     ns, due_time = await inbox.receive()
 
@@ -102,7 +102,7 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
             infinite: Iterable[int] = seq.infinite()
 
             async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], int]]) -> None:
-                @recursive_async
+                @tailrec_async
                 async def message_loop(current_index: int) -> Result[TSource, Exception]:
                     n, index = await inbox.receive()
 

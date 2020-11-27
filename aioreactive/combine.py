@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Generic, Iterable, Tuple, TypeVar, cast
 
 from expression.collections import FrozenList, Map, frozenlist, map
-from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, match, pipe, recursive_async
+from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, match, pipe, tailrec_async
 from expression.system import AsyncDisposable
 
 from .create import of_seq
@@ -168,7 +168,7 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
             async def worker(inbox: MailboxProcessor[Msg]) -> None:
-                @recursive_async
+                @tailrec_async
                 async def message_loop(
                     source_value: Option[TSource], other_value: Option[TOther]
                 ) -> Result[AsyncObservable[TSource], Exception]:
@@ -245,7 +245,7 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TS
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
             async def worker(inbox: MailboxProcessor[Msg]) -> None:
-                @recursive_async
+                @tailrec_async
                 async def message_loop(latest: Option[TOther]) -> Result[TSource, Exception]:
                     cn = await inbox.receive()
 
