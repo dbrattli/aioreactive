@@ -300,6 +300,25 @@ class AsyncRx(AsyncObservable[TSource]):
         """
         return AsyncRx(pipe(self, skip(count)))
 
+    def skip_last(self, count: int) -> AsyncObservable[TSource]:
+        """Bypasses a specified number of elements at the end of an
+        observable sequence.
+
+        This operator accumulates a queue with a length enough to store
+        the first `count` elements. As more elements are received,
+        elements are taken from the front of the queue and produced on
+        the result sequence. This causes elements to be delayed.
+
+        Args:
+            count: Number of elements to bypass at the end of the
+            source sequence.
+
+        Returns:
+            An observable sequence containing the source sequence
+            elements except for the bypassed ones at the end.
+        """
+        return AsyncRx(pipe(self, skip_last(count)))
+
     def starfilter(self, predicate: Callable[..., bool]) -> AsyncObservable[Tuple[TSource, int]]:
         """Filter and spread the arguments to the predicate.
 
@@ -761,6 +780,28 @@ def skip(count: int) -> Stream[TSource, TSource]:
     return skip(count)
 
 
+def skip_last(count: int) -> Stream[TSource, TSource]:
+    """Bypasses a specified number of elements at the end of an
+    observable sequence.
+
+    This operator accumulates a queue with a length enough to store
+    the first `count` elements. As more elements are received,
+    elements are taken from the front of the queue and produced on
+    the result sequence. This causes elements to be delayed.
+
+    Args:
+        count: Number of elements to bypass at the end of the
+        source sequence.
+
+    Returns:
+        An observable sequence containing the source sequence
+        elements except for the bypassed ones at the end.
+    """
+    from .filtering import skip_last
+
+    return skip_last(count)
+
+
 def starfilter(predicate: Callable[..., bool]) -> Stream[TSource, Tuple[Any, ...]]:
     """Filter and spread the arguments to the predicate.
 
@@ -802,7 +843,7 @@ def take(count: int) -> Stream[TSource, TSource]:
 
     Returns:
         An observable sequence that contains the specified number of
-        elements from the start of the input sequence.
+        elements from the start of the input stream.
     """
     from .filtering import take
 
@@ -819,7 +860,8 @@ def take_last(count: int) -> Stream[TSource, TSource]:
         count: Number of elements to take.
 
     Returns:
-        Stream[TSource, TSource]: [description]
+        An observable stream that contains the specified number of
+        elements from the end of the input stream.
     """
     from .filtering import take_last
 
@@ -902,11 +944,15 @@ __all__ = [
     "retry",
     "run",
     "single",
+    "skip",
+    "skip_last",
     "starfilter",
     "starmap",
     "Stream",
     "switch_latest",
     "to_async_iterable",
+    "take",
+    "take_last",
 ]
 
 

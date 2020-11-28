@@ -221,9 +221,13 @@ ones.
 * **merge_seq** -- Merge a sequence of observables.
 * **run** -- Awaits the future returned by subscribe. Returns when the subscription closes.
 * **slice** -- Slices an observable.
+* **skip** -- Skip items from the start of the observable stream.
+* **skip_last** -- Skip items from the end of the observable stream.
 * **starfilter** -- Filters an observable with a predicate and spreads the arguments.
 * **starmap** -- Transforms and async observable and spreads the arguments to the mapper.
 * **switch_latest** -- Merges the latest stream in an observable of streams.
+* **take** -- Take a number of items from the start of the observable stream.
+* **take_last** -- Take a number of items from the end of the observable stream.
 * **unit** -- Converts a value or future to an observable.
 * **with_latest_from** -- Combines two observables into one.
 
@@ -419,7 +423,7 @@ Many ideas from aioreactive have already been ported back into "classic" RxPY.
 
 Aioreactive was inspired by:
 
-* [AsyncRx](https://github.com/dbrattli/asyncrx) - Aioreactive is actually a direct port of AsyncRx from F#.
+* [AsyncRx](https://github.com/dbrattli/asyncrx) - Aioreactive is a direct port of AsyncRx from F#.
 * [Expression](https://github.com/dbrattli/Expression) - Functional programming for Python.
 * [Is it really Pythonic to continue using LINQ operators instead of plain old functions?](https://github.com/ReactiveX/RxPY/issues/94)
 * [Reactive Extensions (Rx)](http://reactivex.io) and [RxPY](https://github.com/ReactiveX/RxPY).
