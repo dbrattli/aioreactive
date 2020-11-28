@@ -49,6 +49,4 @@ class AsyncIterableObservable(AsyncIterable[TSource], AsyncObservable[TSource]):
             An async iterator.
         """
 
-        obv: AsyncIteratorObserver[TSource] = AsyncIteratorObserver(self)
-
-        return obv
+        return AsyncIteratorObserver(self)

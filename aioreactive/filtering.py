@@ -1,10 +1,10 @@
-from typing import Any, Awaitable, Callable, List, Optional, Tuple, TypeVar, overload
+from typing import Any, Awaitable, Callable, List, NoReturn, Optional, Tuple, TypeVar, overload
 
 from expression.collections import seq
 from expression.core import (
     MailboxProcessor,
     Option,
-    Result,
+    TailCallResult,
     TailCall,
     aiotools,
     compose,
@@ -122,7 +122,7 @@ def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[
 
         async def worker(inbox: MailboxProcessor[Notification[TSource]]) -> None:
             @tailrec_async
-            async def message_loop(latest: Notification[TSource]) -> Result[Notification[TSource], Exception]:
+            async def message_loop(latest: Notification[TSource]) -> TailCallResult[NoReturn]:
                 n = await inbox.receive()
 
                 async def get_latest() -> Notification[TSource]:
@@ -236,18 +236,6 @@ def skip_last(count: int) -> Stream[TSource, TSource]:
 
 
 def take(count: int) -> Stream[TSource, TSource]:
-    """Take the first elements from the stream.
-
-    Returns a specified number of contiguous elements from the start of
-    an observable sequence.
-
-    Args:
-        count Number of elements to take.
-
-    Returns:
-        Stream[TSource, TSource]: [description]
-    """
-
     if count < 0:
         raise ValueError("Count cannot be negative.")
 

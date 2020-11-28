@@ -1,10 +1,20 @@
 import dataclasses
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, Iterable, Tuple, TypeVar, cast
+from typing import Any, Callable, Generic, Iterable, NoReturn, Tuple, TypeVar, cast
 
 from expression.collections import FrozenList, Map, frozenlist, map
-from expression.core import MailboxProcessor, Nothing, Option, Result, Some, TailCall, match, pipe, tailrec_async
+from expression.core import (
+    MailboxProcessor,
+    Nothing,
+    Option,
+    TailCallResult,
+    Some,
+    TailCall,
+    match,
+    pipe,
+    tailrec_async,
+)
 from expression.system import AsyncDisposable
 
 from .create import of_seq
@@ -171,7 +181,7 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
                 @tailrec_async
                 async def message_loop(
                     source_value: Option[TSource], other_value: Option[TOther]
-                ) -> Result[AsyncObservable[TSource], Exception]:
+                ) -> TailCallResult[NoReturn]:
                     cn = await inbox.receive()
 
                     async def get_value(n: Notification[TSource]) -> Option[TSource]:
@@ -246,7 +256,7 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TS
 
             async def worker(inbox: MailboxProcessor[Msg]) -> None:
                 @tailrec_async
-                async def message_loop(latest: Option[TOther]) -> Result[TSource, Exception]:
+                async def message_loop(latest: Option[TOther]) -> TailCallResult[NoReturn]:
                     cn = await inbox.receive()
 
                     async def get_value(n: Notification[TSource]) -> Option[TSource]:

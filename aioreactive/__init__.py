@@ -115,6 +115,16 @@ class AsyncRx(AsyncObservable[TSource]):
 
     @classmethod
     def from_async_iterable(cls, iter: AsyncIterable[TSource]) -> "AsyncObservable[TSource]":
+        """Convert an async iterable to an async observable stream.
+
+        Example:
+            >>> xs = AsyncRx.from_async_iterable(async_iterable)
+
+        Returns:
+            The source stream whose elements are pulled from the given
+            (async) iterable sequence.
+        """
+
         return AsyncRx(from_async_iterable(iter))
 
     @classmethod
@@ -169,18 +179,16 @@ class AsyncRx(AsyncObservable[TSource]):
         return concat_seq([self, other])
 
     def debounce(self, seconds: float) -> "AsyncRx[TSource]":
-        """Debounce observable source.
+        """Debounce observable stream.
 
-        Ignores values from a source stream which are followed by
-        another value before seconds has elapsed.
+        Ignores values from an observable sequence which are followed by
+        another value before the given timeout.
 
-        Example:
-        partial = debounce(5) # 5 seconds
+        Args:
+            seconds (float): Number of seconds to debounce.
 
-        Keyword arguments:
-        seconds -- Duration of the throttle period for each value
-
-        Returns partially applied function that takes a source sequence.
+        Returns:
+            The debounced stream.
         """
 
         from .timeshift import debounce
@@ -322,7 +330,8 @@ class AsyncRx(AsyncObservable[TSource]):
             count Number of elements to take.
 
         Returns:
-            Stream[TSource, TSource]: [description]
+            An observable sequence that contains the specified number of
+            elements from the start of the input sequence.
         """
         from .filtering import take
 
@@ -432,7 +441,7 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
     value before seconds has elapsed.
 
     Example:
-        >>> partial = debounce(5) # 5 seconds
+        >>> ys = pipe(xs, debounce(5)) # 5 seconds
 
     Args:
         seconds: Duration of the throttle period for each value
@@ -618,6 +627,15 @@ def flat_map_latest_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[
 
 
 def from_async_iterable(iter: AsyncIterable[TSource]) -> "AsyncObservable[TSource]":
+    """Convert an async iterable to an async observable stream.
+
+    Example:
+        >>> xs = rx.from_async_iterable(async_iterable)
+
+    Returns:
+        The source stream whose elements are pulled from the given
+        (async) iterable sequence.
+    """
     from .create import of_async_iterable
 
     return AsyncRx(of_async_iterable(iter))
@@ -783,7 +801,8 @@ def take(count: int) -> Stream[TSource, TSource]:
         count Number of elements to take.
 
     Returns:
-        Stream[TSource, TSource]: [description]
+        An observable sequence that contains the specified number of
+        elements from the start of the input sequence.
     """
     from .filtering import take
 

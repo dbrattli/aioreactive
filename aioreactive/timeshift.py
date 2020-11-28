@@ -1,10 +1,19 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Iterable, Tuple, TypeVar
+from typing import Iterable, NoReturn, Tuple, TypeVar
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, Result, TailCall, aiotools, match, pipe, tailrec_async, snd
+from expression.core import (
+    MailboxProcessor,
+    TailCall,
+    aiotools,
+    match,
+    pipe,
+    tailrec_async,
+    snd,
+    TailCallResult,
+)
 from expression.system import CancellationTokenSource
 
 from .combine import with_latest_from
@@ -38,7 +47,7 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], datetime]]) -> None:
                 @tailrec_async
-                async def loop() -> Result[None, Exception]:
+                async def loop() -> TailCallResult[NoReturn]:
                     ns, due_time = await inbox.receive()
 
                     diff = due_time - datetime.utcnow()
@@ -84,18 +93,6 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
 
 
 def debounce(seconds: float) -> Stream[TSource, TSource]:
-    """Debounce observable stream.
-
-    Ignores values from an observable sequence which are followed by
-    another value before the given timeout.
-
-    Args:
-        seconds (float): Number of seconds to debounce.
-
-    Returns:
-        The debounced stream.
-    """
-
     def _debounce(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
@@ -103,7 +100,7 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
 
             async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], int]]) -> None:
                 @tailrec_async
-                async def message_loop(current_index: int) -> Result[TSource, Exception]:
+                async def message_loop(current_index: int) -> TailCallResult[NoReturn]:
                     n, index = await inbox.receive()
 
                     with match(n) as m:
