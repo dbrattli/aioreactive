@@ -119,7 +119,7 @@ def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Stream[T
     invoking the async mapper function by incorporating the element's
     index on each element of the source.
     """
-    return compose(zip_seq(seq.infinite()), starmap_async(mapper))
+    return compose(zip_seq(seq.infinite), starmap_async(mapper))
 
 
 def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
@@ -130,7 +130,7 @@ def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
     on each element of the source.
     """
     return compose(
-        zip_seq(seq.infinite()),
+        zip_seq(seq.infinite),
         starmap(mapper),
     )
 

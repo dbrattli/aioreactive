@@ -70,7 +70,7 @@ def merge_inner(max_concurrent: int = 0) -> Callable[[AsyncObservable[TSource]],
                     return AsyncAnonymousObserver(asend, athrow, aclose)
 
                 async def update(msg: Msg, model: Model[TSource]) -> Model[TSource]:
-                    log.debug("update: %s, model: %s", msg, model)
+                    # log.debug("update: %s, model: %s", msg, model)
                     with match(msg) as m:
                         for xs in InnerObservableMsg.case(m):
                             if max_concurrent == 0 or len(model.subscriptions) < max_concurrent:
@@ -311,7 +311,7 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TS
 def zip_seq(
     sequence: Iterable[TOther],
 ) -> Callable[[AsyncObservable[TSource]], AsyncObservable[Tuple[TSource, TOther]]]:
-    def _(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
+    def _zip_seq(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
         async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
@@ -341,4 +341,4 @@ def zip_seq(
 
         return AsyncAnonymousObservable(subscribe_async)
 
-    return _
+    return _zip_seq

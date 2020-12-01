@@ -2,8 +2,8 @@ import logging
 from asyncio import Future, iscoroutinefunction
 from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar
 
-from expression.core import MailboxProcessor
-from expression.system import AsyncDisposable, Disposable
+from expression.core import MailboxProcessor, tailrec_async, TailCall
+from expression.system import AsyncDisposable, Disposable, CancellationTokenSource
 
 from .msg import DisposableMsg, DisposeMsg, Msg
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
@@ -197,8 +197,15 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
 def auto_detach_observer(
     obv: AsyncObserver[TSource],
 ) -> Tuple[AsyncObserver[TSource], Callable[[Awaitable[AsyncDisposable]], Awaitable[AsyncDisposable]]]:
+    cts = CancellationTokenSource()
+    token = cts.token
+
     async def worker(inbox: MailboxProcessor[Msg]):
+        @tailrec_async
         async def message_loop(disposables: List[AsyncDisposable]):
+            if token.is_cancellation_requested:
+                return
+
             cmd = await inbox.receive()
             if isinstance(cmd, DisposableMsg):
                 disposables.append(cmd.disposable)
@@ -206,13 +213,14 @@ def auto_detach_observer(
                 for disp in disposables:
                     await disp.dispose_async()
                 return
-            await message_loop(disposables)
+            return TailCall(disposables)
 
         await message_loop([])
 
-    agent = MailboxProcessor.start(worker)
+    agent = MailboxProcessor.start(worker, token)
 
     async def cancel():
+        cts.cancel()
         agent.post(DisposeMsg)
 
     canceller = AsyncDisposable.create(cancel)

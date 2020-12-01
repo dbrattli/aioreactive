@@ -43,11 +43,15 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
 
     def _delay(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         cts = CancellationTokenSource()
+        token = cts.token
 
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], datetime]]) -> None:
                 @tailrec_async
-                async def loop() -> TailCallResult[NoReturn]:
+                async def loop() -> TailCallResult[None]:
+                    if token.is_cancellation_requested:
+                        return
+
                     ns, due_time = await inbox.receive()
 
                     diff = due_time - datetime.utcnow()
@@ -70,18 +74,19 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
                     await matcher()
                     return TailCall()
 
-                await loop()
+                asyncio.ensure_future(loop())
 
-            agent = MailboxProcessor.start(worker, cts.token)
+            agent = MailboxProcessor.start(worker, token)
 
             async def fn(ns: Notification[TSource]) -> None:
                 due_time = datetime.utcnow() + timedelta(seconds=seconds)
                 agent.post((ns, due_time))
 
             obv: AsyncNotificationObserver[TSource] = AsyncNotificationObserver(fn)
-            subscription = await pipe(obv, source.subscribe_async)
+            subscription = await source.subscribe_async(obv)
 
             async def cancel() -> None:
+                log.debug("delay:cancel()")
                 cts.cancel()
                 await subscription.dispose_async()
 
@@ -96,7 +101,7 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
     def _debounce(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
-            infinite: Iterable[int] = seq.infinite()
+            infinite: Iterable[int] = seq.infinite
 
             async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], int]]) -> None:
                 @tailrec_async

@@ -1,11 +1,18 @@
 import asyncio
+import logging
+import signal
+import sys
 from tkinter import Event, Frame, Label, Misc, Tk
+from types import FrameType
 from typing import Tuple
 
 import aioreactive as rx
 from aioreactive import AsyncAnonymousObserver, AsyncSubject
 from aioreactive.types import AsyncObservable
 from expression.core import MailboxProcessor, pipe
+from expression.system import AsyncDisposable
+
+# logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
 
 
 async def main() -> None:
@@ -55,14 +62,48 @@ async def main() -> None:
         print("Exception: ", ex)
 
     obv = AsyncAnonymousObserver(asend, athrow)
-    await stream.subscribe_async(obv)
+
+    subscription: AsyncDisposable
+
+    async def start():
+        nonlocal subscription
+        print("Subscribing stream")
+        subscription = await stream.subscribe_async(obv)
+
+    async def stop():
+        nonlocal subscription
+        print("Disposing stream")
+        await subscription.dispose_async()
+
+    def handle_focus_in(event: "Event[Misc]"):
+        asyncio.ensure_future(start())
+
+    def handle_focus_out(event: "Event[Misc]"):
+        asyncio.ensure_future(stop())
+
+    root.bind("<FocusIn>", handle_focus_in)
+    root.bind("<FocusOut>", handle_focus_out)
 
     frame.pack()
 
+    running = True
+
+    def signal_handler(signal: int, frame: FrameType) -> None:
+        nonlocal running
+        running = False
+        sys.stderr.write("Exiting...\n")
+        root.destroy()
+        root.quit()
+
+    signal.signal(signal.SIGINT, signal_handler)
+
     # A simple combined event loop
-    while True:
-        root.update()  # type: ignore
+    while running:
         await asyncio.sleep(0.001)
+        try:
+            root.update()  # type: ignore
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
