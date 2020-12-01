@@ -98,7 +98,7 @@ def starfilter(predicate: Callable[..., bool]) -> Stream[Tuple[Any, ...], Tuple[
 
 def filteri(predicate: Callable[[TSource, int], bool]) -> Stream[TSource, TSource]:
     return compose(
-        zip_seq(seq.infinite()),
+        zip_seq(seq.infinite),
         starfilter(predicate),
         map(fst),
     )

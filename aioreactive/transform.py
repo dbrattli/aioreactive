@@ -5,7 +5,7 @@ from expression.core import (
     MailboxProcessor,
     Nothing,
     Option,
-    Result,
+    TailCallResult,
     Some,
     TailCall,
     compose,
@@ -259,7 +259,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
             @tailrec_async
             async def message_loop(
                 current: Option[AsyncDisposable], is_stopped: bool, current_id: int
-            ) -> Result[None, Exception]:
+            ) -> TailCallResult[None]:
                 cmd = await inbox.receive()
 
                 with match(cmd) as m:
