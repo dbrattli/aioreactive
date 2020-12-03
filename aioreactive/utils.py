@@ -32,4 +32,4 @@ class NoopObserver(AsyncObserver[TSource]):
         pass
 
 
-noopobserver = NoopObserver()
+noopobserver: NoopObserver[Any] = NoopObserver()

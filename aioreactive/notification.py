@@ -109,7 +109,7 @@ class OnError(Notification[TSource]):
 
         return matcher.case(cls)
 
-    def __match__(self, pattern: Any) -> Iterable[TSource]:
+    def __match__(self, pattern: Any) -> Iterable[Exception]:
         if isinstance(self, pattern):
             return [self.exception]
         return []

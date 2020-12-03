@@ -71,7 +71,7 @@ def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
 
 def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
     async def subscribe_async(observer: AsyncObserver[TSource]) -> AsyncDisposable:
-        task: Optional[Future[TSource]] = None
+        task: Optional[Future[None]] = None
 
         async def cancel():
             if task is not None:

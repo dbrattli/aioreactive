@@ -1,6 +1,6 @@
 import logging
 from asyncio import Future, iscoroutinefunction
-from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar
+from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar, cast
 
 from expression.core import MailboxProcessor, tailrec_async, TailCall
 from expression.system import AsyncDisposable, Disposable, CancellationTokenSource
@@ -22,9 +22,9 @@ class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource], Asyn
         super().__init__()
 
         self._push: Future[TSource] = Future()
-        self._pull: Future[TSource] = Future()
+        self._pull: Future[bool] = Future()
 
-        self._awaiters: List[Future[TSource]] = []
+        self._awaiters: List[Future[bool]] = []
         self._subscription: Optional[AsyncDisposable] = None
         self._source = source
         self._busy = False
@@ -58,7 +58,7 @@ class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource], Asyn
     async def _serialize_access(self) -> None:
         # Serialize producer event to the iterator
         while self._busy:
-            fut: Future[TSource] = Future()
+            fut: Future[bool] = Future()
             self._awaiters.append(fut)
             await fut
             self._awaiters.remove(fut)
@@ -295,7 +295,7 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         self._is_stopped = True
 
         if self._has_value:
-            self.set_result(self._last_value)
+            self.set_result(cast(TSource, self._last_value))
         else:
             self.cancel()
         await self._aclose()

@@ -44,7 +44,9 @@ class Model(Generic[TSource]):
         return dataclasses.replace(self, **changes)
 
 
-def merge_inner(max_concurrent: int = 0) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:
+def merge_inner(
+    max_concurrent: int = 0,
+) -> Callable[[AsyncObservable[AsyncObservable[TSource]]], AsyncObservable[TSource]]:
     def _(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)

@@ -1,16 +1,16 @@
-from typing import TypeVar, AsyncIterable, Generic
+from typing import TypeVar, AsyncIterable
 
 from aioreactive import AsyncObservable
 
-T = TypeVar("T")
+TSource = TypeVar("TSource")
 
 
-class ToAsyncObservable(Generic[T], AsyncIterable[T]):
-    def __init__(self, source: AsyncIterable) -> None:
+class ToAsyncObservable(AsyncIterable[TSource]):
+    def __init__(self, source: AsyncIterable[TSource]) -> None:
         self._source = source
 
 
-def to_async_observable(source: AsyncIterable) -> AsyncObservable:
+def to_async_observable(source: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
     """Convert to async observable.
 
     Keyword arguments:
