@@ -19,7 +19,7 @@ from expression.system import AsyncDisposable
 
 from .create import of_seq
 from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Key, Msg, OtherMsg, SourceMsg
-from .notification import Notification, OnNext
+from .notification import Notification, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
 from .types import AsyncObservable, AsyncObserver, Stream
@@ -81,8 +81,8 @@ def merge_inner(
                                     subscriptions=model.subscriptions.add(model.key, inner),
                                     key=Key(model.key + 1),
                                 )
-                            else:
-                                return model.replace(queue=model.queue.append(frozenlist.singleton(xs)))
+
+                            return model.replace(queue=model.queue.append(xs))
                         for key in InnerCompletedMsg.case(m):
                             subscriptions = model.subscriptions.remove(key)
                             if len(model.queue):
@@ -108,7 +108,7 @@ def merge_inner(
                             return model.replace(is_stopped=True)
 
                         while m.default():
-                            for key, dispose in model.subscriptions:
+                            for dispose in model.subscriptions.values():
                                 await dispose.dispose_async()
 
                         return initial_model.replace(is_stopped=True)
@@ -125,7 +125,7 @@ def merge_inner(
 
             agent = MailboxProcessor.start(worker)
 
-            async def asend(xs: TSource) -> None:
+            async def asend(xs: AsyncObservable[TSource]) -> None:
                 log.debug("merge_inner:asend(%s)", xs)
                 agent.post(InnerObservableMsg(inner_observable=xs))
 
@@ -186,12 +186,16 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
                 ) -> TailCallResult[NoReturn]:
                     cn = await inbox.receive()
 
-                    async def get_value(n: Notification[TSource]) -> Option[TSource]:
-                        if isinstance(n, OnNext):
-                            n = cast(OnNext[TSource], n)
-                            return Some(n.value)
+                    async def get_value(n: Notification[Any]) -> Option[Any]:
+                        with match(n) as m:
+                            for value in OnNext.case(m):
+                                return Some(value)
 
-                        await n.accept_observer(safe_obv)
+                            for err in OnError.case(m):
+                                await safe_obv.athrow(err)
+
+                            while m.default():
+                                await safe_obv.aclose()
                         return Nothing
 
                     m = match(cn)
@@ -261,12 +265,16 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TS
                 async def message_loop(latest: Option[TOther]) -> TailCallResult[NoReturn]:
                     cn = await inbox.receive()
 
-                    async def get_value(n: Notification[TSource]) -> Option[TSource]:
-                        if isinstance(n, OnNext):
-                            n = cast(OnNext[TSource], n)
-                            return Some(n.value)
+                    async def get_value(n: Notification[Any]) -> Option[Any]:
+                        with match(n) as m:
+                            for value in OnNext.case(m):
+                                return Some(value)
 
-                        await n.accept_observer(safe_obv)
+                            for err in OnError.case(m):
+                                await safe_obv.athrow(err)
+
+                            while m.default():
+                                await safe_obv.aclose()
                         return Nothing
 
                     source_value = Nothing
