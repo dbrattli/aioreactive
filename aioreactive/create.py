@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from asyncio import Future
-from typing import AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
+from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
 
 from expression.core import TailCallResult, aiotools, tailrec_async
 from expression.core.fn import TailCall
@@ -131,7 +131,7 @@ def never() -> AsyncObservable[TSource]:
     return AsyncAnonymousObservable(subscribe_async)
 
 
-def fail(error: Exception) -> AsyncObservable[TSource]:
+def fail(error: Exception) -> AsyncObservable[Any]:
     """Returns the observable sequence that terminates exceptionally
     with the specified exception."""
 

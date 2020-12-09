@@ -4,8 +4,8 @@ from expression.collections import seq
 from expression.core import (
     MailboxProcessor,
     Option,
-    TailCallResult,
     TailCall,
+    TailCallResult,
     aiotools,
     compose,
     fst,
@@ -126,8 +126,8 @@ def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[
                 n = await inbox.receive()
 
                 async def get_latest() -> Notification[TSource]:
-                    with match(n) as m:
-                        for x in OnNext.case(m):
+                    with match(n) as case:
+                        for x in case(OnNext[TSource]):
                             if n == latest:
                                 break
                             try:
@@ -135,10 +135,10 @@ def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[
                             except Exception as ex:
                                 await safe_obv.athrow(ex)
                             break
-                        for err in OnError.case(m):
+                        for err in case(OnError[TSource]):
                             await safe_obv.athrow(err)
                             break
-                        while m.case(OnCompleted):
+                        while case(OnCompleted):
                             await safe_obv.aclose()
                             break
 

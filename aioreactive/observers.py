@@ -200,7 +200,7 @@ def auto_detach_observer(
     cts = CancellationTokenSource()
     token = cts.token
 
-    async def worker(inbox: MailboxProcessor[Msg]):
+    async def worker(inbox: MailboxProcessor[Msg[TSource]]):
         @tailrec_async
         async def message_loop(disposables: List[AsyncDisposable]):
             if token.is_cancellation_requested:

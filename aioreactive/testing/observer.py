@@ -1,5 +1,5 @@
 import logging
-from typing import Awaitable, Callable, List, Tuple, TypeVar, cast
+from typing import Awaitable, Callable, List, Tuple, TypeVar
 
 from aioreactive import AsyncAwaitableObserver
 from aioreactive.notification import Notification, OnCompleted, OnError, OnNext
@@ -33,7 +33,7 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
     ):
         super().__init__(asend, athrow, aclose)
 
-        self._values = cast(List[Tuple[float, Notification[TSource]]], [])  # FIXME: Pylance confusion?
+        self._values: List[Tuple[float, Notification[TSource]]] = []
 
         self._send = asend
         self._throw = athrow

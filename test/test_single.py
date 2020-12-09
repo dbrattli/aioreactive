@@ -121,7 +121,6 @@ async def test_unit_future_cancel():
     obv = AsyncTestObserver()
     async with await xs.subscribe_async(obv):
         await asyncio.sleep(1)
-        print("cancelling")
         fut.cancel()
         with pytest.raises(asyncio.CancelledError):
             await obv

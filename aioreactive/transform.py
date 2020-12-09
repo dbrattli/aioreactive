@@ -5,9 +5,9 @@ from expression.core import (
     MailboxProcessor,
     Nothing,
     Option,
-    TailCallResult,
     Some,
     TailCall,
+    TailCallResult,
     compose,
     match,
     pipe,
@@ -243,7 +243,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
         safe_obv, auto_detach = auto_detach_observer(aobv)
 
-        def obv(mb: MailboxProcessor[Msg], id: int):
+        def obv(mb: MailboxProcessor[Msg[TSource]], id: int):
             async def asend(value: TSource) -> None:
                 await safe_obv.asend(value)
 
@@ -255,38 +255,31 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
 
             return AsyncAnonymousObserver(asend, athrow, aclose)
 
-        async def worker(inbox: MailboxProcessor[Msg]) -> None:
+        async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
             @tailrec_async
             async def message_loop(
                 current: Option[AsyncDisposable], is_stopped: bool, current_id: int
             ) -> TailCallResult[None]:
                 cmd = await inbox.receive()
 
-                with match(cmd) as m:
-                    for xs in InnerObservableMsg.case(m):
+                with match(cmd) as case:
+                    for xs in case(InnerObservableMsg[TSource]):
                         next_id = current_id + 1
                         for disp in current.to_list():
                             await disp.dispose_async()
                         inner = await xs.subscribe_async(obv(inbox, next_id))
                         current, current_id = Some(inner), next_id
                         break
-                    for xs in InnerObservableMsg.case(m):
-                        next_id = current_id + 1
-                        for disp in current.to_list():
-                            await disp.dispose_async()
-                        inner = await xs.subscribe_async(obv(inbox, next_id))
-                        current, current_id = Some(inner), next_id
-                        break
-                    for idx in InnerCompletedMsg.case(m):
+                    for idx in case(InnerCompletedMsg):
                         if is_stopped and idx == current_id:
                             await safe_obv.aclose()
                             current, is_stopped = Nothing, True
                         break
-                    while m.case(CompletedMsg):
+                    while case(CompletedMsg):
                         if current.is_none():
                             await safe_obv.aclose()
                         break
-                    while m.case(DisposeMsg):
+                    while case(DisposeMsg):
                         if current.is_some():
                             await current.value.dispose_async()
                         current, is_stopped = Nothing, True
@@ -358,7 +351,7 @@ def flat_map_latest(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> St
     return compose(map(mapper), switch_latest)
 
 
-def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TSource, TResult]:
+def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TSource, TSource]:
     """Catch Exception.
 
     Returns an observable sequence containing the first sequence's

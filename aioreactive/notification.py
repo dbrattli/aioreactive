@@ -1,8 +1,8 @@
-from abc import ABC, abstractclassmethod, abstractmethod
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Awaitable, Callable, Generic, Iterable, TypeVar
+from typing import Any, Awaitable, Callable, Generic, Iterable, TypeVar, get_origin
 
-from expression.core import Matcher
+from expression.core import SupportsMatch
 
 from .types import AsyncObserver
 
@@ -16,7 +16,7 @@ class MsgKind(Enum):
     ON_COMPLETED = 3
 
 
-class Notification(ABC, Generic[TSource]):
+class Notification(Generic[TSource], ABC):
     """Represents a message to a mailbox processor."""
 
     def __init__(self, kind: MsgKind):
@@ -35,17 +35,11 @@ class Notification(ABC, Generic[TSource]):
     async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
         raise NotImplementedError
 
-    @abstractclassmethod
-    def case(cls, matcher: Matcher) -> Iterable[Any]:
-        """Helper to cast the match result to correct type."""
-
-        raise NotImplementedError
-
     def __repr__(self) -> str:
         return str(self)
 
 
-class OnNext(Notification[TSource]):
+class OnNext(Notification[TSource], SupportsMatch[TSource]):
     """Represents an OnNext notification to an observer."""
 
     def __init__(self, value: TSource):
@@ -64,15 +58,13 @@ class OnNext(Notification[TSource]):
     async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
         await obv.asend(self.value)
 
-    @classmethod
-    def case(cls, matcher: Matcher) -> Iterable[TSource]:
-        """Helper to cast the match result to correct type."""
-
-        return matcher.case(cls)
-
     def __match__(self, pattern: Any) -> Iterable[TSource]:
-        if isinstance(self, pattern):
-            return [self.value]
+        origin: Any = get_origin(pattern)
+        try:
+            if isinstance(self, origin or pattern):
+                return [self.value]
+        except TypeError:
+            pass
         return []
 
     def __eq__(self, other: Any) -> bool:
@@ -84,7 +76,7 @@ class OnNext(Notification[TSource]):
         return f"OnNext({self.value})"
 
 
-class OnError(Notification[TSource]):
+class OnError(Notification[TSource], SupportsMatch[Exception]):
     """Represents an OnError notification to an observer."""
 
     def __init__(self, exception: Exception):
@@ -103,15 +95,13 @@ class OnError(Notification[TSource]):
     async def accept_observer(self, obv: AsyncObserver[TSource]):
         await obv.athrow(self.exception)
 
-    @classmethod
-    def case(cls, matcher: Matcher) -> Iterable[Exception]:
-        """Helper to cast the match result to correct type."""
-
-        return matcher.case(cls)
-
     def __match__(self, pattern: Any) -> Iterable[Exception]:
-        if isinstance(self, pattern):
-            return [self.exception]
+        origin: Any = get_origin(pattern)
+        try:
+            if isinstance(self, origin or pattern):
+                return [self.exception]
+        except TypeError:
+            pass
         return []
 
     def __eq__(self, other: Any) -> bool:
@@ -123,7 +113,7 @@ class OnError(Notification[TSource]):
         return f"OnError({self.exception})"
 
 
-class _OnCompleted(Notification[TSource]):
+class _OnCompleted(Notification[TSource], SupportsMatch[bool]):
     """Represents an OnCompleted notification to an observer.
 
     Note: Do not use. Use the singleton `OnCompleted` instance instead.
@@ -145,11 +135,17 @@ class _OnCompleted(Notification[TSource]):
     async def accept_observer(self, obv: AsyncObserver[TSource]):
         await obv.aclose()
 
-    @classmethod
-    def case(cls, matcher: Matcher) -> Iterable[bool]:
-        """Helper to cast the match result to correct type."""
+    def __match__(self, pattern: Any) -> Iterable[bool]:
+        if self is pattern:
+            return [True]
 
-        return matcher.case(cls)
+        origin: Any = get_origin(pattern)
+        try:
+            if isinstance(self, origin or pattern):
+                return [True]
+        except TypeError:
+            pass
+        return []
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, _OnCompleted):

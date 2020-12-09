@@ -8,9 +8,9 @@ from expression.core import (
     MailboxProcessor,
     Nothing,
     Option,
-    TailCallResult,
     Some,
     TailCall,
+    TailCallResult,
     match,
     pipe,
     tailrec_async,
@@ -58,7 +58,7 @@ def merge_inner(
                 key=Key(0),
             )
 
-            async def worker(inbox: MailboxProcessor[Msg]) -> None:
+            async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
                 def obv(key: Key) -> AsyncObserver[TSource]:
                     async def asend(value: TSource) -> None:
                         await safe_obv.asend(value)
@@ -71,19 +71,19 @@ def merge_inner(
 
                     return AsyncAnonymousObserver(asend, athrow, aclose)
 
-                async def update(msg: Msg, model: Model[TSource]) -> Model[TSource]:
+                async def update(msg: Msg[TSource], model: Model[TSource]) -> Model[TSource]:
                     # log.debug("update: %s, model: %s", msg, model)
-                    with match(msg) as m:
-                        for xs in InnerObservableMsg.case(m):
+                    with match(msg) as case:
+                        for xs in case(InnerObservableMsg[TSource]):
                             if max_concurrent == 0 or len(model.subscriptions) < max_concurrent:
                                 inner = await xs.subscribe_async(obv(model.key))
                                 return model.replace(
                                     subscriptions=model.subscriptions.add(model.key, inner),
                                     key=Key(model.key + 1),
                                 )
-
-                            return model.replace(queue=model.queue.append(xs))
-                        for key in InnerCompletedMsg.case(m):
+                            lst = FrozenList.singleton(xs)
+                            return model.replace(queue=model.queue.append(lst))
+                        for key in case(InnerCompletedMsg):
                             subscriptions = model.subscriptions.remove(key)
                             if len(model.queue):
                                 xs = model.queue[0]
@@ -100,14 +100,14 @@ def merge_inner(
                                 if model.is_stopped:
                                     await safe_obv.aclose()
                                 return model.replace(subscriptions=map.empty)
-                        while CompletedMsg.case(m):
+                        while case(CompletedMsg):
                             if not model.subscriptions:
                                 log.debug("merge_inner: closing!")
                                 await safe_obv.aclose()
 
                             return model.replace(is_stopped=True)
 
-                        while m.default():
+                        while case.default():
                             for dispose in model.subscriptions.values():
                                 await dispose.dispose_async()
 
@@ -179,7 +179,7 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
         async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
-            async def worker(inbox: MailboxProcessor[Msg]) -> None:
+            async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
                 @tailrec_async
                 async def message_loop(
                     source_value: Option[TSource], other_value: Option[TOther]
@@ -188,24 +188,24 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
 
                     async def get_value(n: Notification[Any]) -> Option[Any]:
                         with match(n) as m:
-                            for value in OnNext.case(m):
+                            for value in case(OnNext[TSource]):
                                 return Some(value)
 
-                            for err in OnError.case(m):
+                            for err in case(OnError):
                                 await safe_obv.athrow(err)
 
                             while m.default():
                                 await safe_obv.aclose()
                         return Nothing
 
-                    m = match(cn)
-                    for value in SourceMsg.case(m):
-                        source_value = await get_value(value)
-                        break
+                    with match(cn) as case:
+                        for value in case(SourceMsg[TSource]):
+                            source_value = await get_value(value)
+                            break
 
-                    for value in OtherMsg.case(m):
-                        other_value = await get_value(value)
-                        break
+                        for value in case(OtherMsg[TOther]):
+                            other_value = await get_value(value)
+                            break
 
                     def binder(s: TSource) -> Option[Tuple[TSource, TOther]]:
                         def mapper(o: TOther) -> Tuple[TSource, TOther]:
@@ -260,20 +260,20 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TS
         async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
-            async def worker(inbox: MailboxProcessor[Msg]) -> None:
+            async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
                 @tailrec_async
                 async def message_loop(latest: Option[TOther]) -> TailCallResult[NoReturn]:
                     cn = await inbox.receive()
 
                     async def get_value(n: Notification[Any]) -> Option[Any]:
-                        with match(n) as m:
-                            for value in OnNext.case(m):
+                        with match(n) as case:
+                            for value in case(OnNext[TSource]):
                                 return Some(value)
 
-                            for err in OnError.case(m):
+                            for err in case(OnError[TSource]):
                                 await safe_obv.athrow(err)
 
-                            while m.default():
+                            while case.default():
                                 await safe_obv.aclose()
                         return Nothing
 
