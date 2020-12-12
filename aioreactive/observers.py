@@ -295,7 +295,7 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         self._is_stopped = True
 
         if self._has_value:
-            self.set_result(cast(TSource, self._last_value))
+            self.set_result(cast("TSource", self._last_value))
         else:
             self.cancel()
         await self._aclose()

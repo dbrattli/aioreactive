@@ -2,7 +2,7 @@
 """
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Iterable, NewType, Type, TypeVar, get_origin
+from typing import Any, Iterable, NewType, TypeVar, get_origin
 
 from expression.core import SupportsMatch
 from expression.system import AsyncDisposable

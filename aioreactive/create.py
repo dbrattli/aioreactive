@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from asyncio import Future
-from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
+from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar, cast
 
 from expression.core import TailCallResult, aiotools, tailrec_async
 from expression.core.fn import TailCall
@@ -66,7 +66,8 @@ def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
         finally:
             await obv.aclose()
 
-    return of_async_worker(worker)
+    ret = of_async_worker(worker)
+    return cast(AsyncObservable[TSource], ret)  # NOTE: pyright issue
 
 
 def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
@@ -160,7 +161,8 @@ def of_seq(xs: Iterable[TSource]) -> AsyncObservable[TSource]:
 
         await obv.aclose()
 
-    return of_async_worker(worker)
+    ret = of_async_worker(worker)
+    return cast(AsyncObservable[TSource], ret)  # NOTE: pyright issue
 
 
 def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TSource]:

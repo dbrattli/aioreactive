@@ -69,7 +69,7 @@ def starmap_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Strea
     ...
 
 
-def starmap_async(amapper: Callable[..., Awaitable[Any]]) -> Stream[TSource, Any]:
+def starmap_async(amapper: Callable[..., Awaitable[TResult]]) -> Stream[Tuple[TSource, ...], TResult]:
     """Map async spreading arguments to the async mapper.
 
     Returns an observable sequence whose elements are the result of
@@ -96,11 +96,11 @@ def map(mapper: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
 
 
 @overload
-def starmap(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
+def starmap(mapper: Callable[[TSource, int], TResult]) -> Stream[Tuple[TSource, int], TResult]:
     ...
 
 
-def starmap(mapper: Callable[..., Any]) -> Stream[TSource, Any]:
+def starmap(mapper: Callable[..., TResult]) -> Stream[Tuple[TSource, ...], TResult]:
     """Map and spread the arguments to the mapper.
 
     Returns an observable sequence whose elements are the result of
@@ -291,8 +291,12 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
 
         inner_agent = MailboxProcessor.start(worker)
 
-        async def asend(xs: TSource) -> None:
-            pipe(xs, InnerObservableMsg, inner_agent.post)
+        async def asend(xs: AsyncObservable[TSource]) -> None:
+            pipe(
+                xs,
+                InnerObservableMsg,
+                inner_agent.post,
+            )
 
         async def athrow(error: Exception) -> None:
             await safe_obv.athrow(error)

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Iterable, NoReturn, Tuple, TypeVar
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, TailCall, TailCallResult, aiotools, match, pipe, snd, tailrec_async
+from expression.core import MailboxProcessor, TailCall, TailCallResult, aiotools, match, pipe, fst, tailrec_async
 from expression.system import CancellationTokenSource
 
 from .combine import with_latest_from
@@ -152,8 +152,12 @@ def sample(seconds: float) -> Stream[TSource, TSource]:
         timer = interval(seconds, seconds)
 
         if seconds > 0:
-            return pipe(source, with_latest_from(timer), map(snd))
-        else:
-            return source
+            return pipe(
+                source,
+                with_latest_from(timer),
+                map(fst),
+            )
+
+        return source
 
     return _sample

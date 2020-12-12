@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import signal
 import sys
 from tkinter import Event, Frame, Label, Misc, Tk
