@@ -22,7 +22,7 @@ from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg
 from .notification import Notification, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
-from .types import AsyncObservable, AsyncObserver, Stream
+from .types import AsyncObservable, AsyncObserver, Projection, Zipper
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
@@ -160,7 +160,7 @@ def concat_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[T
     )
 
 
-def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSource, TOther]]:
+def combine_latest(other: AsyncObservable[TOther]) -> Projection[TSource, Tuple[TSource, TOther]]:
     """Combine latest values.
 
     Merges the specified observable sequences into one observable
@@ -241,7 +241,7 @@ def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSou
     return _combine_latest
 
 
-def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSource, TOther]]:
+def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[TOther]:
     """[summary]
 
     Merges the specified observable sequences into one observable
@@ -318,9 +318,7 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TS
     return _with_latest_from
 
 
-def zip_seq(
-    sequence: Iterable[TOther],
-) -> Callable[[AsyncObservable[TSource]], AsyncObservable[Tuple[TSource, TOther]]]:
+def zip_seq(sequence: Iterable[TOther]) -> Zipper[TOther]:
     def _zip_seq(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
         async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)

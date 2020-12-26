@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Tuple, TypeVar, overload
+from typing import Any, Awaitable, Callable, Iterable, TypeVar, cast
 
 from expression.collections import seq
 from expression.core import (
@@ -20,7 +20,7 @@ from .create import fail
 from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Key, Msg
 from .observables import AsyncAnonymousObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, auto_detach_observer
-from .types import AsyncObserver, Stream
+from .types import AsyncObserver, Projection
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
@@ -37,10 +37,10 @@ def transform(
         ],
         Awaitable[None],
     ]
-) -> Stream[TSource, TResult]:
+) -> Projection[TSource, TResult]:
     def _(source: AsyncObservable[TSource]) -> AsyncObservable[TResult]:
         async def subscribe_async(aobv: AsyncObserver[TResult]) -> AsyncDisposable:
-            async def asend(value: TResult) -> None:
+            async def asend(value: TSource) -> None:
                 return await anext(aobv.asend, value)
 
             obv: AsyncObserver[TSource] = AsyncAnonymousObserver(asend, aobv.athrow, aobv.aclose)
@@ -52,7 +52,7 @@ def transform(
     return _
 
 
-def map_async(amapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+def map_async(amapper: Callable[[TSource], Awaitable[TResult]]) -> Projection[TSource, TResult]:
     """Returns an observable sequence whose elements are the result of
     invoking the async mapper function on each element of the
     source."""
@@ -64,26 +64,21 @@ def map_async(amapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSourc
     return transform(handler)
 
 
-@overload
-def starmap_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Stream[TSource, TResult]:
-    ...
-
-
-def starmap_async(amapper: Callable[..., Awaitable[TResult]]) -> Stream[Tuple[TSource, ...], TResult]:
+def starmap_async(amapper: Callable[..., Awaitable[TResult]]) -> Projection[Iterable[Any], TResult]:
     """Map async spreading arguments to the async mapper.
 
     Returns an observable sequence whose elements are the result of
     invoking the async mapper function on each element of the
     source."""
 
-    async def handler(next: Callable[[TResult], Awaitable[None]], args: Tuple[TSource, ...]) -> None:
+    async def handler(next: Callable[[TResult], Awaitable[None]], args: Iterable[Any]) -> None:
         b = await amapper(*args)
         await next(b)
 
     return transform(handler)
 
 
-def map(mapper: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
+def map(mapper: Callable[[TSource], TResult]) -> Projection[TSource, TResult]:
     """Map each element in the stream.
 
     Returns an observable sequence whose elements are the result of
@@ -95,47 +90,48 @@ def map(mapper: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
     return transform(handler)
 
 
-@overload
-def starmap(mapper: Callable[[TSource, int], TResult]) -> Stream[Tuple[TSource, int], TResult]:
-    ...
-
-
-def starmap(mapper: Callable[..., TResult]) -> Stream[Tuple[TSource, ...], TResult]:
+def starmap(mapper: Callable[..., TResult]) -> Projection[Iterable[Any], TResult]:
     """Map and spread the arguments to the mapper.
 
     Returns an observable sequence whose elements are the result of
     invoking the mapper function on each element of the source."""
 
-    def handler(next: Callable[[TResult], Awaitable[None]], args: Tuple[Any, ...]) -> Awaitable[None]:
+    def handler(next: Callable[[TResult], Awaitable[None]], args: Iterable[Any]) -> Awaitable[None]:
         return next(mapper(*args))
 
     return transform(handler)
 
 
-def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Projection[TSource, TResult]:
     """Map with index async.
 
     Returns an observable sequence whose elements are the result of
     invoking the async mapper function by incorporating the element's
     index on each element of the source.
     """
-    return compose(zip_seq(seq.infinite), starmap_async(mapper))
+
+    ret = compose(
+        zip_seq(seq.infinite),
+        starmap_async(mapper),
+    )
+    return cast(Projection[TSource, TResult], ret)  # FIXME: pyright issue
 
 
-def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
+def mapi(mapper: Callable[[TSource, int], TResult]) -> Projection[TSource, TResult]:
     """Map with index.
 
     Returns an observable sequence whose elements are the result of
     invoking the mapper function and incorporating the element's index
     on each element of the source.
     """
-    return compose(
+    ret = compose(
         zip_seq(seq.infinite),
         starmap(mapper),
     )
+    return cast(Projection[TSource, TResult], ret)  # FIXME: pyright issue
 
 
-def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
     """Flap map the observable sequence.
 
     Projects each element of an observable sequence into an observable
@@ -155,7 +151,7 @@ def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TS
     )
 
 
-def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
     """Flat map with index.
 
     Projects each element of an observable sequence into an observable
@@ -177,7 +173,7 @@ def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Str
     )
 
 
-def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Stream[TSource, TResult]:
+def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Projection[TSource, TResult]:
     """Flap map async.
 
     Asynchronously projects each element of an observable sequence into
@@ -198,7 +194,9 @@ def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult
     )
 
 
-def flat_mapi_async(mapper: Callable[[TSource, int], Awaitable[AsyncObservable[TResult]]]) -> Stream[TSource, TResult]:
+def flat_mapi_async(
+    mapper: Callable[[TSource, int], Awaitable[AsyncObservable[TResult]]]
+) -> Projection[TSource, TResult]:
     """Flat map async with index.
 
     Asynchronously projects each element of an observable sequence into
@@ -219,7 +217,7 @@ def flat_mapi_async(mapper: Callable[[TSource, int], Awaitable[AsyncObservable[T
     )
 
 
-def concat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+def concat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
     return compose(
         map(mapper),
         merge_inner(1),
@@ -293,8 +291,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
 
         async def asend(xs: AsyncObservable[TSource]) -> None:
             pipe(
-                xs,
-                InnerObservableMsg,
+                InnerObservableMsg(xs),
                 inner_agent.post,
             )
 
@@ -321,7 +318,9 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
     return AsyncAnonymousObservable(subscribe_async)
 
 
-def flat_map_latest_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Stream[TSource, TResult]:
+def flat_map_latest_async(
+    mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]
+) -> Projection[TSource, TResult]:
     """Flat map latest async.
 
     Asynchronosly transforms the items emitted by an source sequence
@@ -338,7 +337,7 @@ def flat_map_latest_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[
     return compose(map_async(mapper), switch_latest)
 
 
-def flat_map_latest(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+def flat_map_latest(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
     """Flat map latest.
 
 
@@ -355,7 +354,7 @@ def flat_map_latest(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> St
     return compose(map(mapper), switch_latest)
 
 
-def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TSource, TSource]:
+def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Projection[TSource, TSource]:
     """Catch Exception.
 
     Returns an observable sequence containing the first sequence's
@@ -401,7 +400,7 @@ def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TS
     return _catch
 
 
-def retry(retry_count: int) -> Stream[TSource, TSource]:
+def retry(retry_count: int) -> Projection[TSource, TSource]:
     def _retry(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         count = retry_count
 

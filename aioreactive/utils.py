@@ -13,7 +13,7 @@ def noop(*args: Any, **kw: Any) -> None:
     pass
 
 
-async def anoop(value: Optional[TSource] = None):
+async def anoop(value: Optional[Any] = None):
     """Async no operation. Returns nothing"""
     pass
 

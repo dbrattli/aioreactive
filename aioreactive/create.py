@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from asyncio import Future
-from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar, cast
+from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
 
 from expression.core import TailCallResult, aiotools, tailrec_async
 from expression.core.fn import TailCall
@@ -35,14 +35,12 @@ def create(subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposab
     return AsyncAnonymousObservable(subscribe)
 
 
-def of_async_worker(
-    worker: Callable[[AsyncObserver[TSource], CancellationToken], Awaitable[None]]
-) -> AsyncObservable[TSource]:
+def of_async_worker(worker: Callable[[AsyncObserver[Any], CancellationToken], Awaitable[None]]) -> AsyncObservable[Any]:
     """Create async observable from async worker function"""
 
     log.debug("of_async_worker()")
 
-    async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(aobv: AsyncObserver[Any]) -> AsyncDisposable:
         log.debug("of_async_worker:subscribe_async()")
         disposable, token = canceller()
         safe_obv = safe_observer(aobv, disposable)
@@ -66,8 +64,7 @@ def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
         finally:
             await obv.aclose()
 
-    ret = of_async_worker(worker)
-    return cast(AsyncObservable[TSource], ret)  # NOTE: pyright issue
+    return of_async_worker(worker)
 
 
 def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
@@ -113,20 +110,20 @@ def single(value: TSource) -> AsyncObservable[TSource]:
     return AsyncAnonymousObservable(subscribe_async)
 
 
-def empty() -> AsyncObservable[TSource]:
+def empty() -> AsyncObservable[Any]:
     """Returns an observable sequence with no elements."""
 
-    async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(aobv: AsyncObserver[Any]) -> AsyncDisposable:
         await aobv.aclose()
         return AsyncDisposable.empty()
 
     return AsyncAnonymousObservable(subscribe_async)
 
 
-def never() -> AsyncObservable[TSource]:
+def never() -> AsyncObservable[Any]:
     """Returns an empty observable sequence that never completes."""
 
-    async def subscribe_async(_: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(_: AsyncObserver[Any]) -> AsyncDisposable:
         return AsyncDisposable.empty()
 
     return AsyncAnonymousObservable(subscribe_async)
@@ -136,7 +133,7 @@ def fail(error: Exception) -> AsyncObservable[Any]:
     """Returns the observable sequence that terminates exceptionally
     with the specified exception."""
 
-    async def worker(obv: AsyncObserver[TSource], _: CancellationToken) -> None:
+    async def worker(obv: AsyncObserver[Any], _: CancellationToken) -> None:
         await obv.athrow(error)
 
     return of_async_worker(worker)
@@ -161,8 +158,7 @@ def of_seq(xs: Iterable[TSource]) -> AsyncObservable[TSource]:
 
         await obv.aclose()
 
-    ret = of_async_worker(worker)
-    return cast(AsyncObservable[TSource], ret)  # NOTE: pyright issue
+    return of_async_worker(worker)
 
 
 def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TSource]:

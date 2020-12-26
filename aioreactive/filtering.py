@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, List, NoReturn, Optional, Tuple, TypeVar, overload
+from typing import Any, Awaitable, Callable, Iterable, List, NoReturn, Optional, TypeVar
 
 from expression.collections import seq
 from expression.core import (
@@ -8,7 +8,6 @@ from expression.core import (
     TailCallResult,
     aiotools,
     compose,
-    fst,
     match,
     pipe,
     tailrec_async,
@@ -20,13 +19,13 @@ from .notification import Notification, OnCompleted, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
 from .transform import map, transform
-from .types import AsyncObservable, AsyncObserver, Stream
+from .types import AsyncObservable, AsyncObserver, Filter, Projection
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
 
 
-def choose_async(chooser: Callable[[TSource], Awaitable[Option[TResult]]]) -> Stream[TSource, TResult]:
+def choose_async(chooser: Callable[[TSource], Awaitable[Option[TResult]]]) -> Projection[TSource, TResult]:
     async def handler(next: Callable[[TResult], Awaitable[None]], xs: TSource) -> None:
         result = await chooser(xs)
         for x in result.to_list():
@@ -35,7 +34,7 @@ def choose_async(chooser: Callable[[TSource], Awaitable[Option[TResult]]]) -> St
     return transform(handler)
 
 
-def choose(chooser: Callable[[TSource], Option[TResult]]) -> Stream[TSource, TResult]:
+def choose(chooser: Callable[[TSource], Option[TResult]]) -> Projection[TSource, TResult]:
     def handler(next: Callable[[TResult], Awaitable[None]], xs: TSource) -> Awaitable[None]:
         for x in chooser(xs).to_list():
             return next(x)
@@ -44,7 +43,7 @@ def choose(chooser: Callable[[TSource], Option[TResult]]) -> Stream[TSource, TRe
     return transform(handler)
 
 
-def filter_async(predicate: Callable[[TSource], Awaitable[bool]]) -> Stream[TSource, TSource]:
+def filter_async(predicate: Callable[[TSource], Awaitable[bool]]) -> Projection[TSource, TSource]:
     """Filter async.
 
     Filters the elements of an observable sequence based on an async
@@ -65,7 +64,7 @@ def filter_async(predicate: Callable[[TSource], Awaitable[bool]]) -> Stream[TSou
     return transform(handler)
 
 
-def filter(predicate: Callable[[TSource], bool]) -> Stream[TSource, TSource]:
+def filter(predicate: Callable[[TSource], bool]) -> Projection[TSource, TSource]:
     def handler(next: Callable[[TSource], Awaitable[None]], x: TSource) -> Awaitable[None]:
         if predicate(x):
             return next(x)
@@ -74,12 +73,7 @@ def filter(predicate: Callable[[TSource], bool]) -> Stream[TSource, TSource]:
     return transform(handler)
 
 
-@overload
-def starfilter(predicate: Callable[[TSource, int], bool]) -> Stream[Tuple[TSource, int], Tuple[TSource, int]]:
-    ...
-
-
-def starfilter(predicate: Callable[..., bool]) -> Stream[Tuple[Any, ...], Tuple[Any, ...]]:
+def starfilter(predicate: Callable[..., bool]) -> Projection[Iterable[Any], Iterable[Any]]:
     """Filter and spread the arguments to the predicate.
 
     Filters the elements of an observable sequence based on a predicate.
@@ -88,7 +82,7 @@ def starfilter(predicate: Callable[..., bool]) -> Stream[Tuple[Any, ...], Tuple[
         sequence that satisfy the condition.
     """
 
-    def handler(next: Callable[[Tuple[TSource, ...]], Awaitable[None]], args: Tuple[TSource, ...]) -> Awaitable[None]:
+    def handler(next: Callable[[Iterable[Any]], Awaitable[None]], args: Iterable[Any]) -> Awaitable[None]:
         if predicate(*args):
             return next(args)
         return aiotools.empty()
@@ -96,11 +90,11 @@ def starfilter(predicate: Callable[..., bool]) -> Stream[Tuple[Any, ...], Tuple[
     return transform(handler)
 
 
-def filteri(predicate: Callable[[TSource, int], bool]) -> Stream[TSource, TSource]:
+def filteri(predicate: Callable[[Any, int], bool]) -> Filter:
     return compose(
         zip_seq(seq.infinite),
         starfilter(predicate),
-        map(fst),
+        map(seq.head),
     )
 
 
@@ -160,7 +154,7 @@ def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[
     return AsyncAnonymousObservable(subscribe_async)
 
 
-def skip(count: int) -> Stream[TSource, TSource]:
+def skip(count: int) -> Filter:
     """[summary]
 
     Bypasses a specified number of elements in an observable sequence
@@ -194,7 +188,7 @@ def skip(count: int) -> Stream[TSource, TSource]:
     return _skip
 
 
-def skip_last(count: int) -> Stream[TSource, TSource]:
+def skip_last(count: int) -> Filter:
     def _skip_last(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         async def subscribe_async(observer: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(observer)
@@ -218,7 +212,7 @@ def skip_last(count: int) -> Stream[TSource, TSource]:
     return _skip_last
 
 
-def take(count: int) -> Stream[TSource, TSource]:
+def take(count: int) -> Filter:
     if count < 0:
         raise ValueError("Count cannot be negative.")
 
@@ -245,7 +239,7 @@ def take(count: int) -> Stream[TSource, TSource]:
     return _take
 
 
-def take_last(count: int) -> Stream[TSource, TSource]:
+def take_last(count: int) -> Filter:
     """Take last elements from stream.
 
     Returns a specified number of contiguous elements from the end of an
@@ -281,7 +275,7 @@ def take_last(count: int) -> Stream[TSource, TSource]:
     return _take_last
 
 
-def take_until(other: AsyncObservable[TResult]) -> Stream[TSource, TSource]:
+def take_until(other: AsyncObservable[Any]) -> Projection[TSource, TSource]:
     """Take elements until other.
 
     Returns the values from the source observable sequence until the
@@ -312,7 +306,7 @@ def take_until(other: AsyncObservable[TResult]) -> Stream[TSource, TSource]:
     return _take_until
 
 
-def slice(start: Optional[int] = None, stop: Optional[int] = None, step: int = 1) -> Stream[TSource, TSource]:
+def slice(start: Optional[int] = None, stop: Optional[int] = None, step: int = 1) -> Projection[TSource, TSource]:
     """Slices the given source stream.
 
     It is basically a wrapper around skip(), skip_last(), take(),

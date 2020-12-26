@@ -1,9 +1,9 @@
 import logging
 from asyncio import Future, iscoroutinefunction
-from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar, cast
+from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar, cast
 
-from expression.core import MailboxProcessor, tailrec_async, TailCall
-from expression.system import AsyncDisposable, Disposable, CancellationTokenSource
+from expression.core import MailboxProcessor, TailCall, tailrec_async
+from expression.system import AsyncDisposable, CancellationTokenSource, Disposable
 
 from .msg import DisposableMsg, DisposeMsg, Msg
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
@@ -141,7 +141,7 @@ class AsyncNotificationObserver(AsyncObserver[TSource]):
         await self._fn(OnCompleted)
 
 
-def noop() -> AsyncObserver[TSource]:
+def noop() -> AsyncObserver[Any]:
     return AsyncAnonymousObserver(anoop, anoop, anoop)
 
 

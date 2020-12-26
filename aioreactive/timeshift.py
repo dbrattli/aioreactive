@@ -1,10 +1,10 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Iterable, NoReturn, Tuple, TypeVar
+from typing import Iterable, NoReturn, Tuple, TypeVar, cast
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, TailCall, TailCallResult, aiotools, match, pipe, fst, tailrec_async
+from expression.core import MailboxProcessor, TailCall, TailCallResult, aiotools, fst, match, pipe, tailrec_async
 from expression.system import CancellationTokenSource
 
 from .combine import with_latest_from
@@ -13,13 +13,14 @@ from .notification import Notification, OnCompleted, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncNotificationObserver, auto_detach_observer
 from .transform import map
-from .types import AsyncDisposable, AsyncObservable, AsyncObserver, Stream
+from .types import AsyncDisposable, AsyncObservable, AsyncObserver, Projection
 
 TSource = TypeVar("TSource")
+TSource_ = TypeVar("TSource_")
 log = logging.getLogger(__name__)
 
 
-def delay(seconds: float) -> Stream[TSource, TSource]:
+def delay(seconds: float) -> Projection[TSource, TSource]:
     """Delay observable.
 
     Time shifts the observable sequence by the given timeout. The
@@ -88,7 +89,7 @@ def delay(seconds: float) -> Stream[TSource, TSource]:
     return _delay
 
 
-def debounce(seconds: float) -> Stream[TSource, TSource]:
+def debounce(seconds: float) -> Projection[TSource, TSource]:
     def _debounce(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
@@ -147,16 +148,19 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
     return _debounce
 
 
-def sample(seconds: float) -> Stream[TSource, TSource]:
+def sample(seconds: float) -> Projection[TSource_, TSource_]:
     def _sample(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         timer = interval(seconds, seconds)
 
+        mapper = cast(Projection[Tuple[TSource, int], TSource], map(fst))  # FIXME: pyright issue
+
         if seconds > 0:
-            return pipe(
+            ret = pipe(
                 source,
                 with_latest_from(timer),
-                map(fst),
+                mapper,
             )
+            return ret
 
         return source
 

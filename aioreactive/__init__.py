@@ -21,7 +21,7 @@ from .observables import AsyncAnonymousObservable, AsyncIterableObservable, Asyn
 from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
 from .subject import AsyncSingleSubject, AsyncSubject
 from .subscription import run
-from .types import AsyncObserver, Stream
+from .types import AsyncObserver, Projection
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
@@ -407,7 +407,7 @@ def as_chained(source: AsyncObservable[TSource]) -> AsyncRx[TSource]:
     return AsyncRx(source)
 
 
-def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSource]:
+def choose(chooser: Callable[[TSource], Option[TSource]]) -> Projection[TSource, TSource]:
     """Choose.
 
     Applies the given function to each element of the stream and returns
@@ -427,7 +427,7 @@ def choose(chooser: Callable[[TSource], Option[TSource]]) -> Stream[TSource, TSo
     return choose(chooser)
 
 
-def choose_async(chooser: Callable[[TSource], Awaitable[Option[TSource]]]) -> Stream[TSource, TSource]:
+def choose_async(chooser: Callable[[TSource], Awaitable[Option[TSource]]]) -> Projection[TSource, TSource]:
     """Choose async.
 
     Applies the given async function to each element of the stream and
@@ -447,13 +447,13 @@ def choose_async(chooser: Callable[[TSource], Awaitable[Option[TSource]]]) -> St
     return choose_async(chooser)
 
 
-def combine_latest(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSource, TOther]]:
+def combine_latest(other: AsyncObservable[TOther]) -> Projection[TSource, Tuple[TSource, TOther]]:
     from .combine import combine_latest
 
     return pipe(combine_latest(other))
 
 
-def debounce(seconds: float) -> Stream[TSource, TSource]:
+def debounce(seconds: float) -> Projection[TSource, TSource]:
     """Debounce source stream.
 
     Ignores values from a source stream which are followed by another
@@ -475,13 +475,13 @@ def debounce(seconds: float) -> Stream[TSource, TSource]:
     return debounce(seconds)
 
 
-def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Stream[TSource, TSource]:
+def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Projection[TSource, TSource]:
     from .transform import catch
 
     return catch(handler)
 
 
-def concat(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
+def concat(other: AsyncObservable[TSource]) -> Projection[TSource, TSource]:
     """Concatenates an observable sequence with another observable
     sequence."""
 
@@ -509,7 +509,7 @@ def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TS
     return defer(factory)
 
 
-def delay(seconds: float) -> Stream[TSource, TSource]:
+def delay(seconds: float) -> Projection[TSource, TSource]:
     from .timeshift import delay
 
     return delay(seconds)
@@ -547,7 +547,7 @@ def filter(predicate: Callable[[TSource], bool]) -> Callable[[AsyncObservable[TS
     return _filter(predicate)
 
 
-def filteri(predicate: Callable[[TSource, int], bool]) -> Stream[TSource, TSource]:
+def filteri(predicate: Callable[[TSource, int], bool]) -> Projection[TSource, TSource]:
     """Filter with index.
 
     Filters the elements of an observable sequence based on a predicate
@@ -594,19 +594,19 @@ def from_iterable(iterable: Iterable[TSource]) -> AsyncObservable[TSource]:
     return of_seq(iterable)
 
 
-def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
     from .transform import flat_map
 
     return flat_map(mapper)
 
 
-def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Stream[TSource, TResult]:
+def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
     from .transform import flat_mapi
 
     return flat_mapi(mapper)
 
 
-def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Stream[TSource, TResult]:
+def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Projection[TSource, TResult]:
     """Flap map async.
 
     Asynchronously projects each element of an observable sequence into
@@ -626,7 +626,7 @@ def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult
     return flat_map_async(mapper)
 
 
-def flat_map_latest_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Stream[TSource, TResult]:
+def flat_map_latest_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Projection[TSource, TResult]:
     """Flat map latest async.
 
     Asynchronosly transforms the items emitted by an source sequence
@@ -669,13 +669,13 @@ def interval(seconds: float, period: int) -> AsyncObservable[int]:
     return interval(seconds, period)
 
 
-def map(fn: Callable[[TSource], TResult]) -> Stream[TSource, TResult]:
+def map(fn: Callable[[TSource], TResult]) -> Projection[TSource, TResult]:
     from .transform import map as _map
 
     return _map(fn)
 
 
-def map_async(mapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+def map_async(mapper: Callable[[TSource], Awaitable[TResult]]) -> Projection[TSource, TResult]:
     """Map asynchrnously.
 
     Returns an observable sequence whose elements are the result of
@@ -686,7 +686,7 @@ def map_async(mapper: Callable[[TSource], Awaitable[TResult]]) -> Stream[TSource
     return map_async(mapper)
 
 
-def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Stream[TSource, TResult]:
+def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Projection[TSource, TResult]:
     """Returns an observable sequence whose elements are the result of
     invoking the async mapper function by incorporating the element's
     index on each element of the source."""
@@ -695,7 +695,7 @@ def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Stream[T
     return mapi_async(mapper)
 
 
-def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
+def mapi(mapper: Callable[[TSource, int], TResult]) -> Projection[TSource, TResult]:
     """Returns an observable sequence whose elements are the result of
     invoking the mapper function and incorporating the element's index
     on each element of the source."""
@@ -704,7 +704,7 @@ def mapi(mapper: Callable[[TSource, int], TResult]) -> Stream[TSource, TResult]:
     return mapi(mapper)
 
 
-def merge(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
+def merge(other: AsyncObservable[TSource]) -> Projection[TSource, TSource]:
     from .create import of_seq
 
     def _(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
@@ -713,7 +713,7 @@ def merge(other: AsyncObservable[TSource]) -> Stream[TSource, TSource]:
     return _
 
 
-def merge_inner(max_concurrent: int = 0) -> Stream[AsyncObservable[TSource], TSource]:
+def merge_inner(max_concurrent: int = 0) -> Projection[AsyncObservable[TSource], TSource]:
     def _merge_inner(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
         from .combine import merge_inner
 
@@ -740,7 +740,7 @@ def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
     return of_async(workflow)
 
 
-def retry(retry_count: int) -> Stream[TSource, TSource]:
+def retry(retry_count: int) -> Projection[TSource, TSource]:
     from .transform import retry
 
     return retry(retry_count)
@@ -763,7 +763,7 @@ def single(value: TSource) -> "AsyncObservable[TSource]":
     return single(value)
 
 
-def skip(count: int) -> Stream[TSource, TSource]:
+def skip(count: int) -> Projection[TSource, TSource]:
     """Skip items in the stream.
 
     Bypasses a specified number of elements in an observable sequence
@@ -780,7 +780,7 @@ def skip(count: int) -> Stream[TSource, TSource]:
     return skip(count)
 
 
-def skip_last(count: int) -> Stream[TSource, TSource]:
+def skip_last(count: int) -> Projection[TSource, TSource]:
     """Bypasses a specified number of elements at the end of an
     observable sequence.
 
@@ -802,7 +802,7 @@ def skip_last(count: int) -> Stream[TSource, TSource]:
     return skip_last(count)
 
 
-def starfilter(predicate: Callable[..., bool]) -> Stream[TSource, Tuple[Any, ...]]:
+def starfilter(predicate: Callable[..., bool]) -> Projection[TSource, Tuple[Any, ...]]:
     """Filter and spread the arguments to the predicate.
 
     Filters the elements of an observable sequence based on a predicate.
@@ -815,7 +815,7 @@ def starfilter(predicate: Callable[..., bool]) -> Stream[TSource, Tuple[Any, ...
     return starfilter(predicate)
 
 
-def starmap(mapper: Callable[..., TResult]) -> Stream[TSource, TResult]:
+def starmap(mapper: Callable[..., TResult]) -> Projection[TSource, TResult]:
     """Map and spread the arguments to the mapper.
 
     Returns an observable sequence whose elements are the result of
@@ -826,13 +826,13 @@ def starmap(mapper: Callable[..., TResult]) -> Stream[TSource, TResult]:
     return starmap(mapper)
 
 
-def switch_latest() -> Stream[AsyncObservable[TSource], TSource]:
+def switch_latest() -> Projection[AsyncObservable[TSource], TSource]:
     from .transform import switch_latest
 
     return switch_latest
 
 
-def take(count: int) -> Stream[TSource, TSource]:
+def take(count: int) -> Projection[TSource, TSource]:
     """Take the first elements from the stream.
 
     Returns a specified number of contiguous elements from the start of
@@ -850,7 +850,7 @@ def take(count: int) -> Stream[TSource, TSource]:
     return take(count)
 
 
-def take_last(count: int) -> Stream[TSource, TSource]:
+def take_last(count: int) -> Projection[TSource, TSource]:
     """Take last elements from stream.
 
     Returns a specified number of contiguous elements from the end of an
@@ -868,7 +868,7 @@ def take_last(count: int) -> Stream[TSource, TSource]:
     return take_last(count)
 
 
-def take_until(other: AsyncObservable[TResult]) -> Stream[TSource, TSource]:
+def take_until(other: AsyncObservable[TResult]) -> Projection[TSource, TSource]:
     """Take elements until other.
 
     Returns the values from the source observable sequence until the
@@ -900,7 +900,7 @@ def to_async_iterable(source: AsyncObservable[TSource]) -> AsyncIterable[TSource
     return to_async_iterable(source)
 
 
-def with_latest_from(other: AsyncObservable[TOther]) -> Stream[TSource, Tuple[TSource, TOther]]:
+def with_latest_from(other: AsyncObservable[TOther]) -> Projection[TSource, Tuple[TSource, TOther]]:
     from .combine import with_latest_from
 
     return with_latest_from(other)

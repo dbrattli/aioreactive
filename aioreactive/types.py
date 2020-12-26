@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Callable, Generic, TypeVar
+from typing import Generic, Protocol, Tuple, TypeVar
 
 from expression.system import AsyncDisposable
 
@@ -15,7 +15,7 @@ class AsyncObserver(Generic[T_contra]):
     __slots__ = ()
 
     @abstractmethod
-    async def asend(self, value: TSource) -> None:
+    async def asend(self, value: T_contra) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -31,9 +31,35 @@ class AsyncObservable(Generic[T_co]):
     __slots__ = ()
 
     @abstractmethod
-    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(self, observer: AsyncObserver[T_co]) -> AsyncDisposable:
         raise NotImplementedError
 
 
-Stream = Callable[[AsyncObservable[TSource]], AsyncObservable[TResult]]
-"""A stream is a function that transforms from one observable to another."""
+class Projection(Protocol[TSource, TResult]):
+    """A projetion is a function that transforms from one observable to another, i.e:
+
+    `AsyncObservable[TSource]) -> AsyncObservable[TResult]`
+    """
+
+    def __call__(self, __source: AsyncObservable[TSource]) -> AsyncObservable[TResult]:
+        raise NotImplementedError
+
+
+class Zipper(Protocol[TResult]):
+    """A zipping projetion is a function that projects from one observable to a zipped, i.e:
+
+    `AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TResult]]`
+    """
+
+    def __call__(self, __source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TResult]]:
+        raise NotImplementedError
+
+
+class Filter(Protocol):
+    """A filter projetion is a function that projects from one observable to the same, i.e:
+
+    `AsyncObservable[TSource]) -> AsyncObservable[TSource]`
+    """
+
+    def __call__(self, __source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+        raise NotImplementedError
