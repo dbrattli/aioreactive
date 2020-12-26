@@ -55,6 +55,16 @@ class Zipper(Protocol[TResult]):
         raise NotImplementedError
 
 
+class Flatten(Protocol):
+    """A zipping projetion is a function that projects from one observable to a zipped, i.e:
+
+    `AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[Tuple[TSource, TResult]]`
+    """
+
+    def __call__(self, __source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+        raise NotImplementedError
+
+
 class Filter(Protocol):
     """A filter projetion is a function that projects from one observable to the same, i.e:
 

@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Iterable, List, NoReturn, Optional, TypeVar
+from typing import Any, Awaitable, Callable, Iterable, List, NoReturn, Optional, TypeVar, cast
 
 from expression.collections import seq
 from expression.core import (
@@ -90,12 +90,13 @@ def starfilter(predicate: Callable[..., bool]) -> Projection[Iterable[Any], Iter
     return transform(handler)
 
 
-def filteri(predicate: Callable[[Any, int], bool]) -> Filter:
-    return compose(
+def filteri(predicate: Callable[[TSource, int], bool]) -> Projection[TSource, TSource]:
+    ret = compose(
         zip_seq(seq.infinite),
         starfilter(predicate),
         map(seq.head),
     )
+    return cast(Projection[TSource, TSource], ret)  # FIXME: pyright issue
 
 
 def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
@@ -275,7 +276,7 @@ def take_last(count: int) -> Filter:
     return _take_last
 
 
-def take_until(other: AsyncObservable[Any]) -> Projection[TSource, TSource]:
+def take_until(other: AsyncObservable[Any]) -> Filter:
     """Take elements until other.
 
     Returns the values from the source observable sequence until the
@@ -306,7 +307,7 @@ def take_until(other: AsyncObservable[Any]) -> Projection[TSource, TSource]:
     return _take_until
 
 
-def slice(start: Optional[int] = None, stop: Optional[int] = None, step: int = 1) -> Projection[TSource, TSource]:
+def slice(start: Optional[int] = None, stop: Optional[int] = None, step: int = 1) -> Filter:
     """Slices the given source stream.
 
     It is basically a wrapper around skip(), skip_last(), take(),
@@ -355,7 +356,8 @@ def slice(start: Optional[int] = None, stop: Optional[int] = None, step: int = 1
         if step is not None:
             if step > 1:
                 mapper: Callable[[Any, int], bool] = lambda _, i: i % step == 0
-                source = pipe(source, filteri(mapper))
+                xs = pipe(source, filteri(mapper))
+                source = xs
             elif step < 0:
                 # Reversing streams is not supported
                 raise TypeError("Negative step not supported.")

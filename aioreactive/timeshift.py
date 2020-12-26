@@ -13,14 +13,14 @@ from .notification import Notification, OnCompleted, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncNotificationObserver, auto_detach_observer
 from .transform import map
-from .types import AsyncDisposable, AsyncObservable, AsyncObserver, Projection
+from .types import AsyncDisposable, AsyncObservable, AsyncObserver, Filter, Projection
 
 TSource = TypeVar("TSource")
 TSource_ = TypeVar("TSource_")
 log = logging.getLogger(__name__)
 
 
-def delay(seconds: float) -> Projection[TSource, TSource]:
+def delay(seconds: float) -> Filter:
     """Delay observable.
 
     Time shifts the observable sequence by the given timeout. The
@@ -89,7 +89,7 @@ def delay(seconds: float) -> Projection[TSource, TSource]:
     return _delay
 
 
-def debounce(seconds: float) -> Projection[TSource, TSource]:
+def debounce(seconds: float) -> Filter:
     def _debounce(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)

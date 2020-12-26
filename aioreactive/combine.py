@@ -22,7 +22,7 @@ from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg
 from .notification import Notification, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
-from .types import AsyncObservable, AsyncObserver, Projection, Zipper
+from .types import AsyncObservable, AsyncObserver, Zipper
 
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
@@ -160,7 +160,7 @@ def concat_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[T
     )
 
 
-def combine_latest(other: AsyncObservable[TOther]) -> Projection[TSource, Tuple[TSource, TOther]]:
+def combine_latest(other: AsyncObservable[TOther]) -> Zipper[TOther]:
     """Combine latest values.
 
     Merges the specified observable sequences into one observable
