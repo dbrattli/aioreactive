@@ -1,13 +1,8 @@
-from typing import TypeVar, AsyncIterable
+from typing import AsyncIterable, TypeVar
 
-from aioreactive import AsyncObservable
+from aioreactive import AsyncObservable, AsyncRx
 
 TSource = TypeVar("TSource")
-
-
-class ToAsyncObservable(AsyncIterable[TSource]):
-    def __init__(self, source: AsyncIterable[TSource]) -> None:
-        self._source = source
 
 
 def to_async_observable(source: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
@@ -18,4 +13,4 @@ def to_async_observable(source: AsyncIterable[TSource]) -> AsyncObservable[TSour
 
     Returns async observable"""
 
-    return ToAsyncObservable(source)
+    return AsyncRx.from_async_iterable(source)

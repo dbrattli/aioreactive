@@ -110,11 +110,10 @@ def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Projecti
     index on each element of the source.
     """
 
-    ret = compose(
+    return compose(
         zip_seq(seq.infinite),
         starmap_async(mapper),
     )
-    return cast(Projection[TSource, TResult], ret)  # FIXME: pyright issue
 
 
 def mapi(mapper: Callable[[TSource, int], TResult]) -> Projection[TSource, TResult]:
@@ -124,11 +123,10 @@ def mapi(mapper: Callable[[TSource, int], TResult]) -> Projection[TSource, TResu
     invoking the mapper function and incorporating the element's index
     on each element of the source.
     """
-    ret = compose(
+    return compose(
         zip_seq(seq.infinite),
         starmap(mapper),
     )
-    return cast(Projection[TSource, TResult], ret)  # FIXME: pyright issue
 
 
 def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
