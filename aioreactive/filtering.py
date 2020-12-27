@@ -90,13 +90,15 @@ def starfilter(predicate: Callable[..., bool]) -> Projection[Iterable[Any], Iter
     return transform(handler)
 
 
-def filteri(predicate: Callable[[TSource, int], bool]) -> Projection[TSource, TSource]:
+def filteri(
+    predicate: Callable[[TSource, int], bool]
+) -> Callable[[AsyncObservable[TSource]], AsyncObservable[TSource]]:  # Projection[TSource, TSource]:
     ret = compose(
         zip_seq(seq.infinite),
         starfilter(predicate),
         map(seq.head),
     )
-    return cast(Projection[TSource, TSource], ret)  # FIXME: pyright issue
+    return cast(Projection[TSource, TSource], ret)  # FIXME: pyright issue?
 
 
 def distinct_until_changed(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:

@@ -160,7 +160,7 @@ def concat_seq(sources: Iterable[AsyncObservable[TSource]]) -> AsyncObservable[T
     )
 
 
-def combine_latest(other: AsyncObservable[TOther]) -> Zipper[TOther]:
+def combine_latest(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
     """Combine latest values.
 
     Merges the specified observable sequences into one observable
@@ -241,7 +241,7 @@ def combine_latest(other: AsyncObservable[TOther]) -> Zipper[TOther]:
     return _combine_latest
 
 
-def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[TOther]:
+def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
     """[summary]
 
     Merges the specified observable sequences into one observable
@@ -318,7 +318,7 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[TOther]:
     return _with_latest_from
 
 
-def zip_seq(sequence: Iterable[TOther]) -> Zipper[TOther]:
+def zip_seq(sequence: Iterable[TOther]) -> Zipper[Any, TOther]:
     def _zip_seq(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
         async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)

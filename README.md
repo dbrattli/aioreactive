@@ -111,7 +111,7 @@ observable.
 async def asend(value):
     print(value)
 
-disposable = await subscribe(source, AsyncAnonymousObserver(asend))
+disposable = await subscribe_async(source, AsyncAnonymousObserver(asend))
 ```
 
 `AsyncAnonymousObserver` is an anonymous observer that constructs an
@@ -134,7 +134,7 @@ the stream of events.
 
 ```python
 obv = AsyncIteratorObserver()
-subscription = subscribe(source, obv)
+subscription = subscribe_async(source, obv)
 async for x in obv:
     print(x)
 ```
@@ -156,7 +156,7 @@ xs = rx.from_iterable([1, 2, 3])
 result = []
 
 obv = rx.AsyncIteratorObserver()
-async with await xs.subscribe(obv) as subscription:
+async with await xs.subscribe_async(obv) as subscription:
     async for x in obv:
         result.append(x)
 
@@ -268,7 +268,7 @@ async def main():
         rx.switch_latest(),
     )
 
-    async with xs.subscribe(obv) as ys
+    async with xs.subscribe_async(obv) as ys
         async for value in obv:
             print(value)
 ```
@@ -322,7 +322,7 @@ async def test_observable_simple_pipe():
     async def on_next(value):
         result.append(value)
 
-    subscription = await ys.subscribe(AsyncAnonymousObserver(on_next))
+    subscription = await ys.subscribe_async(AsyncAnonymousObserver(on_next))
     await subsubscription
     assert result == [20, 30]
 ```
@@ -381,7 +381,7 @@ async def test_delay_done():
 
     ys = delay(0.5, xs)
     lis = AsyncTestObserver()  # Test AsyncAnonymousObserver
-    sub = await subscribe(ys, lis)
+    sub = await subscribe_async(ys, lis)
     await xs.asend_later(0, 10)
     await xs.asend_later(1, 20)
     await xs.aclose_later(1)

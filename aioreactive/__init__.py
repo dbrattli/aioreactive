@@ -12,16 +12,13 @@ Example:
     >>> ...
 
 """
-from typing import (Any, AsyncIterable, Awaitable, Callable, Iterable, Tuple,
-                    TypeVar, Union)
+from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Tuple, TypeVar, Union
 
 from expression.core import Option, pipe
 from expression.system.disposable import AsyncDisposable
 
-from .observables import (AsyncAnonymousObservable, AsyncIterableObservable,
-                          AsyncObservable)
-from .observers import (AsyncAnonymousObserver, AsyncAwaitableObserver,
-                        AsyncIteratorObserver, AsyncNotificationObserver)
+from .observables import AsyncAnonymousObservable, AsyncIterableObservable, AsyncObservable
+from .observers import AsyncAnonymousObserver, AsyncAwaitableObserver, AsyncIteratorObserver, AsyncNotificationObserver
 from .subject import AsyncSingleSubject, AsyncSubject
 from .subscription import run
 from .types import AsyncObserver, Filter, Flatten, Projection, Zipper
@@ -454,7 +451,7 @@ def choose_async(chooser: Callable[[TSource], Awaitable[Option[TResult]]]) -> Pr
     return choose_async(chooser)
 
 
-def combine_latest(other: AsyncObservable[TOther]) -> Zipper[TOther]:
+def combine_latest(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
     from .combine import combine_latest
 
     return combine_latest(other)
@@ -916,7 +913,7 @@ def to_async_iterable(source: AsyncObservable[TSource]) -> AsyncIterable[TSource
     return to_async_iterable(source)
 
 
-def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[TOther]:
+def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
     from .combine import with_latest_from
 
     return with_latest_from(other)

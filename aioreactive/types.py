@@ -45,7 +45,7 @@ class Projection(Protocol[TSource, TResult]):
         raise NotImplementedError
 
 
-class Zipper(Protocol[TResult]):
+class Zipper(Protocol[TSource, TResult]):
     """A zipping projetion is a function that projects from one observable to a zipped, i.e:
 
     `AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TResult]]`
