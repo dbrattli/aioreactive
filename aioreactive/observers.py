@@ -80,7 +80,7 @@ class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource], Asyn
 
     async def dispose_async(self) -> None:
         if self._subscription is not None:
-            self._subscription.dispose_async()
+            await self._subscription.dispose_async()
         self._subscription = None
 
     def __aiter__(self) -> AsyncIterator[TSource]:

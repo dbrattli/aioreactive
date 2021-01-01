@@ -5,6 +5,7 @@ import aioreactive as rx
 import pytest
 from aioreactive.notification import OnCompleted, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
+from aioreactive.types import AsyncObservable
 from expression.core import pipe
 
 log = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ async def test_take_zero() -> None:
 
 @pytest.mark.asyncio
 async def test_take_empty() -> None:
-    xs = rx.empty()
+    xs: AsyncObservable[int] = rx.empty()
 
     ys = pipe(xs, rx.take(42))
 

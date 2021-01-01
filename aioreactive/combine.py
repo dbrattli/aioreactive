@@ -83,7 +83,7 @@ def merge_inner(
                                 )
                             lst = FrozenList.singleton(xs)
                             return model.replace(queue=model.queue.append(lst))
-                        for key in case(InnerCompletedMsg):
+                        for key in case(InnerCompletedMsg[Key]):
                             subscriptions = model.subscriptions.remove(key)
                             if len(model.queue):
                                 xs = model.queue[0]

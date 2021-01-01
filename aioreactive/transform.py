@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Iterable, TypeVar, cast
+from typing import Any, Awaitable, Callable, Iterable, TypeVar
 
 from expression.collections import seq
 from expression.core import (
@@ -266,7 +266,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
                         inner = await xs.subscribe_async(obv(inbox, next_id))
                         current, current_id = Some(inner), next_id
                         break
-                    for idx in case(InnerCompletedMsg):
+                    for idx in case(InnerCompletedMsg[Key]):
                         if is_stopped and idx == current_id:
                             await safe_obv.aclose()
                             current, is_stopped = Nothing, True
@@ -378,7 +378,7 @@ def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Projectio
 
                 async def athrow(error: Exception) -> None:
                     next_source = handler(error)
-                    action(next_source)
+                    await action(next_source)
 
                 async def aclose() -> None:
                     await aobv.aclose()

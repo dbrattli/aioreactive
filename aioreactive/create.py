@@ -52,7 +52,8 @@ def of_async_worker(worker: Callable[[AsyncObserver[Any], CancellationToken], Aw
 
 
 def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
-    """Returns the async observable sequence whose single element is the result of the given async workflow."""
+    """Returns the async observable sequence whose single element is the
+    result of the given async workflow."""
 
     async def worker(obv: AsyncObserver[TSource], _: CancellationToken) -> None:
         try:
@@ -98,7 +99,8 @@ def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSour
 
 
 def single(value: TSource) -> AsyncObservable[TSource]:
-    """Returns an observable sequence containing the single specified element."""
+    """Returns an observable sequence containing the single specified
+    element."""
 
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
         safe_obv = safe_observer(aobv, AsyncDisposable.empty())
@@ -178,8 +180,8 @@ def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TS
 
 def interval(seconds: float, period: float) -> AsyncObservable[int]:
     """Returns an observable sequence that triggers the increasing
-    sequence starting with 0 after the given msecs, and the after
-    each period."""
+    sequence starting with 0 after the given msecs, and the after each
+    period."""
 
     async def subscribe_async(aobv: AsyncObserver[int]) -> AsyncDisposable:
         cancel, token = canceller()
