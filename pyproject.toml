@@ -5,9 +5,7 @@ description = "sync/await Reactive Tools for Python 3.9+"
 readme = "README.md"
 authors = ["Dag Brattli <dag@brattli.net>", "Børge Lanes"]
 license = "MIT License"
-#homepage = "http://reactivex.io"
 repository = "https://github.com/dbrattli/aioreactive"
-#documentation = "https://rxpy.readthedocs.io/en/latest/"
 classifiers = [
         "Development Status :: 3 - Alpha",
         "Environment :: Other Environment",
@@ -56,14 +54,6 @@ multi_line_output=3            # corresponds to -m  flag
 include_trailing_comma=true    # corresponds to -tc flag
 skip_glob = '^((?!py$).)*$'    # isort all Python files
 float_to_top=true
-
-[tool.mypy]
-python_version = "3.9"
-follow_imports = "silent"
-files = ["aioreactive"]
-exclude = ["tests", "aioreactive/__init__.py$", "aioreactive/testing/__init__.py$"] # mypy will eventually catch up
-disallow_any_generics = true
-disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
