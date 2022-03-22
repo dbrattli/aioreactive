@@ -1,0 +1,30 @@
+repos:
+  - hooks:
+      - args:
+          - --remove-all-unused-imports
+          - --in-place
+        id: autoflake
+    repo: https://github.com/humitos/mirrors-autoflake
+    rev: v1.1
+  - hooks:
+      - id: isort
+    repo: https://github.com/timothycrosley/isort
+    rev: 5.10.1
+  - hooks:
+      - id: black
+    repo: https://github.com/psf/black
+    rev: 22.1.0
+  - hooks:
+      - id: flake8
+        exclude: (^docs/|^examples/|^notebooks/|^tests/)
+    repo: https://gitlab.com/pycqa/flake8
+    rev: 3.9.2
+  - hooks:
+      - id: pyright
+        name: pyright
+        entry: pyright
+        language: node
+        pass_filenames: false
+        types: [python]
+        additional_dependencies: ["pyright@1.1.231"]
+    repo: local

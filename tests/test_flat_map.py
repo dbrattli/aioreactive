@@ -1,12 +1,13 @@
-import aioreactive as rx
 import pytest
+from expression.core import pipe
+
+import aioreactive as rx
 from aioreactive.notification import OnCompleted, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from aioreactive.types import AsyncObservable
-from expression.core import pipe
 
 
-@pytest.yield_fixture()  # type: ignore
+@pytest.fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop

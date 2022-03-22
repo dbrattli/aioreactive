@@ -6,39 +6,45 @@ from expression.system import AsyncDisposable
 from .observers import AsyncIteratorObserver
 from .types import AsyncObservable, AsyncObserver
 
-TSource = TypeVar("TSource")
-TResult = TypeVar("TResult")
-TOther = TypeVar("TOther")
-TError = TypeVar("TError")
-T1 = TypeVar("T1")
-T2 = TypeVar("T2")
+_TSource = TypeVar("_TSource")
+_TResult = TypeVar("_TResult")
+_TOther = TypeVar("_TOther")
+_TError = TypeVar("_TError")
+_T1 = TypeVar("_T1")
+_T2 = TypeVar("_T2")
 
 log = logging.getLogger(__name__)
 
 
-class AsyncAnonymousObservable(AsyncObservable[TSource]):
+class AsyncAnonymousObservable(AsyncObservable[_TSource]):
 
     """An anonymous AsyncObservable.
 
     Uses a custom subscribe method.
     """
 
-    def __init__(self, subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]]) -> None:
+    def __init__(
+        self, subscribe: Callable[[AsyncObserver[_TSource]], Awaitable[AsyncDisposable]]
+    ) -> None:
         self._subscribe = subscribe
 
-    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(
+        self, observer: AsyncObserver[_TSource]
+    ) -> AsyncDisposable:
         log.debug("AsyncAnonymousObservable:subscribe_async(%s)", self._subscribe)
         return await self._subscribe(observer)
 
 
-class AsyncIterableObservable(AsyncIterable[TSource], AsyncObservable[TSource]):
-    def __init__(self, source: AsyncObservable[TSource]) -> None:
+class AsyncIterableObservable(AsyncIterable[_TSource], AsyncObservable[_TSource]):
+    def __init__(self, source: AsyncObservable[_TSource]) -> None:
         self._source = source
 
-    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(
+        self, observer: AsyncObserver[_TSource]
+    ) -> AsyncDisposable:
         return await self._source.subscribe_async(observer)
 
-    def __aiter__(self) -> AsyncIterator[TSource]:
+    def __aiter__(self) -> AsyncIterator[_TSource]:
         """Iterate asynchronously.
 
         Transforms the async source to an async iterable. The source

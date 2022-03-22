@@ -3,13 +3,14 @@ import signal
 import sys
 from tkinter import Event, Frame, Label, Misc, Tk
 from types import FrameType
-from typing import Tuple
+from typing import Optional, Tuple
+
+from expression.core import MailboxProcessor, pipe
+from expression.system import AsyncDisposable
 
 import aioreactive as rx
 from aioreactive import AsyncAnonymousObserver, AsyncSubject
 from aioreactive.types import AsyncObservable
-from expression.core import MailboxProcessor, pipe
-from expression.system import AsyncDisposable
 
 # logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
 
@@ -20,7 +21,7 @@ async def main() -> None:
 
     mousemoves: AsyncSubject[Tuple[int, int]] = AsyncSubject()
 
-    frame = Frame(root, width=800, height=600, bg="white")
+    frame = Frame(root, width=800, height=600)  # , bg="white")
 
     async def worker(mb: MailboxProcessor["Event[Misc]"]) -> None:
         while True:
@@ -31,7 +32,7 @@ async def main() -> None:
     frame.bind("<Motion>", agent.post)
 
     text = "TIME FLIES LIKE AN ARROW"
-    labels = [Label(frame, text=c, bg="white") for c in text]
+    labels = [Label(frame, text=c, borderwidth=0, padx=0, pady=0) for c in text]
 
     def handle_label(label: Label, i: int) -> AsyncObservable[Tuple[Label, int, int]]:
         label.config(dict(borderwidth=0, padx=0, pady=0))
@@ -52,17 +53,21 @@ async def main() -> None:
         rx.flat_mapi(handle_label),  # swap stream of labels with stream of labels + pos
     )
 
+    subscription: AsyncDisposable
+    running = True
+
     async def asend(value: Tuple[Label, int, int]) -> None:
         """Perform side effect."""
         label, x, y = value
         label.place(x=x, y=y)
 
     async def athrow(ex: Exception):
+        nonlocal running
         print("Exception: ", ex)
+        await subscription.dispose_async()
+        running = False
 
     obv = AsyncAnonymousObserver(asend, athrow)
-
-    subscription: AsyncDisposable
 
     async def start():
         nonlocal subscription
@@ -85,9 +90,7 @@ async def main() -> None:
 
     frame.pack()
 
-    running = True
-
-    def signal_handler(signal: int, frame: FrameType) -> None:
+    def signal_handler(signal: int, frame: Optional[FrameType] = None) -> None:
         nonlocal running
         running = False
         sys.stderr.write("Exiting...\n")
@@ -99,15 +102,8 @@ async def main() -> None:
     # A simple combined event loop
     while running:
         await asyncio.sleep(0.001)
-        try:
-            root.update()  # type: ignore
-        except Exception:
-            pass
+        root.update()
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(main())
-    finally:
-        loop.close()
+    asyncio.run(main())

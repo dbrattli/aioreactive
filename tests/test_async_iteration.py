@@ -1,15 +1,15 @@
-import asyncio
 import logging
 
-import aioreactive as rx
 import pytest
+
+import aioreactive as rx
 from aioreactive.testing import VirtualTimeEventLoop
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()  # type: ignore
+@pytest.fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop

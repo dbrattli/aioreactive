@@ -1,8 +1,9 @@
 """Example to show how to split a stream into two substreams."""
 import asyncio
 
-import aioreactive as rx
 from expression.core import pipe
+
+import aioreactive as rx
 
 
 async def main():

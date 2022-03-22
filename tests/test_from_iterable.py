@@ -1,14 +1,11 @@
-import asyncio
-from typing import Optional
+import pytest
 
 import aioreactive as rx
-import pytest
 from aioreactive.notification import OnCompleted, OnError, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
-from expression.system.disposable import AsyncDisposable
 
 
-@pytest.yield_fixture()  # type:ignore
+@pytest.fixture()  # type:ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop

@@ -17,33 +17,42 @@ from expression.system import AsyncDisposable
 
 from .combine import merge_inner, zip_seq
 from .create import fail
-from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Key, Msg
+from .msg import (
+    CompletedMsg,
+    DisposeMsg,
+    InnerCompletedMsg,
+    InnerObservableMsg,
+    Key,
+    Msg,
+)
 from .observables import AsyncAnonymousObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, auto_detach_observer
 from .types import AsyncObserver, Projection
 
-TSource = TypeVar("TSource")
-TResult = TypeVar("TResult")
+_TSource = TypeVar("_TSource")
+_TResult = TypeVar("_TResult")
 
 
 def transform(
     anext: Callable[
         [
             Callable[
-                [TResult],
+                [_TResult],
                 Awaitable[None],
             ],
-            TSource,
+            _TSource,
         ],
         Awaitable[None],
     ]
-) -> Projection[TSource, TResult]:
-    def _(source: AsyncObservable[TSource]) -> AsyncObservable[TResult]:
-        async def subscribe_async(aobv: AsyncObserver[TResult]) -> AsyncDisposable:
-            async def asend(value: TSource) -> None:
+) -> Projection[_TSource, _TResult]:
+    def _(source: AsyncObservable[_TSource]) -> AsyncObservable[_TResult]:
+        async def subscribe_async(aobv: AsyncObserver[_TResult]) -> AsyncDisposable:
+            async def asend(value: _TSource) -> None:
                 return await anext(aobv.asend, value)
 
-            obv: AsyncObserver[TSource] = AsyncAnonymousObserver(asend, aobv.athrow, aobv.aclose)
+            obv: AsyncObserver[_TSource] = AsyncAnonymousObserver(
+                asend, aobv.athrow, aobv.aclose
+            )
             sub = await source.subscribe_async(obv)
             return sub
 
@@ -52,57 +61,71 @@ def transform(
     return _
 
 
-def map_async(amapper: Callable[[TSource], Awaitable[TResult]]) -> Projection[TSource, TResult]:
+def map_async(
+    amapper: Callable[[_TSource], Awaitable[_TResult]]
+) -> Projection[_TSource, _TResult]:
     """Returns an observable sequence whose elements are the result of
     invoking the async mapper function on each element of the
     source."""
 
-    async def handler(next: Callable[[TResult], Awaitable[None]], x: TSource) -> None:
+    async def handler(next: Callable[[_TResult], Awaitable[None]], x: _TSource) -> None:
         b = await amapper(x)
         await next(b)
 
     return transform(handler)
 
 
-def starmap_async(amapper: Callable[..., Awaitable[TResult]]) -> Projection[Iterable[Any], TResult]:
+def starmap_async(
+    amapper: Callable[..., Awaitable[_TResult]]
+) -> Projection[Iterable[Any], _TResult]:
     """Map async spreading arguments to the async mapper.
 
     Returns an observable sequence whose elements are the result of
     invoking the async mapper function on each element of the
     source."""
 
-    async def handler(next: Callable[[TResult], Awaitable[None]], args: Iterable[Any]) -> None:
+    async def handler(
+        next: Callable[[_TResult], Awaitable[None]], args: Iterable[Any]
+    ) -> None:
         b = await amapper(*args)
         await next(b)
 
     return transform(handler)
 
 
-def map(mapper: Callable[[TSource], TResult]) -> Projection[TSource, TResult]:
+def map(
+    mapper: Callable[[_TSource], _TResult]
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Map each element in the stream.
 
     Returns an observable sequence whose elements are the result of
     invoking the mapper function on each element of the source."""
 
-    def handler(next: Callable[[TResult], Awaitable[None]], x: TSource) -> Awaitable[None]:
+    def handler(
+        next: Callable[[_TResult], Awaitable[None]], x: _TSource
+    ) -> Awaitable[None]:
         return next(mapper(x))
 
     return transform(handler)
 
 
-def starmap(mapper: Callable[..., TResult]) -> Projection[Iterable[Any], TResult]:
+def starmap(mapper: Callable[..., _TResult]) -> Projection[Iterable[Any], _TResult]:
     """Map and spread the arguments to the mapper.
 
     Returns an observable sequence whose elements are the result of
     invoking the mapper function on each element of the source."""
 
-    def handler(next: Callable[[TResult], Awaitable[None]], args: Iterable[Any]) -> Awaitable[None]:
+    def handler(
+        next: Callable[[_TResult], Awaitable[None]], args: Iterable[Any]
+    ) -> Awaitable[None]:
         return next(mapper(*args))
 
     return transform(handler)
 
 
-def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Projection[TSource, TResult]:
+def mapi_async(
+    mapper: Callable[[_TSource, int], Awaitable[_TResult]]
+) -> Projection[_TSource, _TResult]:
     """Map with index async.
 
     Returns an observable sequence whose elements are the result of
@@ -116,7 +139,7 @@ def mapi_async(mapper: Callable[[TSource, int], Awaitable[TResult]]) -> Projecti
     )
 
 
-def mapi(mapper: Callable[[TSource, int], TResult]) -> Projection[TSource, TResult]:
+def mapi(mapper: Callable[[_TSource, int], _TResult]) -> Projection[_TSource, _TResult]:
     """Map with index.
 
     Returns an observable sequence whose elements are the result of
@@ -129,7 +152,9 @@ def mapi(mapper: Callable[[TSource, int], TResult]) -> Projection[TSource, TResu
     )
 
 
-def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
+def flat_map(
+    mapper: Callable[[_TSource], AsyncObservable[_TResult]]
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flap map the observable sequence.
 
     Projects each element of an observable sequence into an observable
@@ -149,7 +174,9 @@ def flat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projectio
     )
 
 
-def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
+def flat_mapi(
+    mapper: Callable[[_TSource, int], AsyncObservable[_TResult]]
+) -> Projection[_TSource, _TResult]:
     """Flat map with index.
 
     Projects each element of an observable sequence into an observable
@@ -171,7 +198,9 @@ def flat_mapi(mapper: Callable[[TSource, int], AsyncObservable[TResult]]) -> Pro
     )
 
 
-def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]) -> Projection[TSource, TResult]:
+def flat_map_async(
+    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]]
+) -> Projection[_TSource, _TResult]:
     """Flap map async.
 
     Asynchronously projects each element of an observable sequence into
@@ -193,8 +222,8 @@ def flat_map_async(mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult
 
 
 def flat_mapi_async(
-    mapper: Callable[[TSource, int], Awaitable[AsyncObservable[TResult]]]
-) -> Projection[TSource, TResult]:
+    mapper: Callable[[_TSource, int], Awaitable[AsyncObservable[_TResult]]]
+) -> Projection[_TSource, _TResult]:
     """Flat map async with index.
 
     Asynchronously projects each element of an observable sequence into
@@ -215,14 +244,18 @@ def flat_mapi_async(
     )
 
 
-def concat_map(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
+def concat_map(
+    mapper: Callable[[_TSource], AsyncObservable[_TResult]]
+) -> Projection[_TSource, _TResult]:
     return compose(
         map(mapper),
         merge_inner(1),
     )
 
 
-def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+def switch_latest(
+    source: AsyncObservable[AsyncObservable[_TSource]],
+) -> AsyncObservable[_TSource]:
     """Switch latest observable.
 
     Transforms an observable sequence of observable sequences into an
@@ -236,22 +269,28 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
         The transformed observable sequence.
     """
 
-    async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(aobv: AsyncObserver[_TSource]) -> AsyncDisposable:
         safe_obv, auto_detach = auto_detach_observer(aobv)
 
-        def obv(mb: MailboxProcessor[Msg[TSource]], id: int):
-            async def asend(value: TSource) -> None:
+        def obv(
+            mb: MailboxProcessor[Msg[_TSource]], id: int
+        ) -> AsyncObserver[_TSource]:
+            async def asend(value: _TSource) -> None:
                 await safe_obv.asend(value)
 
             async def athrow(error: Exception) -> None:
                 await safe_obv.athrow(error)
 
             async def aclose() -> None:
-                pipe(Key(id), InnerCompletedMsg, mb.post)
+                pipe(
+                    Key(id),
+                    InnerCompletedMsg,
+                    mb.post,
+                )
 
             return AsyncAnonymousObserver(asend, athrow, aclose)
 
-        async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
+        async def worker(inbox: MailboxProcessor[Msg[_TSource]]) -> None:
             @tailrec_async
             async def message_loop(
                 current: Option[AsyncDisposable], is_stopped: bool, current_id: int
@@ -259,7 +298,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
                 cmd = await inbox.receive()
 
                 with match(cmd) as case:
-                    for xs in case(InnerObservableMsg[TSource]):
+                    for xs in case(InnerObservableMsg[_TSource]):
                         next_id = current_id + 1
                         for disp in current.to_list():
                             await disp.dispose_async()
@@ -287,7 +326,7 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
 
         inner_agent = MailboxProcessor.start(worker)
 
-        async def asend(xs: AsyncObservable[TSource]) -> None:
+        async def asend(xs: AsyncObservable[_TSource]) -> None:
             pipe(
                 InnerObservableMsg(xs),
                 inner_agent.post,
@@ -317,8 +356,8 @@ def switch_latest(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObs
 
 
 def flat_map_latest_async(
-    mapper: Callable[[TSource], Awaitable[AsyncObservable[TResult]]]
-) -> Projection[TSource, TResult]:
+    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]]
+) -> Projection[_TSource, _TResult]:
     """Flat map latest async.
 
     Asynchronosly transforms the items emitted by an source sequence
@@ -335,7 +374,9 @@ def flat_map_latest_async(
     return compose(map_async(mapper), switch_latest)
 
 
-def flat_map_latest(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Projection[TSource, TResult]:
+def flat_map_latest(
+    mapper: Callable[[_TSource], AsyncObservable[_TResult]]
+) -> Projection[_TSource, _TResult]:
     """Flat map latest.
 
 
@@ -352,7 +393,9 @@ def flat_map_latest(mapper: Callable[[TSource], AsyncObservable[TResult]]) -> Pr
     return compose(map(mapper), switch_latest)
 
 
-def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Projection[TSource, TSource]:
+def catch(
+    handler: Callable[[Exception], AsyncObservable[_TSource]]
+) -> Projection[_TSource, _TSource]:
     """Catch Exception.
 
     Returns an observable sequence containing the first sequence's
@@ -366,14 +409,14 @@ def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Projectio
         A new stream that replaces the original one.
     """
 
-    def _catch(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
-        async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+    def _catch(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
+        async def subscribe_async(aobv: AsyncObserver[_TSource]) -> AsyncDisposable:
             disposable = AsyncDisposable.empty()
 
-            async def action(source: AsyncObservable[TSource]) -> None:
+            async def action(source: AsyncObservable[_TSource]) -> None:
                 nonlocal disposable
 
-                async def asend(value: TSource) -> None:
+                async def asend(value: _TSource) -> None:
                     await aobv.asend(value)
 
                 async def athrow(error: Exception) -> None:
@@ -398,11 +441,13 @@ def catch(handler: Callable[[Exception], AsyncObservable[TSource]]) -> Projectio
     return _catch
 
 
-def retry(retry_count: int) -> Projection[TSource, TSource]:
-    def _retry(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+def retry(
+    retry_count: int,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
+    def _retry(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
         count = retry_count
 
-        def factory(exn: Exception) -> AsyncObservable[TSource]:
+        def factory(exn: Exception) -> AsyncObservable[_TSource]:
             nonlocal count
 
             if not count:

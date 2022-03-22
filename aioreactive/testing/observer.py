@@ -30,7 +30,7 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         asend: Callable[[TSource], Awaitable[None]] = anoop,
         athrow: Callable[[Exception], Awaitable[None]] = anoop,
         aclose: Callable[[], Awaitable[None]] = anoop,
-    ):
+    ) -> None:
         super().__init__(asend, athrow, aclose)
 
         self._values: List[Tuple[float, Notification[TSource]]] = []
@@ -39,10 +39,10 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         self._throw = athrow
         self._close = aclose
 
-    def time(self):
+    def time(self) -> float:
         return self._loop.time()
 
-    async def asend(self, value: TSource):
+    async def asend(self, value: TSource) -> None:
         log.debug("AsyncAnonymousObserver:asend(%s)", value)
         time = self.time()
         self._values.append((time, OnNext(value)))
@@ -50,7 +50,7 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         await self._send(value)
         await super().asend(value)
 
-    async def athrow(self, error: Exception):
+    async def athrow(self, error: Exception) -> None:
         log.debug("AsyncAnonymousObserver:athrow(%s)", error)
         time = self.time()
         self._values.append((time, OnError(error)))
@@ -58,7 +58,7 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         await self._throw(error)
         await super().athrow(error)
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         log.debug("AsyncAnonymousObserver:aclose()")
 
         time = self.time()

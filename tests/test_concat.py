@@ -1,8 +1,9 @@
 import logging
 
-import aioreactive as rx
 import pytest
 from expression.core import pipe
+
+import aioreactive as rx
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

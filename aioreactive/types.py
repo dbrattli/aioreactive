@@ -35,23 +35,25 @@ class AsyncObservable(Generic[T_co]):
         raise NotImplementedError
 
 
-class Projection(Protocol[TSource, TResult]):
+class Projection(Protocol[T_contra, T_co]):
     """A projetion is a function that transforms from one observable to another, i.e:
 
     `AsyncObservable[TSource]) -> AsyncObservable[TResult]`
     """
 
-    def __call__(self, __source: AsyncObservable[TSource]) -> AsyncObservable[TResult]:
+    def __call__(self, __source: AsyncObservable[T_contra]) -> AsyncObservable[T_co]:
         raise NotImplementedError
 
 
-class Zipper(Protocol[TSource, TResult]):
+class Zipper(Protocol[TSource, T_co]):
     """A zipping projetion is a function that projects from one observable to a zipped, i.e:
 
     `AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TResult]]`
     """
 
-    def __call__(self, __source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TResult]]:
+    def __call__(
+        self, __source: AsyncObservable[TSource]
+    ) -> AsyncObservable[Tuple[TSource, T_co]]:
         raise NotImplementedError
 
 
@@ -61,7 +63,9 @@ class Flatten(Protocol):
     `AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[Tuple[TSource, TResult]]`
     """
 
-    def __call__(self, __source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+    def __call__(
+        self, __source: AsyncObservable[AsyncObservable[TSource]]
+    ) -> AsyncObservable[TSource]:
         raise NotImplementedError
 
 

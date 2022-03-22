@@ -1,20 +1,20 @@
 import asyncio
 import logging
-from asyncio.exceptions import CancelledError
 from typing import Awaitable, Optional
 
-import aioreactive as rx
 import pytest
-from aioreactive.notification import OnCompleted, OnError, OnNext
-from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from expression.system.disposable import AsyncDisposable
 from pytest import approx
+
+import aioreactive as rx
+from aioreactive.notification import OnCompleted, OnError, OnNext
+from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()  # type:ignore
+@pytest.fixture()  # type:ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop

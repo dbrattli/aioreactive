@@ -1,27 +1,29 @@
 import asyncio
 import logging
+from typing import Generator, List
+
+import pytest
+from expression.core import pipe
+from pytest import approx
 
 import aioreactive as rx
-import pytest
 from aioreactive.notification import OnCompleted, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from aioreactive.types import AsyncObservable
-from expression.core import pipe
-from pytest import approx
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()  # type: ignore
-def event_loop():
+@pytest.fixture()  # type: ignore
+def event_loop() -> Generator[VirtualTimeEventLoop, None, None]:
     loop = VirtualTimeEventLoop()
     yield loop
     loop.close()
 
 
 @pytest.mark.asyncio
-async def test_pipe_map():
+async def test_pipe_map() -> None:
     xs = rx.from_iterable([1, 2, 3])
 
     def mapper(value: int) -> int:
@@ -40,7 +42,7 @@ async def test_pipe_map():
 
 
 @pytest.mark.asyncio
-async def test_pipe_simple_pipe():
+async def test_pipe_simple_pipe() -> None:
     xs = rx.from_iterable([1, 2, 3])
 
     def mapper(value: int) -> int:
@@ -62,9 +64,9 @@ async def test_pipe_simple_pipe():
 
 
 @pytest.mark.asyncio
-async def test_pipe_complex_pipe():
+async def test_pipe_complex_pipe() -> None:
     xs = rx.from_iterable([1, 2, 3])
-    result = []
+    result: List[int] = []
 
     def mapper(value: int) -> int:
         return value * 10

@@ -2,10 +2,11 @@ import asyncio
 from functools import partial
 
 import pytest
+
 from aioreactive.testing import VirtualTimeEventLoop
 
 
-@pytest.yield_fixture()  # type: ignore
+@pytest.fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop

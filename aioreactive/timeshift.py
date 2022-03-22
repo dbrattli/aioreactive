@@ -4,7 +4,16 @@ from datetime import datetime, timedelta
 from typing import Iterable, NoReturn, Tuple, TypeVar, cast
 
 from expression.collections import seq
-from expression.core import MailboxProcessor, TailCall, TailCallResult, aiotools, fst, match, pipe, tailrec_async
+from expression.core import (
+    MailboxProcessor,
+    TailCall,
+    TailCallResult,
+    aiotools,
+    fst,
+    match,
+    pipe,
+    tailrec_async,
+)
 from expression.system import CancellationTokenSource
 
 from .combine import with_latest_from
@@ -38,7 +47,9 @@ def delay(seconds: float) -> Filter:
         token = cts.token
 
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
-            async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], datetime]]) -> None:
+            async def worker(
+                inbox: MailboxProcessor[Tuple[Notification[TSource], datetime]]
+            ) -> None:
                 @tailrec_async
                 async def loop() -> TailCallResult[None]:
                     if token.is_cancellation_requested:
@@ -95,7 +106,9 @@ def debounce(seconds: float) -> Filter:
             safe_obv, auto_detach = auto_detach_observer(aobv)
             infinite: Iterable[int] = seq.infinite
 
-            async def worker(inbox: MailboxProcessor[Tuple[Notification[TSource], int]]) -> None:
+            async def worker(
+                inbox: MailboxProcessor[Tuple[Notification[TSource], int]]
+            ) -> None:
                 @tailrec_async
                 async def message_loop(current_index: int) -> TailCallResult[NoReturn]:
                     n, index = await inbox.receive()
@@ -152,7 +165,9 @@ def sample(seconds: float) -> Projection[TSource_, TSource_]:
     def _sample(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
         timer = interval(seconds, seconds)
 
-        mapper = cast(Projection[Tuple[TSource, int], TSource], map(fst))  # FIXME: pyright issue
+        mapper = cast(
+            Projection[Tuple[TSource, int], TSource], map(fst)
+        )  # FIXME: pyright issue
 
         if seconds > 0:
             ret = pipe(

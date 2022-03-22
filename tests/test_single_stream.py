@@ -2,13 +2,18 @@ import asyncio
 import logging
 from typing import Optional
 
-import aioreactive as rx
 import pytest
-from aioreactive.notification import OnCompleted, OnError, OnNext
-from aioreactive.testing import AsyncTestObserver, AsyncTestSingleSubject, VirtualTimeEventLoop
-from aioreactive.types import AsyncObserver
 from expression.core import pipe
 from expression.system import AsyncDisposable, ObjectDisposedException
+
+import aioreactive as rx
+from aioreactive.notification import OnCompleted, OnError, OnNext
+from aioreactive.testing import (
+    AsyncTestObserver,
+    AsyncTestSingleSubject,
+    VirtualTimeEventLoop,
+)
+from aioreactive.types import AsyncObserver
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -18,7 +23,7 @@ class MyException(Exception):
     pass
 
 
-@pytest.yield_fixture()  # type: ignore
+@pytest.fixture()  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -53,7 +58,12 @@ async def test_stream_throws():
         await xs.asend_later(1, 40)
         await sink
 
-    assert sink.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30)), (4, OnError(ex))]
+    assert sink.values == [
+        (1, OnNext(10)),
+        (2, OnNext(20)),
+        (3, OnNext(30)),
+        (4, OnError(ex)),
+    ]
 
 
 @pytest.mark.asyncio
@@ -68,7 +78,12 @@ async def test_stream_send_after_close():
     await xs.aclose_later(2)
     await xs.asend_later(1, 40)
 
-    assert sink.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30)), (5, OnCompleted)]
+    assert sink.values == [
+        (1, OnNext(10)),
+        (2, OnNext(20)),
+        (3, OnNext(30)),
+        (5, OnCompleted),
+    ]
 
 
 @pytest.mark.asyncio

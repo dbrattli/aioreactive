@@ -18,10 +18,23 @@ from expression.core import (
 from expression.system import AsyncDisposable
 
 from .create import of_seq
-from .msg import CompletedMsg, DisposeMsg, InnerCompletedMsg, InnerObservableMsg, Key, Msg, OtherMsg, SourceMsg
+from .msg import (
+    CompletedMsg,
+    DisposeMsg,
+    InnerCompletedMsg,
+    InnerObservableMsg,
+    Key,
+    Msg,
+    OtherMsg,
+    SourceMsg,
+)
 from .notification import Notification, OnError, OnNext
 from .observables import AsyncAnonymousObservable
-from .observers import AsyncAnonymousObserver, AsyncNotificationObserver, auto_detach_observer
+from .observers import (
+    AsyncAnonymousObserver,
+    AsyncNotificationObserver,
+    auto_detach_observer,
+)
 from .types import AsyncObservable, AsyncObserver, Zipper
 
 TSource = TypeVar("TSource")
@@ -47,11 +60,13 @@ class Model(Generic[TSource]):
 def merge_inner(
     max_concurrent: int = 0,
 ) -> Callable[[AsyncObservable[AsyncObservable[TSource]]], AsyncObservable[TSource]]:
-    def _(source: AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
+    def _(
+        source: AsyncObservable[AsyncObservable[TSource]],
+    ) -> AsyncObservable[TSource]:
         async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
-            initial_model = Model(
+            initial_model: Model[TSource] = Model(
                 subscriptions=map.empty,
                 queue=frozenlist.empty,
                 is_stopped=False,
@@ -71,14 +86,21 @@ def merge_inner(
 
                     return AsyncAnonymousObserver(asend, athrow, aclose)
 
-                async def update(msg: Msg[TSource], model: Model[TSource]) -> Model[TSource]:
+                async def update(
+                    msg: Msg[TSource], model: Model[TSource]
+                ) -> Model[TSource]:
                     # log.debug("update: %s, model: %s", msg, model)
                     with match(msg) as case:
                         for xs in case(InnerObservableMsg[TSource]):
-                            if max_concurrent == 0 or len(model.subscriptions) < max_concurrent:
+                            if (
+                                max_concurrent == 0
+                                or len(model.subscriptions) < max_concurrent
+                            ):
                                 inner = await xs.subscribe_async(obv(model.key))
                                 return model.replace(
-                                    subscriptions=model.subscriptions.add(model.key, inner),
+                                    subscriptions=model.subscriptions.add(
+                                        model.key, inner
+                                    ),
                                     key=Key(model.key + 1),
                                 )
                             lst = FrozenList.singleton(xs)
@@ -175,8 +197,12 @@ def combine_latest(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
         returns the combined observable.
     """
 
-    def _combine_latest(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
-        async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
+    def _combine_latest(
+        source: AsyncObservable[TSource],
+    ) -> AsyncObservable[Tuple[TSource, TOther]]:
+        async def subscribe_async(
+            aobv: AsyncObserver[Tuple[TSource, TOther]]
+        ) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
             async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
@@ -256,13 +282,19 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
         Stream[TSource, Tuple[TSource, TOther]]: [description]
     """
 
-    def _with_latest_from(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
-        async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
+    def _with_latest_from(
+        source: AsyncObservable[TSource],
+    ) -> AsyncObservable[Tuple[TSource, TOther]]:
+        async def subscribe_async(
+            aobv: AsyncObserver[Tuple[TSource, TOther]]
+        ) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
             async def worker(inbox: MailboxProcessor[Msg[TSource]]) -> None:
                 @tailrec_async
-                async def message_loop(latest: Option[TOther]) -> TailCallResult[NoReturn]:
+                async def message_loop(
+                    latest: Option[TOther],
+                ) -> TailCallResult[NoReturn]:
                     cn = await inbox.receive()
 
                     async def get_value(n: Notification[Any]) -> Option[Any]:
@@ -319,8 +351,12 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
 
 
 def zip_seq(sequence: Iterable[TOther]) -> Zipper[Any, TOther]:
-    def _zip_seq(source: AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TOther]]:
-        async def subscribe_async(aobv: AsyncObserver[Tuple[TSource, TOther]]) -> AsyncDisposable:
+    def _zip_seq(
+        source: AsyncObservable[TSource],
+    ) -> AsyncObservable[Tuple[TSource, TOther]]:
+        async def subscribe_async(
+            aobv: AsyncObserver[Tuple[TSource, TOther]]
+        ) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
 
             enumerator = iter(sequence)

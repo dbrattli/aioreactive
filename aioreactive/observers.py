@@ -1,6 +1,18 @@
 import logging
 from asyncio import Future, iscoroutinefunction
-from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Callable, List, Optional, Tuple, TypeVar, cast
+from typing import (
+    Any,
+    AsyncIterable,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Coroutine,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    cast,
+)
 
 from expression.core import MailboxProcessor, TailCall, tailrec_async
 from expression.system import AsyncDisposable, CancellationTokenSource, Disposable
@@ -12,16 +24,18 @@ from .utils import anoop
 
 log = logging.getLogger(__name__)
 
-TSource = TypeVar("TSource")
+_TSource = TypeVar("_TSource")
 
 
-class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource], AsyncDisposable):
+class AsyncIteratorObserver(
+    AsyncObserver[_TSource], AsyncIterable[_TSource], AsyncDisposable
+):
     """An async observer that might be iterated asynchronously."""
 
-    def __init__(self, source: AsyncObservable[TSource]) -> None:
+    def __init__(self, source: AsyncObservable[_TSource]) -> None:
         super().__init__()
 
-        self._push: Future[TSource] = Future()
+        self._push: Future[_TSource] = Future()
         self._pull: Future[bool] = Future()
 
         self._awaiters: List[Future[bool]] = []
@@ -29,7 +43,7 @@ class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource], Asyn
         self._source = source
         self._busy = False
 
-    async def asend(self, value: TSource) -> None:
+    async def asend(self, value: _TSource) -> None:
         log.debug("AsyncIteratorObserver:asend(%s)", value)
 
         await self._serialize_access()
@@ -65,7 +79,7 @@ class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource], Asyn
 
         self._busy = True
 
-    async def wait_for_push(self) -> TSource:
+    async def wait_for_push(self) -> _TSource:
         if self._subscription is None:
             self._subscription = await self._source.subscribe_async(self)
 
@@ -83,16 +97,16 @@ class AsyncIteratorObserver(AsyncObserver[TSource], AsyncIterable[TSource], Asyn
             await self._subscription.dispose_async()
         self._subscription = None
 
-    def __aiter__(self) -> AsyncIterator[TSource]:
+    def __aiter__(self) -> AsyncIterator[_TSource]:
         log.debug("AsyncIteratorObserver:__aiter__")
         return self
 
-    async def __anext__(self) -> TSource:
+    async def __anext__(self) -> _TSource:
         log.debug("AsyncIteratorObserver:__anext__()")
         return await self.wait_for_push()
 
 
-class AsyncAnonymousObserver(AsyncObserver[TSource]):
+class AsyncAnonymousObserver(AsyncObserver[_TSource]):
     """An anonymous AsyncObserver.
 
     Creates as sink where the implementation is provided by three
@@ -101,7 +115,7 @@ class AsyncAnonymousObserver(AsyncObserver[TSource]):
 
     def __init__(
         self,
-        asend: Callable[[TSource], Awaitable[None]] = anoop,
+        asend: Callable[[_TSource], Awaitable[None]] = anoop,
         athrow: Callable[[Exception], Awaitable[None]] = anoop,
         aclose: Callable[[], Awaitable[None]] = anoop,
     ) -> None:
@@ -115,7 +129,7 @@ class AsyncAnonymousObserver(AsyncObserver[TSource]):
         assert iscoroutinefunction(aclose)
         self._aclose = aclose
 
-    async def asend(self, value: TSource) -> None:
+    async def asend(self, value: _TSource) -> None:
         await self._asend(value)
 
     async def athrow(self, error: Exception) -> None:
@@ -125,13 +139,13 @@ class AsyncAnonymousObserver(AsyncObserver[TSource]):
         await self._aclose()
 
 
-class AsyncNotificationObserver(AsyncObserver[TSource]):
+class AsyncNotificationObserver(AsyncObserver[_TSource]):
     """Observer created from an async notification processing function"""
 
-    def __init__(self, fn: Callable[[Notification[TSource]], Awaitable[None]]) -> None:
+    def __init__(self, fn: Callable[[Notification[_TSource]], Awaitable[None]]) -> None:
         self._fn = fn
 
-    async def asend(self, value: TSource) -> None:
+    async def asend(self, value: _TSource) -> None:
         await self._fn(OnNext(value))
 
     async def athrow(self, error: Exception) -> None:
@@ -145,7 +159,9 @@ def noop() -> AsyncObserver[Any]:
     return AsyncAnonymousObserver(anoop, anoop, anoop)
 
 
-def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> AsyncObserver[TSource]:
+def safe_observer(
+    obv: AsyncObserver[_TSource], disposable: AsyncDisposable
+) -> AsyncObserver[_TSource]:
     """Safe observer that wraps the given observer. Makes sure that
     invocations are serialized and that the Rx grammar is not violated:
 
@@ -159,7 +175,7 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
         disposable: Disposable to dispose when the observer closes.
     """
 
-    async def worker(inbox: MailboxProcessor[Notification[TSource]]):
+    async def worker(inbox: MailboxProcessor[Notification[_TSource]]) -> None:
         async def message_loop(running: bool) -> None:
             while running:
                 msg = await inbox.receive()
@@ -182,7 +198,7 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
 
     agent = MailboxProcessor.start(worker)
 
-    async def asend(value: TSource) -> None:
+    async def asend(value: _TSource) -> None:
         agent.post(OnNext(value))
 
     async def athrow(ex: Exception) -> None:
@@ -195,14 +211,21 @@ def safe_observer(obv: AsyncObserver[TSource], disposable: AsyncDisposable) -> A
 
 
 def auto_detach_observer(
-    obv: AsyncObserver[TSource],
-) -> Tuple[AsyncObserver[TSource], Callable[[Awaitable[AsyncDisposable]], Awaitable[AsyncDisposable]]]:
+    obv: AsyncObserver[_TSource],
+) -> Tuple[
+    AsyncObserver[_TSource],
+    Callable[
+        [Coroutine[None, None, AsyncDisposable]], Coroutine[None, None, AsyncDisposable]
+    ],
+]:
     cts = CancellationTokenSource()
     token = cts.token
 
-    async def worker(inbox: MailboxProcessor[Msg[TSource]]):
+    async def worker(inbox: MailboxProcessor[Msg[_TSource]]) -> None:
         @tailrec_async
-        async def message_loop(disposables: List[AsyncDisposable]):
+        async def message_loop(
+            disposables: List[AsyncDisposable],
+        ) -> Any:
             if token.is_cancellation_requested:
                 return
 
@@ -219,7 +242,7 @@ def auto_detach_observer(
 
     agent = MailboxProcessor.start(worker, token)
 
-    async def cancel():
+    async def cancel() -> None:
         cts.cancel()
         agent.post(DisposeMsg)
 
@@ -227,7 +250,9 @@ def auto_detach_observer(
     safe_obv = safe_observer(obv, canceller)
 
     # Auto-detaches (disposes) the disposable when the observer completes with success or error.
-    async def auto_detach(async_disposable: Awaitable[AsyncDisposable]):
+    async def auto_detach(
+        async_disposable: Coroutine[None, None, AsyncDisposable]
+    ) -> AsyncDisposable:
         disposable = await async_disposable
         agent.post(DisposableMsg(disposable))
         return disposable
@@ -235,7 +260,7 @@ def auto_detach_observer(
     return safe_obv, auto_detach
 
 
-class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable):
+class AsyncAwaitableObserver(Future[_TSource], AsyncObserver[_TSource], Disposable):
     """An async awaitable observer.
 
     Both a future and async observer. The future resolves with the last
@@ -244,7 +269,7 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
 
     def __init__(
         self,
-        asend: Callable[[TSource], Awaitable[None]] = anoop,
+        asend: Callable[[_TSource], Awaitable[None]] = anoop,
         athrow: Callable[[Exception], Awaitable[None]] = anoop,
         aclose: Callable[[], Awaitable[None]] = anoop,
     ) -> None:
@@ -259,11 +284,11 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         assert iscoroutinefunction(aclose)
         self._aclose = aclose
 
-        self._last_value: Optional[TSource] = None
+        self._last_value: _TSource = cast(_TSource, None)
         self._is_stopped = False
         self._has_value = False
 
-    async def asend(self, value: TSource) -> None:
+    async def asend(self, value: _TSource) -> None:
         log.debug("AsyncAwaitableObserver:asend(%s)", str(value))
 
         if self._is_stopped:
@@ -295,7 +320,7 @@ class AsyncAwaitableObserver(Future[TSource], AsyncObserver[TSource], Disposable
         self._is_stopped = True
 
         if self._has_value:
-            self.set_result(cast("TSource", self._last_value))
+            self.set_result(self._last_value)
         else:
             self.cancel()
         await self._aclose()

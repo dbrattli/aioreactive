@@ -1,17 +1,23 @@
 import asyncio
 import logging
 
-import aioreactive as rx
 import pytest
-from aioreactive.notification import OnCompleted, OnError, OnNext
-from aioreactive.testing import AsyncTestObserver, AsyncTestSubject, VirtualTimeEventLoop, ca
 from expression.core import pipe
+
+import aioreactive as rx
+from aioreactive.notification import OnCompleted, OnError, OnNext
+from aioreactive.testing import (
+    AsyncTestObserver,
+    AsyncTestSubject,
+    VirtualTimeEventLoop,
+    ca,
+)
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.yield_fixture()  # type:ignore
+@pytest.fixture()  # type:ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
