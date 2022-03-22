@@ -64,7 +64,9 @@ class DisposableMsg(Msg[AsyncDisposable], SupportsMatch[AsyncDisposable]):
 
 
 @dataclass
-class InnerObservableMsg(Msg[AsyncObservable[TSource]], SupportsMatch[AsyncObservable[TSource]]):
+class InnerObservableMsg(
+    Msg[AsyncObservable[TSource]], SupportsMatch[AsyncObservable[TSource]]
+):
     """Message containing an inner observable."""
 
     inner_observable: AsyncObservable[TSource]
@@ -85,7 +87,7 @@ class InnerCompletedMsg(Msg[TSource]):
 
     key: Key
 
-    def __match__(self, pattern: Any) -> Iterable[Key]:
+    def __match__(self, pattern: Any) -> Iterable[Any]:
         origin: Any = get_origin(pattern)
         try:
             if isinstance(self, origin or pattern):
@@ -118,7 +120,7 @@ CompletedMsg = CompletedMsg_()  # Singleton
 class DisposeMsg_(Msg[None]):
     """Message notifying that the operator got disposed."""
 
-    def __match__(self, pattern: Any) -> Iterable[bool]:
+    def __match__(self, pattern: Any) -> Iterable[Any]:
 
         if self is pattern:
             return [True]
@@ -136,4 +138,11 @@ class DisposeMsg_(Msg[None]):
 DisposeMsg = DisposeMsg_()  # Singleton
 
 
-__all__ = ["Msg", "DisposeMsg", "CompletedMsg", "InnerCompletedMsg", "InnerObservableMsg", "DisposableMsg"]
+__all__ = [
+    "Msg",
+    "DisposeMsg",
+    "CompletedMsg",
+    "InnerCompletedMsg",
+    "InnerObservableMsg",
+    "DisposableMsg",
+]

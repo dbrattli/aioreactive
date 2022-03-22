@@ -50,9 +50,6 @@ TestResults/Rx.TE.Tests.mdf
 TestResults/Rx.TE.Tests_log.ldf
 *.user
 
-# Cloud9
-.c9
-
 # PyCharm
 .idea
 .zedstate
@@ -63,3 +60,5 @@ TestResults/Rx.TE.Tests_log.ldf
 .ionide
 
 coverage.xml
+
+.vscode/

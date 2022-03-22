@@ -1,15 +1,16 @@
 import asyncio
 from typing import Optional
 
-import aioreactive as rx
 import pytest
-from aioreactive import AsyncObservable, AsyncObserver
-from aioreactive.testing import VirtualTimeEventLoop
 from expression.core import pipe
 from expression.system import AsyncDisposable
 
+import aioreactive as rx
+from aioreactive import AsyncObservable, AsyncObserver
+from aioreactive.testing import VirtualTimeEventLoop
 
-@pytest.yield_fixture()  # type:ignore
+
+@pytest.fixture()  # type:ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop

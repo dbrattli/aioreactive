@@ -14,10 +14,10 @@ class AsyncSubjectBase(AsyncObserver[TSource]):
     time both relative and absolute.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._loop = asyncio.get_event_loop()
 
-    async def asend_at(self, when: float, value: TSource):
+    async def asend_at(self, when: float, value: TSource) -> None:
         async def task() -> None:
             await self.asend(value)
 
@@ -51,27 +51,27 @@ class AsyncSubjectBase(AsyncObserver[TSource]):
         await self.athrow(err)
 
     async def athrow_later_scheduled(self, delay: float, err: Exception) -> None:
-        async def task():
+        async def task() -> None:
             await asyncio.sleep(delay)
             await self.athrow(err)
 
         asyncio.ensure_future(task())
 
-    async def aclose_at(self, when: float):
-        async def task():
+    async def aclose_at(self, when: float) -> None:
+        async def task() -> None:
             await self.aclose()
 
-        def callback():
+        def callback() -> None:
             asyncio.ensure_future(task())
 
         self._loop.call_at(when, callback)
 
-    async def aclose_later(self, delay: float):
+    async def aclose_later(self, delay: float) -> None:
         await asyncio.sleep(delay)
         await self.aclose()
 
-    async def close_later_scheduled(self, delay: float):
-        async def task():
+    async def close_later_scheduled(self, delay: float) -> None:
+        async def task() -> None:
             await asyncio.sleep(delay)
             await self.aclose()
 
@@ -83,7 +83,7 @@ class AsyncTestSubject(AsyncSubject[TSource], AsyncSubjectBase[TSource]):
 
 
 class AsyncTestSingleSubject(AsyncSingleSubject[TSource], AsyncSubjectBase[TSource]):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
 

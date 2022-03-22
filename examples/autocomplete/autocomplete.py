@@ -16,13 +16,14 @@ from typing import Any, Callable, Dict
 
 import aiohttp
 import aiohttp_jinja2
-import aioreactive as rx
 import jinja2
 from aiohttp import web
 from aiohttp.http_websocket import WSMessage
 from aiohttp.web_request import Request
 from aiohttp.web_ws import WebSocketResponse
 from expression.core import pipe
+
+import aioreactive as rx
 
 Msg = Dict[str, str]
 

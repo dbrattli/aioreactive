@@ -12,7 +12,9 @@ log = logging.getLogger(__name__)
 TSource = TypeVar("TSource")
 
 
-class AsyncSingleSubject(AsyncObserver[TSource], AsyncObservable[TSource], AsyncDisposable):
+class AsyncSingleSubject(
+    AsyncObserver[TSource], AsyncObservable[TSource], AsyncDisposable
+):
 
     """An stream with a single sink.
 
@@ -34,7 +36,7 @@ class AsyncSingleSubject(AsyncObserver[TSource], AsyncObservable[TSource], Async
         if self._is_disposed:
             raise ObjectDisposedException()
 
-    async def asend(self, value: TSource):
+    async def asend(self, value: TSource) -> None:
         log.debug("AsyncSingleStream:asend(%s)", str(value))
 
         self.check_disposed()
@@ -72,13 +74,15 @@ class AsyncSingleSubject(AsyncObserver[TSource], AsyncObservable[TSource], Async
             await self._observer.aclose()
             self._is_stopped = True
 
-    async def dispose_async(self):
+    async def dispose_async(self) -> None:
         log.debug("AsyncSingleStream:dispose_async()")
 
         self._observer = None
         self._is_disposed = True
 
-    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(
+        self, observer: AsyncObserver[TSource]
+    ) -> AsyncDisposable:
         """Start streaming."""
 
         self.check_disposed()
@@ -90,7 +94,9 @@ class AsyncSingleSubject(AsyncObserver[TSource], AsyncObservable[TSource], Async
         return AsyncDisposable.create(self.dispose_async)
 
 
-class AsyncMultiSubject(AsyncObserver[TSource], AsyncObservable[TSource], AsyncDisposable):
+class AsyncMultiSubject(
+    AsyncObserver[TSource], AsyncObservable[TSource], AsyncDisposable
+):
     """An stream with a multiple observers.
 
     Both an async observable and async observer.
@@ -138,7 +144,9 @@ class AsyncMultiSubject(AsyncObserver[TSource], AsyncObservable[TSource], AsyncD
         for obv in list(self._observers):
             await obv.aclose()
 
-    async def subscribe_async(self, observer: AsyncObserver[TSource]) -> AsyncDisposable:
+    async def subscribe_async(
+        self, observer: AsyncObserver[TSource]
+    ) -> AsyncDisposable:
         """Subscribe."""
 
         log.debug("AsyncMultiStream:subscribe_async()")

@@ -1,11 +1,24 @@
 import asyncio
 import logging
 from asyncio import Future
-from typing import Any, AsyncIterable, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
+from typing import (
+    Any,
+    AsyncIterable,
+    Awaitable,
+    Callable,
+    Iterable,
+    Optional,
+    Tuple,
+    TypeVar,
+)
 
 from expression.core import TailCallResult, aiotools, tailrec_async
 from expression.core.fn import TailCall
-from expression.system import AsyncDisposable, CancellationToken, CancellationTokenSource
+from expression.system import (
+    AsyncDisposable,
+    CancellationToken,
+    CancellationTokenSource,
+)
 
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncObserver, safe_observer
@@ -26,7 +39,9 @@ def canceller() -> Tuple[AsyncDisposable, CancellationToken]:
     return AsyncDisposable.create(cancel), cts.token
 
 
-def create(subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]]) -> AsyncObservable[TSource]:
+def create(
+    subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]]
+) -> AsyncObservable[TSource]:
     """Create an async observable.
 
     Creates an `AsyncObservable[TSource]` from the given subscribe
@@ -35,7 +50,9 @@ def create(subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposab
     return AsyncAnonymousObservable(subscribe)
 
 
-def of_async_worker(worker: Callable[[AsyncObserver[Any], CancellationToken], Awaitable[None]]) -> AsyncObservable[Any]:
+def of_async_worker(
+    worker: Callable[[AsyncObserver[Any], CancellationToken], Awaitable[None]]
+) -> AsyncObservable[Any]:
     """Create async observable from async worker function"""
 
     log.debug("of_async_worker()")
@@ -72,8 +89,8 @@ def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSour
     async def subscribe_async(observer: AsyncObserver[TSource]) -> AsyncDisposable:
         task: Optional[Future[None]] = None
 
-        async def cancel():
-            if task is not None:
+        async def cancel() -> None:
+            if task:
                 task.cancel()
 
         sub = AsyncDisposable.create(cancel)
@@ -89,7 +106,7 @@ def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSour
             await observer.aclose()
 
         try:
-            task = asyncio.ensure_future(worker())
+            task = asyncio.create_task(worker())
         except Exception as ex:
             log.debug("FromIterable:worker(), Exception: %s" % ex)
             await observer.athrow(ex)

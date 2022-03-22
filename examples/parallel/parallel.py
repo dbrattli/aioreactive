@@ -5,8 +5,9 @@ from asyncio.futures import wrap_future
 from concurrent.futures import ThreadPoolExecutor
 from threading import current_thread
 
-import aioreactive as rx
 from expression.core import pipe
+
+import aioreactive as rx
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

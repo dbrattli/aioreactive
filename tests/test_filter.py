@@ -1,17 +1,18 @@
 import asyncio
 from typing import Any, Generator
 
-import aioreactive as rx
 import pytest
-from aioreactive.testing import VirtualTimeEventLoop
 from expression.core import pipe
+
+import aioreactive as rx
+from aioreactive.testing import VirtualTimeEventLoop
 
 
 class MyException(Exception):
     pass
 
 
-@pytest.yield_fixture()  # type:ignore
+@pytest.fixture()  # type:ignore
 def event_loop() -> Generator[Any, Any, Any]:
     loop = VirtualTimeEventLoop()
     yield loop

@@ -62,7 +62,8 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
         sched_count = len(self._scheduled)
         if (
             sched_count > _MIN_SCHEDULED_TIMER_HANDLES
-            and self._timer_cancelled_count / sched_count > _MIN_CANCELLED_TIMER_HANDLES_FRACTION
+            and self._timer_cancelled_count / sched_count
+            > _MIN_CANCELLED_TIMER_HANDLES_FRACTION
         ):
             # Remove delayed calls that were cancelled if their number
             # is too high
@@ -113,7 +114,9 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
                     handle._run()
                     dt = self.time() - t0
                     if dt >= self.slow_callback_duration:
-                        logger.warning("Executing %s took %.3f seconds", _format_handle(handle), dt)
+                        logger.warning(
+                            "Executing %s took %.3f seconds", _format_handle(handle), dt
+                        )
                 finally:
                     self._current_handle = None
             else:
@@ -125,3 +128,5 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
 
 
 loop = VirtualTimeEventLoop()
+
+__all__ = ["VirtualTimeEventLoop"]
