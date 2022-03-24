@@ -1105,6 +1105,7 @@ __all__ = [
     "AsyncObserver",
     "AsyncSingleSubject",
     "AsyncSubject",
+    "AsyncDisposable",
     "catch",
     "choose",
     "choose_async",
@@ -1139,4 +1140,5 @@ __all__ = [
     "to_async_iterable",
     "take",
     "take_last",
+    "pipe",
 ]
