@@ -1,7 +1,7 @@
 """Example to show how to split a stream into two substreams."""
 import asyncio
 
-from expression.core import pipe
+from expression import pipe
 
 import aioreactive as rx
 
@@ -21,6 +21,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-    loop.close()
+    asyncio.run(main())

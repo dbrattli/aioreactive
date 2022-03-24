@@ -9,14 +9,14 @@ from .types import AsyncObservable, AsyncObserver
 
 log = logging.getLogger(__name__)
 
-TSource = TypeVar("TSource")
+_TSource = TypeVar("_TSource")
 
 
 async def run(
-    source: AsyncObservable[TSource],
-    observer: Optional[AsyncAwaitableObserver[TSource]] = None,
+    source: AsyncObservable[_TSource],
+    observer: Optional[AsyncAwaitableObserver[_TSource]] = None,
     timeout: int = 2,
-) -> TSource:
+) -> _TSource:
     """Run the source with the given observer.
 
     Similar to `subscribe_async()` but also awaits until the stream
@@ -35,22 +35,22 @@ async def run(
 
     # For run we need a noopobserver if no observer is specified to avoid
     # blocking the last single stream in the chain.
-    obv: AsyncAwaitableObserver[TSource] = observer or AsyncAwaitableObserver()
+    obv: AsyncAwaitableObserver[_TSource] = observer or AsyncAwaitableObserver()
     async with await source.subscribe_async(obv):
         log.debug("run(): waiting for observer ...")
         return await asyncio.wait_for(obv, timeout)
 
 
 def subscribe_async(
-    obv: AsyncObserver[TSource],
-) -> Callable[[AsyncObservable[TSource]], Awaitable[AsyncDisposable]]:
+    obv: AsyncObserver[_TSource],
+) -> Callable[[AsyncObservable[_TSource]], Awaitable[AsyncDisposable]]:
     """A pipeable subscribe async.
 
     Example:
         >>> await pipe(xs, filter(predicate), subscribe_async)
     """
 
-    def _subscribe(source: AsyncObservable[TSource]) -> Awaitable[AsyncDisposable]:
+    def _subscribe(source: AsyncObservable[_TSource]) -> Awaitable[AsyncDisposable]:
         return source.subscribe_async(obv)
 
     return _subscribe

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Iterable, NoReturn, Tuple, TypeVar, cast
+from typing import Callable, Iterable, NoReturn, Tuple, TypeVar
 
 from expression.collections import seq
 from expression.core import (
@@ -22,14 +22,15 @@ from .notification import Notification, OnCompleted, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncNotificationObserver, auto_detach_observer
 from .transform import map
-from .types import AsyncDisposable, AsyncObservable, AsyncObserver, Filter, Projection
+from .types import AsyncDisposable, AsyncObservable, AsyncObserver
 
-TSource = TypeVar("TSource")
-TSource_ = TypeVar("TSource_")
+_TSource = TypeVar("_TSource")
 log = logging.getLogger(__name__)
 
 
-def delay(seconds: float) -> Filter:
+def delay(
+    seconds: float,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     """Delay observable.
 
     Time shifts the observable sequence by the given timeout. The
@@ -42,13 +43,13 @@ def delay(seconds: float) -> Filter:
         Delayed stream.
     """
 
-    def _delay(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+    def _delay(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
         cts = CancellationTokenSource()
         token = cts.token
 
-        async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+        async def subscribe_async(aobv: AsyncObserver[_TSource]) -> AsyncDisposable:
             async def worker(
-                inbox: MailboxProcessor[Tuple[Notification[TSource], datetime]]
+                inbox: MailboxProcessor[Tuple[Notification[_TSource], datetime]]
             ) -> None:
                 @tailrec_async
                 async def loop() -> TailCallResult[None]:
@@ -64,10 +65,10 @@ def delay(seconds: float) -> Filter:
 
                     async def matcher() -> None:
                         with match(ns) as case:
-                            for x in case(OnNext[TSource]):
+                            for x in case(OnNext[_TSource]):
                                 await aobv.asend(x)
                                 return
-                            for err in case(OnError[TSource]):
+                            for err in case(OnError[_TSource]):
                                 await aobv.athrow(err)
                                 return
                             for x in case(OnCompleted):
@@ -81,11 +82,11 @@ def delay(seconds: float) -> Filter:
 
             agent = MailboxProcessor.start(worker, token)
 
-            async def fn(ns: Notification[TSource]) -> None:
+            async def fn(ns: Notification[_TSource]) -> None:
                 due_time = datetime.utcnow() + timedelta(seconds=seconds)
                 agent.post((ns, due_time))
 
-            obv: AsyncNotificationObserver[TSource] = AsyncNotificationObserver(fn)
+            obv: AsyncNotificationObserver[_TSource] = AsyncNotificationObserver(fn)
             subscription = await source.subscribe_async(obv)
 
             async def cancel() -> None:
@@ -100,14 +101,16 @@ def delay(seconds: float) -> Filter:
     return _delay
 
 
-def debounce(seconds: float) -> Filter:
-    def _debounce(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
-        async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
+def debounce(
+    seconds: float,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
+    def _debounce(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
+        async def subscribe_async(aobv: AsyncObserver[_TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
             infinite: Iterable[int] = seq.infinite
 
             async def worker(
-                inbox: MailboxProcessor[Tuple[Notification[TSource], int]]
+                inbox: MailboxProcessor[Tuple[Notification[_TSource], int]]
             ) -> None:
                 @tailrec_async
                 async def message_loop(current_index: int) -> TailCallResult[NoReturn]:
@@ -115,14 +118,14 @@ def debounce(seconds: float) -> Filter:
 
                     with match(n) as case:
                         log.debug("debounce: %s, %d, %d", n, index, current_index)
-                        for x in case(OnNext[TSource]):
+                        for x in case(OnNext[_TSource]):
                             if index == current_index:
                                 await safe_obv.asend(x)
                                 current_index = index
                             elif index > current_index:
                                 current_index = index
 
-                        for err in case(OnError[TSource]):
+                        for err in case(OnError[_TSource]):
                             await safe_obv.athrow(err)
 
                         while case(OnCompleted):
@@ -136,7 +139,7 @@ def debounce(seconds: float) -> Filter:
 
             indexer = iter(infinite)
 
-            async def obv(n: Notification[TSource]) -> None:
+            async def obv(n: Notification[_TSource]) -> None:
                 index = next(indexer)
                 agent.post((n, index))
 
@@ -147,7 +150,7 @@ def debounce(seconds: float) -> Filter:
 
                 aiotools.start(worker())
 
-            obv_: AsyncObserver[TSource] = AsyncNotificationObserver(obv)
+            obv_: AsyncObserver[_TSource] = AsyncNotificationObserver(obv)
             dispose = await pipe(obv_, source.subscribe_async, auto_detach)
 
             async def cancel() -> None:
@@ -161,19 +164,17 @@ def debounce(seconds: float) -> Filter:
     return _debounce
 
 
-def sample(seconds: float) -> Projection[TSource_, TSource_]:
-    def _sample(source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
+def sample(
+    seconds: float,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
+    def _sample(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
         timer = interval(seconds, seconds)
-
-        mapper = cast(
-            Projection[Tuple[TSource, int], TSource], map(fst)
-        )  # FIXME: pyright issue
 
         if seconds > 0:
             ret = pipe(
                 source,
                 with_latest_from(timer),
-                mapper,
+                map(fst),
             )
             return ret
 

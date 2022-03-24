@@ -1,17 +1,20 @@
 import logging
-from typing import AsyncIterable, AsyncIterator, Awaitable, Callable, TypeVar
+from typing import (
+    AsyncIterable,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from expression.system import AsyncDisposable
 
-from .observers import AsyncIteratorObserver
-from .types import AsyncObservable, AsyncObserver
+from .observers import AsyncAnonymousObserver, AsyncIteratorObserver
+from .types import AsyncObservable, AsyncObserver, CloseAsync, SendAsync, ThrowAsync
 
 _TSource = TypeVar("_TSource")
-_TResult = TypeVar("_TResult")
-_TOther = TypeVar("_TOther")
-_TError = TypeVar("_TError")
-_T1 = TypeVar("_T1")
-_T2 = TypeVar("_T2")
 
 log = logging.getLogger(__name__)
 
@@ -29,8 +32,16 @@ class AsyncAnonymousObservable(AsyncObservable[_TSource]):
         self._subscribe = subscribe
 
     async def subscribe_async(
-        self, observer: AsyncObserver[_TSource]
+        self,
+        send: Optional[Union[SendAsync[_TSource], AsyncObserver[_TSource]]] = None,
+        throw: Optional[ThrowAsync] = None,
+        close: Optional[CloseAsync] = None,
     ) -> AsyncDisposable:
+        observer = (
+            send
+            if isinstance(send, AsyncObserver)
+            else AsyncAnonymousObserver(send, throw, close)
+        )
         log.debug("AsyncAnonymousObservable:subscribe_async(%s)", self._subscribe)
         return await self._subscribe(observer)
 
@@ -40,8 +51,16 @@ class AsyncIterableObservable(AsyncIterable[_TSource], AsyncObservable[_TSource]
         self._source = source
 
     async def subscribe_async(
-        self, observer: AsyncObserver[_TSource]
+        self,
+        send: Optional[Union[SendAsync[_TSource], AsyncObserver[_TSource]]] = None,
+        throw: Optional[ThrowAsync] = None,
+        close: Optional[CloseAsync] = None,
     ) -> AsyncDisposable:
+        observer = (
+            send
+            if isinstance(send, AsyncObserver)
+            else AsyncAnonymousObserver(send, throw, close)
+        )
         return await self._source.subscribe_async(observer)
 
     def __aiter__(self) -> AsyncIterator[_TSource]:
@@ -56,3 +75,6 @@ class AsyncIterableObservable(AsyncIterable[_TSource], AsyncObservable[_TSource]
         """
 
         return AsyncIteratorObserver(self)
+
+
+__all__ = ["AsyncAnonymousObservable", "AsyncIterableObservable"]

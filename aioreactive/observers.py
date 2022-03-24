@@ -115,19 +115,19 @@ class AsyncAnonymousObserver(AsyncObserver[_TSource]):
 
     def __init__(
         self,
-        asend: Callable[[_TSource], Awaitable[None]] = anoop,
-        athrow: Callable[[Exception], Awaitable[None]] = anoop,
-        aclose: Callable[[], Awaitable[None]] = anoop,
+        asend: Optional[Callable[[_TSource], Awaitable[None]]] = None,
+        athrow: Optional[Callable[[Exception], Awaitable[None]]] = None,
+        aclose: Optional[Callable[[], Awaitable[None]]] = None,
     ) -> None:
         super().__init__()
-        assert iscoroutinefunction(asend)
-        self._asend = asend
+        self._asend = asend or anoop
+        assert iscoroutinefunction(self._asend)
 
-        assert iscoroutinefunction(athrow)
-        self._athrow = athrow
+        self._athrow = athrow or anoop
+        assert iscoroutinefunction(self._athrow)
 
-        assert iscoroutinefunction(aclose)
-        self._aclose = aclose
+        self._aclose = aclose or anoop
+        assert iscoroutinefunction(self._aclose)
 
     async def asend(self, value: _TSource) -> None:
         await self._asend(value)

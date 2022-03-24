@@ -1,21 +1,35 @@
 from abc import abstractmethod
-from typing import Generic, Protocol, Tuple, TypeVar
+from typing import (
+    Awaitable,
+    Callable,
+    Generic,
+    Optional,
+    Protocol,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from expression.system import AsyncDisposable
 
+_T = TypeVar("_T")
 TSource = TypeVar("TSource")
 TResult = TypeVar("TResult")
-T_co = TypeVar("T_co", covariant=True)  # Any type covariant containers.
-T_contra = TypeVar("T_contra", contravariant=True)  # Ditto contravariant.
+_T_out = TypeVar("_T_out", covariant=True)  # Any type covariant containers.
+_T_in = TypeVar("_T_in", contravariant=True)  # Ditto contravariant.
+
+SendAsync = Callable[[_T], Awaitable[None]]
+ThrowAsync = Callable[[Exception], Awaitable[None]]
+CloseAsync = Callable[[], Awaitable[None]]
 
 
-class AsyncObserver(Generic[T_contra]):
+class AsyncObserver(Generic[_T_in]):
     """An asynchronous observable."""
 
     __slots__ = ()
 
     @abstractmethod
-    async def asend(self, value: T_contra) -> None:
+    async def asend(self, value: _T_in) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -27,25 +41,30 @@ class AsyncObserver(Generic[T_contra]):
         raise NotImplementedError
 
 
-class AsyncObservable(Generic[T_co]):
+class AsyncObservable(Generic[_T_out]):
     __slots__ = ()
 
     @abstractmethod
-    async def subscribe_async(self, observer: AsyncObserver[T_co]) -> AsyncDisposable:
+    async def subscribe_async(
+        self,
+        send: Optional[Union[SendAsync[_T_out], AsyncObserver[_T_out]]] = None,
+        throw: Optional[ThrowAsync] = None,
+        close: Optional[CloseAsync] = None,
+    ) -> AsyncDisposable:
         raise NotImplementedError
 
 
-class Projection(Protocol[T_contra, T_co]):
+class Projection2(Protocol[_T_in, _T_out]):
     """A projetion is a function that transforms from one observable to another, i.e:
 
     `AsyncObservable[TSource]) -> AsyncObservable[TResult]`
     """
 
-    def __call__(self, __source: AsyncObservable[T_contra]) -> AsyncObservable[T_co]:
+    def __call__(self, __source: AsyncObservable[_T_in]) -> AsyncObservable[_T_out]:
         raise NotImplementedError
 
 
-class Zipper(Protocol[TSource, T_co]):
+class Zipper(Protocol[TSource, _T_out]):
     """A zipping projetion is a function that projects from one observable to a zipped, i.e:
 
     `AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TResult]]`
@@ -53,7 +72,7 @@ class Zipper(Protocol[TSource, T_co]):
 
     def __call__(
         self, __source: AsyncObservable[TSource]
-    ) -> AsyncObservable[Tuple[TSource, T_co]]:
+    ) -> AsyncObservable[Tuple[TSource, _T_out]]:
         raise NotImplementedError
 
 
@@ -69,11 +88,4 @@ class Flatten(Protocol):
         raise NotImplementedError
 
 
-class Filter(Protocol):
-    """A filter projetion is a function that projects from one observable to the same, i.e:
-
-    `AsyncObservable[TSource]) -> AsyncObservable[TSource]`
-    """
-
-    def __call__(self, __source: AsyncObservable[TSource]) -> AsyncObservable[TSource]:
-        raise NotImplementedError
+__all__ = ["AsyncObserver", "AsyncObservable"]
