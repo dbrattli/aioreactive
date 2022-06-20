@@ -471,8 +471,8 @@ def _scan(
     initial: _TResult,
     async_result: bool = False,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
-    def _scan_operator(obs: AsyncObservable[_TSource]):
-        async def subscribe_async(observer: AsyncObserver[Any]) -> AsyncDisposable:
+    def _scan_operator(obs: AsyncObservable[_TSource]) -> AsyncObservable[_TResult]:
+        async def subscribe_async(observer: AsyncObserver[_TResult]) -> AsyncDisposable:
             disposable: AsyncDisposable = AsyncDisposable.empty()
             current: _TResult = initial
 

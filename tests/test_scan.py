@@ -1,13 +1,11 @@
 import asyncio
+
 import pytest
 from expression import pipe
 
 from aioreactive import scan, scan_async
-from aioreactive.notification import OnCompleted, OnError, OnNext
-from aioreactive.testing import (
-    AsyncTestObserver,
-    VirtualTimeEventLoop,
-)
+from aioreactive.notification import OnCompleted, OnNext
+from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from aioreactive.testing.subject import AsyncTestSingleSubject
 
 
