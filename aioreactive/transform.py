@@ -1,4 +1,5 @@
-from typing import Any, Awaitable, Callable, Iterable, TypeVar
+from inspect import iscoroutine
+from typing import Any, Awaitable, Callable, Iterable, TypeVar, Union
 
 from expression.collections import seq
 from expression.core import (
@@ -463,3 +464,71 @@ def retry(
         return pipe(source, catch(factory))
 
     return _retry
+
+
+def _scan(
+    accumulator: Callable[[_TResult, _TSource], Union[Awaitable[_TResult], _TResult]],
+    initial: _TResult,
+    async_result: bool = False,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    def _scan_operator(obs: AsyncObservable[_TSource]):
+        async def subscribe_async(observer: AsyncObserver[Any]) -> AsyncDisposable:
+            disposable: AsyncDisposable = AsyncDisposable.empty()
+            current: _TResult = initial
+
+            async def anext(value: _TSource) -> None:
+                nonlocal current
+
+                try:
+                    intermediate = accumulator(current, value)
+                except Exception as ex:
+                    await observer.athrow(ex)
+                else:
+                    if async_result:
+                        if not iscoroutine(intermediate):
+                            raise AssertionError(
+                                "The accumulator did not return an asynchronous result."
+                            )
+                        current = await intermediate
+                    else:
+                        current = intermediate  # type: ignore
+
+                    await observer.asend(current)
+
+            async def athrow(exception: Exception) -> None:
+                await observer.athrow(exception)
+
+            async def aclose() -> None:
+                await observer.aclose()
+
+            await disposable.dispose_async()
+            disposable = await obs.subscribe_async(anext, athrow, aclose)
+
+            return disposable
+
+        return AsyncAnonymousObservable(subscribe_async)
+
+    return _scan_operator
+
+
+def scan(
+    accumulator: Callable[[_TResult, _TSource], _TResult],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    return _scan(accumulator, initial)
+
+
+def scan_async(
+    accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    """Async version of the scan operator.
+
+    Args:
+        accumulator: An async accumulator function.
+        initial: The initial state.
+
+    Returns:
+        The scan operator.
+    """
+    return _scan(accumulator, initial, async_result=True)
