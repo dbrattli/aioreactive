@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Generic, Iterable, NoReturn, Tuple, TypeVar, cast
 
-from expression.collections import FrozenList, Map, frozenlist, map
+from expression.collections import Block, Map, block, map
 from expression.core import (
     MailboxProcessor,
     Nothing,
@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class Model(Generic[TSource]):
     subscriptions: Map[Key, AsyncDisposable]
-    queue: FrozenList[AsyncObservable[TSource]]
+    queue: Block[AsyncObservable[TSource]]
     is_stopped: bool
     key: Key
 
@@ -68,7 +68,7 @@ def merge_inner(
 
             initial_model: Model[TSource] = Model(
                 subscriptions=map.empty,
-                queue=frozenlist.empty,
+                queue=block.empty,
                 is_stopped=False,
                 key=Key(0),
             )
@@ -103,7 +103,7 @@ def merge_inner(
                                     ),
                                     key=Key(model.key + 1),
                                 )
-                            lst = FrozenList.singleton(xs)
+                            lst = Block.singleton(xs)
                             return model.replace(queue=model.queue.append(lst))
                         for key in case(InnerCompletedMsg[Key]):
                             subscriptions = model.subscriptions.remove(key)
@@ -267,8 +267,8 @@ def combine_latest(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
     return _combine_latest
 
 
-def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
-    """[summary]
+def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[TOther]:
+    """With latest from.
 
     Merges the specified observable sequences into one observable
     sequence by combining the values into tuples only when the first
@@ -276,10 +276,11 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
     observable sequence.
 
     Args:
-        other (AsyncObservable[TOther]): [description]
+        other (AsyncObservable[TOther]): The other observable to merge
+            with.
 
     Returns:
-        Stream[TSource, Tuple[TSource, TOther]]: [description]
+        The merged observable.
     """
 
     def _with_latest_from(
@@ -305,7 +306,7 @@ def with_latest_from(other: AsyncObservable[TOther]) -> Zipper[Any, TOther]:
                             for err in case(OnError[TSource]):
                                 await safe_obv.athrow(err)
 
-                            while case.default():
+                            if case.default():
                                 await safe_obv.aclose()
                         return Nothing
 

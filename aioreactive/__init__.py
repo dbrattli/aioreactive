@@ -27,7 +27,7 @@ from typing import (
     overload,
 )
 
-from expression.core import Option, pipe
+from expression import Option, pipe
 from expression.system.disposable import AsyncDisposable
 
 from .observables import AsyncAnonymousObservable, AsyncIterableObservable
@@ -217,7 +217,10 @@ class AsyncRx(AsyncObservable[_TSource]):
     ) -> AsyncRx[Tuple[_TSource, _TOther]]:
         from .combine import combine_latest
 
-        xs = pipe(self, combine_latest(other))
+        xs = pipe(
+            self,
+            combine_latest(other),
+        )
         return AsyncRx.create(xs)
 
     def concat(self, other: AsyncObservable[_TSource]) -> AsyncRx[_TSource]:

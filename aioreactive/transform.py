@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Iterable, TypeVar
+from typing import Any, Awaitable, Callable, Iterable, Tuple, TypeVar
 
 from expression.collections import seq
 from expression.core import (
@@ -298,7 +298,7 @@ def switch_latest(
             @tailrec_async
             async def message_loop(
                 current: Option[AsyncDisposable], is_stopped: bool, current_id: int
-            ) -> TailCallResult[None]:
+            ) -> TailCallResult[None, [Option[AsyncDisposable], bool, int]]:
                 cmd = await inbox.receive()
 
                 with match(cmd) as case:
