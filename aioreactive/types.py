@@ -1,20 +1,10 @@
 from abc import abstractmethod
-from typing import (
-    Awaitable,
-    Callable,
-    Generic,
-    Optional,
-    Protocol,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Awaitable, Callable, Generic, Optional, Protocol, TypeVar, Union
 
 from expression.system import AsyncDisposable
 
 _T = TypeVar("_T")
-TSource = TypeVar("TSource")
-TResult = TypeVar("TResult")
+_TSource = TypeVar("_TSource")
 _T_out = TypeVar("_T_out", covariant=True)  # Any type covariant containers.
 _T_in = TypeVar("_T_in", contravariant=True)  # Ditto contravariant.
 
@@ -54,28 +44,6 @@ class AsyncObservable(Generic[_T_out]):
         raise NotImplementedError
 
 
-class Projection2(Protocol[_T_in, _T_out]):
-    """A projetion is a function that transforms from one observable to another, i.e:
-
-    `AsyncObservable[TSource]) -> AsyncObservable[TResult]`
-    """
-
-    def __call__(self, __source: AsyncObservable[_T_in]) -> AsyncObservable[_T_out]:
-        raise NotImplementedError
-
-
-class Zipper(Protocol[TSource, _T_out]):
-    """A zipping projetion is a function that projects from one observable to a zipped, i.e:
-
-    `AsyncObservable[TSource]) -> AsyncObservable[Tuple[TSource, TResult]]`
-    """
-
-    def __call__(
-        self, __source: AsyncObservable[TSource]
-    ) -> AsyncObservable[Tuple[TSource, _T_out]]:
-        raise NotImplementedError
-
-
 class Flatten(Protocol):
     """A zipping projetion is a function that projects from one observable to a zipped, i.e:
 
@@ -83,8 +51,8 @@ class Flatten(Protocol):
     """
 
     def __call__(
-        self, __source: AsyncObservable[AsyncObservable[TSource]]
-    ) -> AsyncObservable[TSource]:
+        self, __source: AsyncObservable[AsyncObservable[_TSource]]
+    ) -> AsyncObservable[_TSource]:
         raise NotImplementedError
 
 
