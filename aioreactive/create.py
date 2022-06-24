@@ -206,7 +206,7 @@ def interval(seconds: float, period: float) -> AsyncObservable[int]:
         @tailrec_async
         async def handler(
             seconds: float, next: int
-        ) -> TailCallResult[None, [float, int]]:
+        ) -> "TailCallResult[None, [float, int]]":
             await asyncio.sleep(seconds)
             await aobv.asend(next)
 

@@ -211,7 +211,7 @@ def combine_latest(
             @tailrec_async
             async def message_loop(
                 source_value: Option[_TSource], other_value: Option[_TOther]
-            ) -> TailCallResult[NoReturn, [Option[_TSource], Option[_TOther]]]:
+            ) -> "TailCallResult[NoReturn, [Option[_TSource], Option[_TOther]]]":
                 cn = await inbox.receive()
 
                 async def get_value(n: Notification[Any]) -> Option[Any]:
@@ -297,7 +297,7 @@ def with_latest_from(
             @tailrec_async
             async def message_loop(
                 latest: Option[_TOther],
-            ) -> TailCallResult[NoReturn, [Option[_TOther]]]:
+            ) -> "TailCallResult[NoReturn, [Option[_TOther]]]":
                 cn = await inbox.receive()
 
                 async def get_value(n: Notification[Any]) -> Option[Any]:

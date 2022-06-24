@@ -54,7 +54,7 @@ def delay(
             inbox: MailboxProcessor[Tuple[Notification[_TSource], datetime]]
         ) -> None:
             @tailrec_async
-            async def loop() -> TailCallResult[None, ...]:
+            async def loop() -> "TailCallResult[None, ...]":
                 if token.is_cancellation_requested:
                     return
 
@@ -78,7 +78,7 @@ def delay(
                             return
 
                 await matcher()
-                return TailCall[...]()
+                return TailCall["..."]()
 
             asyncio.ensure_future(loop())
 
@@ -115,7 +115,7 @@ def debounce(
                 @tailrec_async
                 async def message_loop(
                     current_index: int,
-                ) -> TailCallResult[NoReturn, [int]]:
+                ) -> "TailCallResult[NoReturn, [int]]":
                     n, index = await inbox.receive()
 
                     with match(n) as case:

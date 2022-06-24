@@ -145,7 +145,7 @@ def distinct_until_changed(
             @tailrec_async
             async def message_loop(
                 latest: Notification[_TSource],
-            ) -> TailCallResult[NoReturn, [Notification[_TSource]]]:
+            ) -> "TailCallResult[NoReturn, [Notification[_TSource]]]":
                 n = await inbox.receive()
 
                 async def get_latest() -> Notification[_TSource]:
