@@ -298,7 +298,7 @@ def switch_latest(
             @tailrec_async
             async def message_loop(
                 current: Option[AsyncDisposable], is_stopped: bool, current_id: int
-            ) -> TailCallResult[None]:
+            ) -> "TailCallResult[None, [Option[AsyncDisposable], bool, int]]":
                 cmd = await inbox.receive()
 
                 with match(cmd) as case:
@@ -324,7 +324,9 @@ def switch_latest(
                         current, is_stopped = Nothing, True
                         break
 
-                return TailCall(current, is_stopped, current_id)
+                return TailCall[Option[AsyncDisposable], bool, int](
+                    current, is_stopped, current_id
+                )
 
             await message_loop(Nothing, False, 0)
 

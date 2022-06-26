@@ -204,7 +204,9 @@ def interval(seconds: float, period: float) -> AsyncObservable[int]:
         cancel, token = canceller()
 
         @tailrec_async
-        async def handler(seconds: float, next: int) -> TailCallResult[None]:
+        async def handler(
+            seconds: float, next: int
+        ) -> "TailCallResult[None, [float, int]]":
             await asyncio.sleep(seconds)
             await aobv.asend(next)
 
@@ -212,7 +214,7 @@ def interval(seconds: float, period: float) -> AsyncObservable[int]:
                 await aobv.aclose()
                 return None
 
-            return TailCall(period, next + 1)
+            return TailCall[float, int](period, next + 1)
 
         aiotools.start(handler(seconds, 0), token)
         return cancel

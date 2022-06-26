@@ -31,7 +31,7 @@ async def test_debounce():
     ys = pipe(xs, rx.debounce(0.5))
 
     obv: AsyncTestObserver[int] = AsyncTestObserver()
-    await ys.subscribe_async(obv)
+    subscription = await ys.subscribe_async(obv)
 
     await xs.asend(1)  # 0 -> 0.5
     await asyncio.sleep(0.6)  # 0.6
@@ -47,6 +47,8 @@ async def test_debounce():
         (ca(1.2), OnCompleted),
     ]
 
+    await subscription.dispose_async()
+
 
 @pytest.mark.asyncio
 async def test_debounce_filter():
@@ -54,7 +56,7 @@ async def test_debounce_filter():
 
     ys = pipe(xs, rx.debounce(0.5))
     obv: AsyncTestObserver[int] = AsyncTestObserver()
-    await ys.subscribe_async(obv)
+    subscription = await ys.subscribe_async(obv)
 
     await xs.asend(1)
     await asyncio.sleep(0.3)
@@ -68,3 +70,5 @@ async def test_debounce_filter():
         (ca(0.8), OnNext(2)),
         (ca(0.9), OnCompleted),
     ]
+
+    await subscription.dispose_async()

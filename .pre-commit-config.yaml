@@ -13,7 +13,7 @@ repos:
   - hooks:
       - id: black
     repo: https://github.com/psf/black
-    rev: 22.1.0
+    rev: 22.3.0
   - hooks:
       - id: flake8
         exclude: (^docs/|^examples/|^notebooks/|^tests/)
@@ -26,5 +26,5 @@ repos:
         language: node
         pass_filenames: false
         types: [python]
-        additional_dependencies: ["pyright@1.1.231"]
+        additional_dependencies: ["pyright@1.1.255"]
     repo: local

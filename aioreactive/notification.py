@@ -6,8 +6,7 @@ from expression.core import SupportsMatch
 
 from .types import AsyncObserver
 
-TSource = TypeVar("TSource")
-TMessage = TypeVar("TMessage")
+_TSource = TypeVar("_TSource")
 
 
 class MsgKind(Enum):
@@ -16,7 +15,7 @@ class MsgKind(Enum):
     ON_COMPLETED = 3
 
 
-class Notification(Generic[TSource], ABC):
+class Notification(Generic[_TSource], ABC):
     """Represents a message to a mailbox processor."""
 
     def __init__(self, kind: MsgKind):
@@ -25,40 +24,40 @@ class Notification(Generic[TSource], ABC):
     @abstractmethod
     async def accept(
         self,
-        asend: Callable[[TSource], Awaitable[None]],
+        asend: Callable[[_TSource], Awaitable[None]],
         athrow: Callable[[Exception], Awaitable[None]],
         aclose: Callable[[], Awaitable[None]],
     ) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
+    async def accept_observer(self, obv: AsyncObserver[_TSource]) -> None:
         raise NotImplementedError
 
     def __repr__(self) -> str:
         return str(self)
 
 
-class OnNext(Notification[TSource], SupportsMatch[TSource]):
+class OnNext(Notification[_TSource], SupportsMatch[_TSource]):
     """Represents an OnNext notification to an observer."""
 
-    def __init__(self, value: TSource) -> None:
+    def __init__(self, value: _TSource) -> None:
         """Constructs a notification of a new value."""
         super().__init__(MsgKind.ON_NEXT)
         self.value = value  # Message value
 
     async def accept(
         self,
-        asend: Callable[[TSource], Awaitable[None]],
+        asend: Callable[[_TSource], Awaitable[None]],
         athrow: Callable[[Exception], Awaitable[None]],
         aclose: Callable[[], Awaitable[None]],
     ) -> None:
         await asend(self.value)
 
-    async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
+    async def accept_observer(self, obv: AsyncObserver[_TSource]) -> None:
         await obv.asend(self.value)
 
-    def __match__(self, pattern: Any) -> Iterable[TSource]:
+    def __match__(self, pattern: Any) -> Iterable[_TSource]:
         origin: Any = get_origin(pattern)
         try:
             if isinstance(self, origin or pattern):
@@ -76,7 +75,7 @@ class OnNext(Notification[TSource], SupportsMatch[TSource]):
         return f"OnNext({self.value})"
 
 
-class OnError(Notification[TSource], SupportsMatch[Exception]):
+class OnError(Notification[_TSource], SupportsMatch[Exception]):
     """Represents an OnError notification to an observer."""
 
     def __init__(self, exception: Exception) -> None:
@@ -86,13 +85,13 @@ class OnError(Notification[TSource], SupportsMatch[Exception]):
 
     async def accept(
         self,
-        asend: Callable[[TSource], Awaitable[None]],
+        asend: Callable[[_TSource], Awaitable[None]],
         athrow: Callable[[Exception], Awaitable[None]],
         aclose: Callable[[], Awaitable[None]],
     ) -> None:
         await athrow(self.exception)
 
-    async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
+    async def accept_observer(self, obv: AsyncObserver[_TSource]) -> None:
         await obv.athrow(self.exception)
 
     def __match__(self, pattern: Any) -> Iterable[Exception]:
@@ -113,7 +112,7 @@ class OnError(Notification[TSource], SupportsMatch[Exception]):
         return f"OnError({self.exception})"
 
 
-class _OnCompleted(Notification[TSource], SupportsMatch[bool]):
+class _OnCompleted(Notification[_TSource], SupportsMatch[bool]):
     """Represents an OnCompleted notification to an observer.
 
     Note: Do not use. Use the singleton `OnCompleted` instance instead.
@@ -126,13 +125,13 @@ class _OnCompleted(Notification[TSource], SupportsMatch[bool]):
 
     async def accept(
         self,
-        asend: Callable[[TSource], Awaitable[None]],
+        asend: Callable[[_TSource], Awaitable[None]],
         athrow: Callable[[Exception], Awaitable[None]],
         aclose: Callable[[], Awaitable[None]],
     ) -> None:
         await aclose()
 
-    async def accept_observer(self, obv: AsyncObserver[TSource]) -> None:
+    async def accept_observer(self, obv: AsyncObserver[_TSource]) -> None:
         await obv.aclose()
 
     def __match__(self, pattern: Any) -> Iterable[bool]:
