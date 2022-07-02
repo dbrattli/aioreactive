@@ -340,7 +340,7 @@ For example the following test still gives the correct result even if it
 takes 0 seconds to run:
 
 ```python
-@pytest.yield_fixture()
+@pytest.fixture()
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
@@ -366,7 +366,7 @@ delay sending values, and a test `AsyncTestObserver` that records all
 events. These two classes helps you with testing in virtual time.
 
 ```python
-@pytest.yield_fixture()
+@pytest.fixture()
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop

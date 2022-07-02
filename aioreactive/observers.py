@@ -236,7 +236,7 @@ def auto_detach_observer(
                 for disp in disposables:
                     await disp.dispose_async()
                 return
-            return TailCall(disposables)
+            return TailCall[List[AsyncDisposable]](disposables)
 
         await message_loop([])
 

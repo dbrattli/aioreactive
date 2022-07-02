@@ -25,7 +25,7 @@ packages = [
 [tool.poetry.dependencies]
 python = ">= 3.9, < 3.11"
 typing-extensions = "^4.1.1"
-Expression = "^2.0.0"
+Expression = "^3.0.0"
 reactivex = "^4.0.0"
 
 [tool.poetry.dev-dependencies]
