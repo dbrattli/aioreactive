@@ -469,7 +469,7 @@ def retry(
 
 
 def _scan(
-    accumulator: Callable[[_TResult, _TSource], Union[Awaitable[_TResult], _TResult]],
+    accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
     initial: _TResult,
     async_result: bool = False,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
@@ -486,14 +486,7 @@ def _scan(
                 except Exception as ex:
                     await observer.athrow(ex)
                 else:
-                    if async_result:
-                        if not iscoroutine(intermediate):
-                            raise AssertionError(
-                                "The accumulator did not return an asynchronous result."
-                            )
-                        current = await intermediate
-                    else:
-                        current = intermediate  # type: ignore
+                    current = intermediate 
 
                     await observer.asend(current)
 
@@ -517,7 +510,10 @@ def scan(
     accumulator: Callable[[_TResult, _TSource], _TResult],
     initial: _TResult,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
-    return _scan(accumulator, initial)
+    async def async_accumulator(state: _TResult, current: _TSource) -> _TResult:
+        return accumulator(state, current)
+
+    return _scan(async_accumulator, initial)
 
 
 def scan_async(
@@ -533,4 +529,4 @@ def scan_async(
     Returns:
         The scan operator.
     """
-    return _scan(accumulator, initial, async_result=True)
+    return _scan(accumulator, initial)
