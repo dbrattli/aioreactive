@@ -1,5 +1,4 @@
-from inspect import iscoroutine
-from typing import Any, Awaitable, Callable, Iterable, TypeVar, Union
+from typing import Any, Awaitable, Callable, Iterable, TypeVar
 
 from expression.collections import seq
 from expression.core import (
@@ -471,7 +470,6 @@ def retry(
 def _scan(
     accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
     initial: _TResult,
-    async_result: bool = False,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     def _scan_operator(obs: AsyncObservable[_TSource]) -> AsyncObservable[_TResult]:
         async def subscribe_async(observer: AsyncObserver[_TResult]) -> AsyncDisposable:
@@ -482,11 +480,11 @@ def _scan(
                 nonlocal current
 
                 try:
-                    intermediate = accumulator(current, value)
+                    intermediate = await accumulator(current, value)
                 except Exception as ex:
                     await observer.athrow(ex)
                 else:
-                    current = intermediate 
+                    current = intermediate
 
                     await observer.asend(current)
 
