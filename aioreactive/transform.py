@@ -465,3 +465,66 @@ def retry(
         return pipe(source, catch(factory))
 
     return _retry
+
+
+def _scan(
+    accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    def _scan_operator(obs: AsyncObservable[_TSource]) -> AsyncObservable[_TResult]:
+        async def subscribe_async(observer: AsyncObserver[_TResult]) -> AsyncDisposable:
+            disposable: AsyncDisposable = AsyncDisposable.empty()
+            current: _TResult = initial
+
+            async def anext(value: _TSource) -> None:
+                nonlocal current
+
+                try:
+                    intermediate = await accumulator(current, value)
+                except Exception as ex:
+                    await observer.athrow(ex)
+                else:
+                    current = intermediate
+
+                    await observer.asend(current)
+
+            async def athrow(exception: Exception) -> None:
+                await observer.athrow(exception)
+
+            async def aclose() -> None:
+                await observer.aclose()
+
+            await disposable.dispose_async()
+            disposable = await obs.subscribe_async(anext, athrow, aclose)
+
+            return disposable
+
+        return AsyncAnonymousObservable(subscribe_async)
+
+    return _scan_operator
+
+
+def scan(
+    accumulator: Callable[[_TResult, _TSource], _TResult],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    async def async_accumulator(state: _TResult, current: _TSource) -> _TResult:
+        return accumulator(state, current)
+
+    return _scan(async_accumulator, initial)
+
+
+def scan_async(
+    accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    """Async version of the scan operator.
+
+    Args:
+        accumulator: An async accumulator function.
+        initial: The initial state.
+
+    Returns:
+        The scan operator.
+    """
+    return _scan(accumulator, initial)

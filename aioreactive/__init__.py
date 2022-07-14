@@ -871,6 +871,45 @@ def retry(
     return retry(retry_count)
 
 
+def scan(
+    accumulator: Callable[[_TResult, _TSource], _TResult],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    """The scan operator
+
+    This operator runs the accumulator for every value from the source with the current state. After every run, the new
+    computed value is returned.
+
+    Args:
+        accumulator: An accumulator function.
+        initial: The initial state.
+
+    Returns:
+        A single-value observable.
+    """
+    from .transform import scan as _scan
+
+    return _scan(accumulator, initial)
+
+
+def scan_async(
+    accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    """Async version of the scan operator.
+
+    Args:
+        accumulator: An async accumulator function.
+        initial: The initial state.
+
+    Returns:
+        The scan operator.
+    """
+    from .transform import scan_async as _scan_async
+
+    return _scan_async(accumulator, initial)
+
+
 def subscribe_async(
     obv: AsyncObserver[_TSource],
 ) -> Callable[[AsyncObservable[_TSource]], Awaitable[AsyncDisposable]]:
@@ -1137,6 +1176,8 @@ __all__ = [
     "never",
     "retry",
     "run",
+    "scan",
+    "scan_async",
     "single",
     "skip",
     "skip_last",
