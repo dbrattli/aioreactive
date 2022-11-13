@@ -863,6 +863,24 @@ def of_async(workflow: Awaitable[_TSource]) -> AsyncObservable[_TSource]:
     return of_async(workflow)
 
 
+def reduce(
+    accumulator: Callable[[_TResult, _TSource], _TResult],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    from .transform import reduce as _reduce
+
+    return _reduce(accumulator, initial)
+
+
+def reduce_async(
+    accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    from .transform import reduce_async as _reduce
+
+    return _reduce(accumulator, initial)
+
+
 def retry(
     retry_count: int,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
