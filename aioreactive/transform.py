@@ -1,4 +1,7 @@
-from typing import Any, Awaitable, Callable, Iterable, TypeVar
+from __future__ import annotations
+
+from collections.abc import Awaitable, Callable, Iterable
+from typing import Any, TypeVar
 
 from expression.collections import seq
 from expression.core import (
@@ -9,7 +12,6 @@ from expression.core import (
     TailCall,
     TailCallResult,
     compose,
-    match,
     pipe,
     tailrec_async,
 )
@@ -19,7 +21,9 @@ from .combine import merge_inner, zip_seq
 from .create import fail
 from .msg import (
     CompletedMsg,
+    CompletedMsg_,
     DisposeMsg,
+    DisposeMsg_,
     InnerCompletedMsg,
     InnerObservableMsg,
     Key,
@@ -28,6 +32,7 @@ from .msg import (
 from .observables import AsyncAnonymousObservable, AsyncObservable
 from .observers import AsyncAnonymousObserver, auto_detach_observer
 from .types import AsyncObserver
+
 
 _TSource = TypeVar("_TSource")
 _TResult = TypeVar("_TResult")
@@ -43,16 +48,14 @@ def transform(
             _TSource,
         ],
         Awaitable[None],
-    ]
+    ],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     def _(source: AsyncObservable[_TSource]) -> AsyncObservable[_TResult]:
         async def subscribe_async(aobv: AsyncObserver[_TResult]) -> AsyncDisposable:
             async def asend(value: _TSource) -> None:
                 return await anext(aobv.asend, value)
 
-            obv: AsyncObserver[_TSource] = AsyncAnonymousObserver(
-                asend, aobv.athrow, aobv.aclose
-            )
+            obv: AsyncObserver[_TSource] = AsyncAnonymousObserver(asend, aobv.athrow, aobv.aclose)
             sub = await source.subscribe_async(obv)
             return sub
 
@@ -62,11 +65,14 @@ def transform(
 
 
 def map_async(
-    amapper: Callable[[_TSource], Awaitable[_TResult]]
+    amapper: Callable[[_TSource], Awaitable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
-    """Returns an observable sequence whose elements are the result of
+    """Map async.
+
+    Returns an observable sequence whose elements are the result of
     invoking the async mapper function on each element of the
-    source."""
+    source.
+    """
 
     async def handler(next: Callable[[_TResult], Awaitable[None]], x: _TSource) -> None:
         b = await amapper(x)
@@ -76,57 +82,50 @@ def map_async(
 
 
 def starmap_async(
-    amapper: Callable[..., Awaitable[_TResult]]
+    amapper: Callable[..., Awaitable[_TResult]],
 ) -> Callable[[AsyncObservable[Any]], AsyncObservable[_TResult]]:
     """Map async spreading arguments to the async mapper.
 
     Returns an observable sequence whose elements are the result of
     invoking the async mapper function on each element of the
-    source."""
+    source.
+    """
 
-    async def handler(
-        next: Callable[[_TResult], Awaitable[None]], args: Iterable[Any]
-    ) -> None:
+    async def handler(next: Callable[[_TResult], Awaitable[None]], args: Iterable[Any]) -> None:
         b = await amapper(*args)
         await next(b)
 
     return transform(handler)
 
 
-def map(
-    mapper: Callable[[_TSource], _TResult]
-) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+def map(mapper: Callable[[_TSource], _TResult]) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Map each element in the stream.
 
     Returns an observable sequence whose elements are the result of
-    invoking the mapper function on each element of the source."""
+    invoking the mapper function on each element of the source.
+    """
 
-    def handler(
-        next: Callable[[_TResult], Awaitable[None]], x: _TSource
-    ) -> Awaitable[None]:
+    def handler(next: Callable[[_TResult], Awaitable[None]], x: _TSource) -> Awaitable[None]:
         return next(mapper(x))
 
     return transform(handler)
 
 
-def starmap(
-    mapper: Callable[..., _TResult]
-) -> Callable[[AsyncObservable[Any]], AsyncObservable[_TResult]]:
+def starmap(mapper: Callable[..., _TResult]) -> Callable[[AsyncObservable[Any]], AsyncObservable[_TResult]]:
     """Map and spread the arguments to the mapper.
 
     Returns an observable sequence whose elements are the result of
-    invoking the mapper function on each element of the source."""
+    invoking the mapper function on each element of the source.
+    """
 
-    def handler(
-        next: Callable[[_TResult], Awaitable[None]], args: Iterable[Any]
-    ) -> Awaitable[None]:
+    def handler(next: Callable[[_TResult], Awaitable[None]], args: Iterable[Any]) -> Awaitable[None]:
         return next(mapper(*args))
 
     return transform(handler)
 
 
 def mapi_async(
-    mapper: Callable[[_TSource, int], Awaitable[_TResult]]
+    mapper: Callable[[_TSource, int], Awaitable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Map with index async.
 
@@ -134,7 +133,6 @@ def mapi_async(
     invoking the async mapper function by incorporating the element's
     index on each element of the source.
     """
-
     return compose(
         zip_seq(seq.infinite),
         starmap_async(mapper),
@@ -142,7 +140,7 @@ def mapi_async(
 
 
 def mapi(
-    mapper: Callable[[_TSource, int], _TResult]
+    mapper: Callable[[_TSource, int], _TResult],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Map with index.
 
@@ -157,7 +155,7 @@ def mapi(
 
 
 def flat_map(
-    mapper: Callable[[_TSource], AsyncObservable[_TResult]]
+    mapper: Callable[[_TSource], AsyncObservable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flap map the observable sequence.
 
@@ -171,7 +169,6 @@ def flat_map(
     Returns:
         The result stream.
     """
-
     return compose(
         map(mapper),
         merge_inner(0),
@@ -179,7 +176,7 @@ def flat_map(
 
 
 def flat_mapi(
-    mapper: Callable[[_TSource, int], AsyncObservable[_TResult]]
+    mapper: Callable[[_TSource, int], AsyncObservable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flat map with index.
 
@@ -195,7 +192,6 @@ def flat_mapi(
     Returns:
         Stream[TSource, TResult]: [description]
     """
-
     return compose(
         mapi(mapper),
         merge_inner(0),
@@ -203,7 +199,7 @@ def flat_mapi(
 
 
 def flat_map_async(
-    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]]
+    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flap map async.
 
@@ -213,8 +209,7 @@ def flat_map_async(
 
 
     Args:
-        mapperCallable ([type]): [description]
-        Awaitable ([type]): [description]
+        mapper: Function to transform each item in the stream.
 
     Returns:
         Stream[TSource, TResult]: [description]
@@ -226,7 +221,7 @@ def flat_map_async(
 
 
 def flat_mapi_async(
-    mapper: Callable[[_TSource, int], Awaitable[AsyncObservable[_TResult]]]
+    mapper: Callable[[_TSource, int], Awaitable[AsyncObservable[_TResult]]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flat map async with index.
 
@@ -236,8 +231,7 @@ def flat_mapi_async(
     back into one observable sequence.
 
     Args:
-        mapperAsync ([type]): [description]
-        Awaitable ([type]): [description]
+        mapper: Function to transform each item in the stream.
 
     Returns:
         Stream[TSource, TResult]: [description]
@@ -249,7 +243,7 @@ def flat_mapi_async(
 
 
 def concat_map(
-    mapper: Callable[[_TSource], AsyncObservable[_TResult]]
+    mapper: Callable[[_TSource], AsyncObservable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     return compose(
         map(mapper),
@@ -276,9 +270,7 @@ def switch_latest(
     async def subscribe_async(aobv: AsyncObserver[_TSource]) -> AsyncDisposable:
         safe_obv, auto_detach = auto_detach_observer(aobv)
 
-        def obv(
-            mb: MailboxProcessor[Msg[_TSource]], id: int
-        ) -> AsyncObserver[_TSource]:
+        def obv(mb: MailboxProcessor[Msg[_TSource]], id: int) -> AsyncObserver[_TSource]:
             async def asend(value: _TSource) -> None:
                 await safe_obv.asend(value)
 
@@ -298,35 +290,32 @@ def switch_latest(
             @tailrec_async
             async def message_loop(
                 current: Option[AsyncDisposable], is_stopped: bool, current_id: int
-            ) -> "TailCallResult[None, [Option[AsyncDisposable], bool, int]]":
+            ) -> TailCallResult[None, [Option[AsyncDisposable], bool, int]]:
                 cmd = await inbox.receive()
 
-                with match(cmd) as case:
-                    for xs in case(InnerObservableMsg[_TSource]):
+                match cmd:
+                    case InnerObservableMsg(inner_observable=xs):
                         next_id = current_id + 1
                         for disp in current.to_list():
                             await disp.dispose_async()
                         inner = await xs.subscribe_async(obv(inbox, next_id))
                         current, current_id = Some(inner), next_id
-                        break
-                    for idx in case(InnerCompletedMsg[Key]):
+
+                    case InnerCompletedMsg(key=idx):
                         if is_stopped and idx == current_id:
                             await safe_obv.aclose()
                             current, is_stopped = Nothing, True
-                        break
-                    while case(CompletedMsg):
+
+                    case CompletedMsg_():
                         if current.is_none():
                             await safe_obv.aclose()
-                        break
-                    while case(DisposeMsg):
+
+                    case DisposeMsg_():
                         if current.is_some():
                             await current.value.dispose_async()
                         current, is_stopped = Nothing, True
-                        break
 
-                return TailCall[Option[AsyncDisposable], bool, int](
-                    current, is_stopped, current_id
-                )
+                return TailCall[Option[AsyncDisposable], bool, int](current, is_stopped, current_id)
 
             await message_loop(Nothing, False, 0)
 
@@ -362,7 +351,7 @@ def switch_latest(
 
 
 def flat_map_latest_async(
-    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]]
+    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flat map latest async.
 
@@ -381,10 +370,9 @@ def flat_map_latest_async(
 
 
 def flat_map_latest(
-    mapper: Callable[[_TSource], AsyncObservable[_TResult]]
+    mapper: Callable[[_TSource], AsyncObservable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flat map latest.
-
 
     Transforms the items emitted by an source sequence into observable
     streams, and mirror those items emitted by the most-recently
@@ -400,7 +388,7 @@ def flat_map_latest(
 
 
 def catch(
-    handler: Callable[[Exception], AsyncObservable[_TSource]]
+    handler: Callable[[Exception], AsyncObservable[_TSource]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     """Catch Exception.
 

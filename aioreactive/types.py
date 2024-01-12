@@ -1,7 +1,9 @@
 from abc import abstractmethod
-from typing import Awaitable, Callable, Generic, Optional, Protocol, TypeVar, Union
+from collections.abc import Awaitable, Callable
+from typing import Generic, Optional, Protocol, TypeVar, Union
 
 from expression.system import AsyncDisposable
+
 
 _T = TypeVar("_T")
 _TSource = TypeVar("_TSource")
@@ -50,9 +52,7 @@ class Flatten(Protocol):
     `AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[Tuple[TSource, TResult]]`
     """
 
-    def __call__(
-        self, __source: AsyncObservable[AsyncObservable[_TSource]]
-    ) -> AsyncObservable[_TSource]:
+    def __call__(self, __source: AsyncObservable[AsyncObservable[_TSource]]) -> AsyncObservable[_TSource]:
         raise NotImplementedError
 
 

@@ -4,6 +4,7 @@ from typing import TypeVar
 from aioreactive import AsyncObserver
 from aioreactive.subject import AsyncSingleSubject, AsyncSubject
 
+
 TSource = TypeVar("TSource")
 
 

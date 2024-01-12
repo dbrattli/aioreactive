@@ -1,11 +1,13 @@
 import asyncio
 import logging
-from typing import Awaitable, Callable, Optional, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Optional, TypeVar
 
 from expression.system.disposable import AsyncDisposable
 
 from .observers import AsyncAwaitableObserver
 from .types import AsyncObservable, AsyncObserver
+
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +34,6 @@ async def run(
         `StopAsyncIteration`. For any other errors it will throw the
         exception.
     """
-
     # For run we need a noopobserver if no observer is specified to avoid
     # blocking the last single stream in the chain.
     obv: AsyncAwaitableObserver[_TSource] = observer or AsyncAwaitableObserver()

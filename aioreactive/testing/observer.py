@@ -1,9 +1,11 @@
 import logging
-from typing import Awaitable, Callable, List, Tuple, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 from aioreactive import AsyncAwaitableObserver
 from aioreactive.notification import Notification, OnCompleted, OnError, OnNext
 from aioreactive.utils import anoop
+
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +35,7 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
     ) -> None:
         super().__init__(asend, athrow, aclose)
 
-        self._values: List[Tuple[float, Notification[TSource]]] = []
+        self._values: list[tuple[float, Notification[TSource]]] = []
 
         self._send = asend
         self._throw = athrow
@@ -68,5 +70,5 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         await super().aclose()
 
     @property
-    def values(self) -> List[Tuple[float, Notification[TSource]]]:
+    def values(self) -> list[tuple[float, Notification[TSource]]]:
         return self._values

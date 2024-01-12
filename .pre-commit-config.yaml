@@ -1,24 +1,12 @@
+exclude: "_version.py|versioneer.py"
 repos:
   - hooks:
-      - args:
-          - --remove-all-unused-imports
-          - --in-place
-        id: autoflake
-    repo: https://github.com/humitos/mirrors-autoflake
-    rev: v1.1
-  - hooks:
-      - id: isort
-    repo: https://github.com/timothycrosley/isort
-    rev: 5.10.1
-  - hooks:
-      - id: black
-    repo: https://github.com/psf/black
-    rev: 22.3.0
-  - hooks:
-      - id: flake8
-        exclude: (^docs/|^examples/|^notebooks/|^tests/)
-    repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+        args: [--check]
+    repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.11
   - hooks:
       - id: pyright
         name: pyright
@@ -26,5 +14,5 @@ repos:
         language: node
         pass_filenames: false
         types: [python]
-        additional_dependencies: ["pyright@1.1.255"]
+        additional_dependencies: ["pyright@1.1.344"]
     repo: local

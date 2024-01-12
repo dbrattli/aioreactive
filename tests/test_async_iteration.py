@@ -19,7 +19,7 @@ def event_loop():
 @pytest.mark.asyncio
 async def test_async_iteration() -> None:
     xs = rx.from_iterable([1, 2, 3])
-    result = []
+    result: list[int] = []
 
     async for x in rx.to_async_iterable(xs):
         result.append(x)
@@ -39,7 +39,7 @@ async def test_async_comprehension() -> None:
 @pytest.mark.asyncio
 async def test_async_iteration_aync_with() -> None:
     xs = rx.from_iterable([1, 2, 3])
-    result = []
+    result: list[int] = []
 
     obv = rx.AsyncIteratorObserver(xs)
     async for x in obv:
@@ -55,7 +55,7 @@ async def test_async_iteration_inception() -> None:
     obv = rx.AsyncIteratorObserver(xs)
 
     ys = rx.from_async_iterable(obv)
-    result = []
+    result: list[int] = []
 
     async for y in rx.to_async_iterable(ys):
         result.append(y)

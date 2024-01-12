@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable, Iterable
 from enum import Enum
-from typing import Any, Awaitable, Callable, Generic, Iterable, TypeVar, get_origin
+from typing import Any, Generic, TypeVar, get_origin
 
 from expression.core import SupportsMatch
 
 from .types import AsyncObserver
+
 
 _TSource = TypeVar("_TSource")
 
@@ -40,6 +42,8 @@ class Notification(Generic[_TSource], ABC):
 
 class OnNext(Notification[_TSource], SupportsMatch[_TSource]):
     """Represents an OnNext notification to an observer."""
+
+    __match_args__ = ("value",)
 
     def __init__(self, value: _TSource) -> None:
         """Constructs a notification of a new value."""
@@ -77,6 +81,8 @@ class OnNext(Notification[_TSource], SupportsMatch[_TSource]):
 
 class OnError(Notification[_TSource], SupportsMatch[Exception]):
     """Represents an OnError notification to an observer."""
+
+    __match_args__ = ("exception",)
 
     def __init__(self, exception: Exception) -> None:
         """Constructs a notification of an exception."""
@@ -120,7 +126,6 @@ class _OnCompleted(Notification[_TSource], SupportsMatch[bool]):
 
     def __init__(self) -> None:
         """Constructs a notification of the end of a sequence."""
-
         super().__init__(MsgKind.ON_COMPLETED)
 
     async def accept(

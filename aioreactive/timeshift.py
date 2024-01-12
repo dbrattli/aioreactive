@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from collections.abc import Callable, Iterable
 from datetime import datetime, timedelta
-from typing import Callable, Iterable, NoReturn, Tuple, TypeVar
+from typing import NoReturn, TypeVar
 
 from expression import curry_flipped
 from expression.collections import seq
@@ -11,7 +12,6 @@ from expression.core import (
     TailCallResult,
     aiotools,
     fst,
-    match,
     pipe,
     tailrec_async,
 )
@@ -19,11 +19,12 @@ from expression.system import CancellationTokenSource
 
 from .combine import with_latest_from
 from .create import interval
-from .notification import Notification, OnCompleted, OnError, OnNext
+from .notification import Notification, OnCompleted, OnError, OnNext, _OnCompleted
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncNotificationObserver, auto_detach_observer
 from .transform import map
 from .types import AsyncDisposable, AsyncObservable, AsyncObserver
+
 
 _TSource = TypeVar("_TSource")
 log = logging.getLogger(__name__)
@@ -40,19 +41,17 @@ def delay(
     relative time intervals between the values are preserved.
 
     Args:
+        source: The source observable.
         seconds (float): Number of seconds to delay.
 
     Returns:
         Delayed stream.
     """
-
     cts = CancellationTokenSource()
     token = cts.token
 
     async def subscribe_async(aobv: AsyncObserver[_TSource]) -> AsyncDisposable:
-        async def worker(
-            inbox: MailboxProcessor[Tuple[Notification[_TSource], datetime]]
-        ) -> None:
+        async def worker(inbox: MailboxProcessor[tuple[Notification[_TSource], datetime]]) -> None:
             @tailrec_async
             async def loop() -> "TailCallResult[None, ...]":
                 if token.is_cancellation_requested:
@@ -66,21 +65,21 @@ def delay(
                     await asyncio.sleep(seconds)
 
                 async def matcher() -> None:
-                    with match(ns) as case:
-                        for x in case(OnNext[_TSource]):
+                    match ns:
+                        case OnNext(value=x):
                             await aobv.asend(x)
                             return
-                        for err in case(OnError[_TSource]):
+                        case OnError(exception=err):
                             await aobv.athrow(err)
                             return
-                        for x in case(OnCompleted):
+                        case _:
                             await aobv.aclose()
                             return
 
                 await matcher()
                 return TailCall["..."]()
 
-            asyncio.ensure_future(loop())
+            _tsk = asyncio.ensure_future(loop())
 
         agent = MailboxProcessor.start(worker, token)
 
@@ -109,28 +108,26 @@ def debounce(
             safe_obv, auto_detach = auto_detach_observer(aobv)
             infinite: Iterable[int] = seq.infinite
 
-            async def worker(
-                inbox: MailboxProcessor[Tuple[Notification[_TSource], int]]
-            ) -> None:
+            async def worker(inbox: MailboxProcessor[tuple[Notification[_TSource], int]]) -> None:
                 @tailrec_async
                 async def message_loop(
                     current_index: int,
                 ) -> "TailCallResult[NoReturn, [int]]":
                     n, index = await inbox.receive()
 
-                    with match(n) as case:
-                        log.debug("debounce: %s, %d, %d", n, index, current_index)
-                        for x in case(OnNext[_TSource]):
+                    match n:
+                        case OnNext(value=x):
+                            log.debug("debounce: %s, %d, %d", n, index, current_index)
                             if index == current_index:
                                 await safe_obv.asend(x)
                                 current_index = index
                             elif index > current_index:
                                 current_index = index
 
-                        for err in case(OnError[_TSource]):
+                        case OnError(exception=err):
                             await safe_obv.athrow(err)
 
-                        while case(OnCompleted):
+                        case _:
                             await safe_obv.aclose()
 
                     return TailCall[int](current_index)
