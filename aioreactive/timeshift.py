@@ -19,7 +19,7 @@ from expression.system import CancellationTokenSource
 
 from .combine import with_latest_from
 from .create import interval
-from .notification import Notification, OnCompleted, OnError, OnNext, _OnCompleted
+from .notification import Notification, OnCompleted, OnError, OnNext
 from .observables import AsyncAnonymousObservable
 from .observers import AsyncNotificationObserver, auto_detach_observer
 from .transform import map

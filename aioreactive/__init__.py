@@ -23,7 +23,7 @@ from typing import (
     overload,
 )
 
-from expression import Option, curry_flipped, pipe
+from expression import Option, curry_flip, pipe
 from expression.system.disposable import AsyncDisposable
 
 from .observables import AsyncAnonymousObservable, AsyncIterableObservable
@@ -336,7 +336,9 @@ class AsyncRx(AsyncObservable[_TSource]):
         )
 
     def skip_last(self, count: int) -> AsyncRx[_TSource]:
-        """Bypasses a specified number of elements at the end of an
+        """Skip the last items of the observable sequencerm .
+
+        Bypasses a specified number of elements at the end of an
         observable sequence.
 
         This operator accumulates a queue with a length enough to store
@@ -485,7 +487,7 @@ def choose_async(
     return choose_async(chooser)
 
 
-@curry_flipped(1)
+@curry_flip(1)
 def combine_latest(
     source: AsyncObservable[_TSource], other: AsyncObservable[_TOther]
 ) -> AsyncObservable[tuple[_TSource, _TOther]]:
@@ -1084,7 +1086,7 @@ def to_async_iterable(source: AsyncObservable[_TSource]) -> AsyncIterable[_TSour
     return to_async_iterable(source)
 
 
-@curry_flipped(1)
+@curry_flip(1)
 def with_latest_from(
     source: AsyncObservable[_TSource],
     other: AsyncObservable[_TOther],
