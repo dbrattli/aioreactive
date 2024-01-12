@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Iterable
 from typing import TypeVar
 
 import reactivex
@@ -8,11 +8,7 @@ from reactivex import Observable
 from reactivex.abc import DisposableBase, ObserverBase, SchedulerBase
 from reactivex.disposable import Disposable
 
-from .observables import (
-    AsyncAnonymousObserver,
-    AsyncIterableObservable,
-    AsyncObservable,
-)
+from .observables import AsyncAnonymousObserver, AsyncIterableObservable, AsyncObservable
 
 
 _TSource = TypeVar("_TSource")
@@ -34,8 +30,10 @@ def to_async_iterable(source: AsyncObservable[_TSource]) -> AsyncIterable[_TSour
 
 
 def to_observable(source: AsyncObservable[_TSource]) -> Observable[_TSource]:
-    def subscribe(obv: ObserverBase[_TSource], scheduler: SchedulerBase | None = None) -> DisposableBase:
-        subscription: AsyncDisposable | None = None
+    """Convert async observable to observable."""
+
+    def subscribe(obv: ObserverBase[_TSource], scheduler: Optional[SchedulerBase] = None) -> DisposableBase:
+        subscription: Optional[AsyncDisposable] = None
 
         async def start() -> None:
             nonlocal subscription
@@ -60,3 +58,8 @@ def to_observable(source: AsyncObservable[_TSource]) -> Observable[_TSource]:
         return Disposable(dispose)
 
     return reactivex.create(subscribe)
+
+
+def to_iterable(source: AsyncObservable[_TSource]) -> Iterable[_TSource]:
+    """Convert async observable to iterable."""
+    return to_observable(source).to_iterable()

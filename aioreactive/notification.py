@@ -3,8 +3,6 @@ from collections.abc import Awaitable, Callable, Iterable
 from enum import Enum
 from typing import Any, Generic, TypeVar, get_origin
 
-from expression.core import SupportsMatch
-
 from .types import AsyncObserver
 
 
@@ -40,7 +38,7 @@ class Notification(Generic[_TSource], ABC):
         return str(self)
 
 
-class OnNext(Notification[_TSource], SupportsMatch[_TSource]):
+class OnNext(Notification[_TSource]):
     """Represents an OnNext notification to an observer."""
 
     __match_args__ = ("value",)
@@ -79,7 +77,7 @@ class OnNext(Notification[_TSource], SupportsMatch[_TSource]):
         return f"OnNext({self.value})"
 
 
-class OnError(Notification[_TSource], SupportsMatch[Exception]):
+class OnError(Notification[_TSource]):
     """Represents an OnError notification to an observer."""
 
     __match_args__ = ("exception",)
@@ -118,7 +116,7 @@ class OnError(Notification[_TSource], SupportsMatch[Exception]):
         return f"OnError({self.exception})"
 
 
-class _OnCompleted(Notification[_TSource], SupportsMatch[bool]):
+class OnCompleted(Notification[_TSource]):
     """Represents an OnCompleted notification to an observer.
 
     Note: Do not use. Use the singleton `OnCompleted` instance instead.
@@ -152,13 +150,9 @@ class _OnCompleted(Notification[_TSource], SupportsMatch[bool]):
         return []
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, _OnCompleted):
+        if isinstance(other, OnCompleted):
             return True
         return False
 
     def __str__(self) -> str:
         return "OnCompleted"
-
-
-OnCompleted: _OnCompleted[Any] = _OnCompleted()
-"""OnCompleted singleton instance."""

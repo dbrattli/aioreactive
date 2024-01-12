@@ -20,7 +20,7 @@ def event_loop():
 @pytest.mark.asyncio
 async def test_map_works():
     xs: AsyncObservable[int] = rx.from_iterable([1, 2, 3])
-    values = []
+    values: list[int] = []
 
     async def asend(value: int) -> None:
         values.append(value)
@@ -69,7 +69,7 @@ async def test_map_mapper_throws():
 async def test_map_subscription_cancel():
     xs: rx.AsyncSubject[int] = rx.AsyncSubject()
     sub: Optional[AsyncDisposable] = None
-    result = []
+    result: list[int] = []
 
     def mapper(value: int) -> int:
         return value * 10
@@ -93,7 +93,7 @@ async def test_map_subscription_cancel():
 @pytest.mark.asyncio
 async def test_mapi_works():
     xs: AsyncObservable[int] = rx.from_iterable([1, 2, 3])
-    values = []
+    values: list[int] = []
 
     async def asend(value: int) -> None:
         values.append(value)

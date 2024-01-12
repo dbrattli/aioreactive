@@ -20,12 +20,6 @@ from expression.system import AsyncDisposable
 from .combine import merge_inner, zip_seq
 from .create import fail
 from .msg import (
-    CompletedMsg,
-    CompletedMsg_,
-    DisposeMsg,
-    DisposeMsg_,
-    InnerCompletedMsg,
-    InnerObservableMsg,
     Key,
     Msg,
 )
@@ -279,8 +273,7 @@ def switch_latest(
 
             async def aclose() -> None:
                 pipe(
-                    Key(id),
-                    InnerCompletedMsg,
+                    Msg[Any](inner_completed=Key(id)),
                     mb.post,
                 )
 
@@ -294,26 +287,28 @@ def switch_latest(
                 cmd = await inbox.receive()
 
                 match cmd:
-                    case InnerObservableMsg(inner_observable=xs):
+                    case Msg(tag="inner_observable", inner_observable=xs):
                         next_id = current_id + 1
                         for disp in current.to_list():
                             await disp.dispose_async()
                         inner = await xs.subscribe_async(obv(inbox, next_id))
                         current, current_id = Some(inner), next_id
 
-                    case InnerCompletedMsg(key=idx):
+                    case Msg(tag="inner_completed", inner_completed=idx):
                         if is_stopped and idx == current_id:
                             await safe_obv.aclose()
                             current, is_stopped = Nothing, True
 
-                    case CompletedMsg_():
+                    case Msg(tag="completed"):
                         if current.is_none():
                             await safe_obv.aclose()
 
-                    case DisposeMsg_():
+                    case Msg(tag="dispose"):
                         if current.is_some():
                             await current.value.dispose_async()
                         current, is_stopped = Nothing, True
+                    case _:
+                        raise ValueError(f"Unknown message: {cmd}")
 
                 return TailCall[Option[AsyncDisposable], bool, int](current, is_stopped, current_id)
 
@@ -323,7 +318,7 @@ def switch_latest(
 
         async def asend(xs: AsyncObservable[_TSource]) -> None:
             pipe(
-                InnerObservableMsg(xs),
+                Msg(inner_observable=xs),
                 inner_agent.post,
             )
 
@@ -331,7 +326,7 @@ def switch_latest(
             await safe_obv.athrow(error)
 
         async def aclose() -> None:
-            inner_agent.post(CompletedMsg)
+            inner_agent.post(Msg(completed=True))
 
         _obv = AsyncAnonymousObserver(asend, athrow, aclose)
         dispose = await pipe(
@@ -343,7 +338,7 @@ def switch_latest(
 
         async def cancel() -> None:
             await dispose.dispose_async()
-            inner_agent.post(DisposeMsg)
+            inner_agent.post(Msg(dispose=True))
 
         return AsyncDisposable.create(cancel)
 

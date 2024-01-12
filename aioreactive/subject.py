@@ -1,6 +1,6 @@
 import logging
 from asyncio import Future
-from typing import Optional, TypeVar, Union
+from typing import TypeVar
 
 from expression.system import AsyncDisposable, ObjectDisposedException
 
@@ -26,7 +26,7 @@ class AsyncSingleSubject(AsyncObserver[_TSource], AsyncObservable[_TSource], Asy
         super().__init__()
 
         self._wait: Future[bool] = Future()
-        self._observer: Optional[AsyncObserver[_TSource]] = None
+        self._observer: AsyncObserver[_TSource] | None = None
         self._is_disposed = False
         self._is_stopped = False
 
@@ -80,9 +80,9 @@ class AsyncSingleSubject(AsyncObserver[_TSource], AsyncObservable[_TSource], Asy
 
     async def subscribe_async(
         self,
-        send: Optional[Union[SendAsync[_TSource], AsyncObserver[_TSource]]] = None,
-        throw: Optional[ThrowAsync] = None,
-        close: Optional[CloseAsync] = None,
+        send: SendAsync[_TSource] | AsyncObserver[_TSource] | None = None,
+        throw: ThrowAsync | None = None,
+        close: CloseAsync | None = None,
     ) -> AsyncDisposable:
         """Start streaming."""
         self.check_disposed()
@@ -144,9 +144,9 @@ class AsyncMultiSubject(AsyncObserver[_TSource], AsyncObservable[_TSource], Asyn
 
     async def subscribe_async(
         self,
-        send: Optional[Union[SendAsync[_TSource], AsyncObserver[_TSource]]] = None,
-        throw: Optional[ThrowAsync] = None,
-        close: Optional[CloseAsync] = None,
+        send: SendAsync[_TSource] | AsyncObserver[_TSource] | None = None,
+        throw: ThrowAsync | None = None,
+        close: CloseAsync | None = None,
     ) -> AsyncDisposable:
         """Subscribe."""
         log.debug("AsyncMultiStream:subscribe_async()")

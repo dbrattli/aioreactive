@@ -7,20 +7,17 @@ authors = ["Dag Brattli <dag@brattli.net>", "Børge Lanes"]
 license = "MIT License"
 repository = "https://github.com/dbrattli/aioreactive"
 classifiers = [
-        "Development Status :: 3 - Alpha",
-        "Environment :: Other Environment",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Topic :: Software Development :: Libraries :: Python Modules",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Other Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-packages = [
-    { include = "aioreactive" },
-    { include = "aioreactive/py.typed" }
-]
+packages = [{ include = "aioreactive" }, { include = "aioreactive/py.typed" }]
 
 [tool.poetry.dependencies]
 python = ">= 3.11, < 4"
@@ -30,7 +27,7 @@ reactivex = "^4.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest-asyncio = "^0.18.1"
-pytest = "^7.0.1"
+pytest = "^7.4.4"
 coverage = "^6.3.2"
 coveralls = "^3.3.1"
 pre-commit = "^2.17.0"
@@ -45,7 +42,7 @@ line-length = 120
 # D105: Missing docstring in magic method
 ignore = ["D100", "D101", "D102", "D103", "D105", "D107"]
 target-version = "py310"
-select = ["D", "E", "W",  "F", "I", "T", "RUF", "TID", "UP"]
+select = ["D", "E", "W", "F", "I", "T", "RUF", "TID", "UP"]
 exclude = ["tests", "docs"]
 
 [tool.ruff.pydocstyle]
@@ -62,4 +59,3 @@ asyncio_mode = "strict"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-

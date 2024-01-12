@@ -6,7 +6,7 @@ from typing import Any, TypeVar, cast
 from expression.core import MailboxProcessor, TailCall, tailrec_async
 from expression.system import AsyncDisposable, CancellationTokenSource, Disposable
 
-from .msg import DisposableMsg, DisposeMsg, Msg
+from .msg import Msg
 from .notification import MsgKind, Notification, OnCompleted, OnError, OnNext
 from .types import AsyncObservable, AsyncObserver
 from .utils import anoop
@@ -141,7 +141,7 @@ class AsyncNotificationObserver(AsyncObserver[_TSource]):
         await self._fn(OnError(error))
 
     async def aclose(self) -> None:
-        await self._fn(OnCompleted)
+        await self._fn(OnCompleted())
 
 
 def noop() -> AsyncObserver[Any]:
@@ -194,7 +194,7 @@ def safe_observer(obv: AsyncObserver[_TSource], disposable: AsyncDisposable) -> 
         agent.post(OnError(ex))
 
     async def aclose() -> None:
-        agent.post(OnCompleted)
+        agent.post(OnCompleted())
 
     return AsyncAnonymousObserver(asend, athrow, aclose)
 
@@ -217,12 +217,13 @@ def auto_detach_observer(
                 return
 
             cmd = await inbox.receive()
-            if isinstance(cmd, DisposableMsg):
-                disposables.append(cmd.disposable)
-            else:
-                for disp in disposables:
-                    await disp.dispose_async()
-                return
+            match cmd:
+                case Msg(tag="disposable", disposable=disposable):
+                    disposables.append(disposable)
+                case _:
+                    for disp in disposables:
+                        await disp.dispose_async()
+                    return
             return TailCall[list[AsyncDisposable]](disposables)
 
         await message_loop([])
@@ -231,7 +232,7 @@ def auto_detach_observer(
 
     async def cancel() -> None:
         cts.cancel()
-        agent.post(DisposeMsg)
+        agent.post(Msg(dispose=True))
 
     canceller = AsyncDisposable.create(cancel)
     safe_obv = safe_observer(obv, canceller)
@@ -239,7 +240,7 @@ def auto_detach_observer(
     # Auto-detaches (disposes) the disposable when the observer completes with success or error.
     async def auto_detach(async_disposable: Coroutine[None, None, AsyncDisposable]) -> AsyncDisposable:
         disposable = await async_disposable
-        agent.post(DisposableMsg(disposable))
+        agent.post(Msg(disposable=disposable))
         return disposable
 
     return safe_obv, auto_detach

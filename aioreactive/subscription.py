@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from expression.system.disposable import AsyncDisposable
 
@@ -16,7 +16,7 @@ _TSource = TypeVar("_TSource")
 
 async def run(
     source: AsyncObservable[_TSource],
-    observer: Optional[AsyncAwaitableObserver[_TSource]] = None,
+    observer: AsyncAwaitableObserver[_TSource] | None = None,
     timeout: int = 2,
 ) -> _TSource:
     """Run the source with the given observer.
@@ -25,7 +25,9 @@ async def run(
     closes and returns the final value received.
 
     Args:
-        timeout -- Seconds before timing out in case source never closes.
+        source: The source observable.
+        observer: The observer to subscribe to the source.
+        timeout: Seconds before timing out in case source never closes.
 
     Returns:
         The last event sent through the stream. If any values have been

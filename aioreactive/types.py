@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections.abc import Awaitable, Callable
-from typing import Generic, Optional, Protocol, TypeVar, Union
+from typing import Generic, Protocol, TypeVar
 
 from expression.system import AsyncDisposable
 
@@ -39,15 +39,17 @@ class AsyncObservable(Generic[_T_out]):
     @abstractmethod
     async def subscribe_async(
         self,
-        send: Optional[Union[SendAsync[_T_out], AsyncObserver[_T_out]]] = None,
-        throw: Optional[ThrowAsync] = None,
-        close: Optional[CloseAsync] = None,
+        send: SendAsync[_T_out] | AsyncObserver[_T_out] | None = None,
+        throw: ThrowAsync | None = None,
+        close: CloseAsync | None = None,
     ) -> AsyncDisposable:
         raise NotImplementedError
 
 
 class Flatten(Protocol):
-    """A zipping projetion is a function that projects from one observable to a zipped, i.e:
+    """Flatten protocol.
+
+    A zipping projetion is a function that projects from one observable to a zipped, i.e:
 
     `AsyncObservable[AsyncObservable[TSource]]) -> AsyncObservable[Tuple[TSource, TResult]]`
     """
