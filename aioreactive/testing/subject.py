@@ -1,8 +1,10 @@
 import asyncio
-from typing import TypeVar
+from asyncio import Task
+from typing import Any, TypeVar
 
 from aioreactive import AsyncObserver
 from aioreactive.subject import AsyncSingleSubject, AsyncSubject
+
 
 TSource = TypeVar("TSource")
 
@@ -16,13 +18,20 @@ class AsyncSubjectBase(AsyncObserver[TSource]):
 
     def __init__(self) -> None:
         self._loop = asyncio.get_event_loop()
+        self._running_tasks: set[Task[Any]] = set()
 
     async def asend_at(self, when: float, value: TSource) -> None:
-        async def task() -> None:
+        task: Task[Any] | None = None
+
+        async def worker() -> None:
             await self.asend(value)
+            if task:
+                self._running_tasks.remove(task)
 
         def callback() -> None:
-            asyncio.ensure_future(task())
+            nonlocal task
+            task = asyncio.ensure_future(worker())
+            self._running_tasks.add(task)
 
         self._loop.call_at(when, callback)
 
@@ -31,18 +40,29 @@ class AsyncSubjectBase(AsyncObserver[TSource]):
         await self.asend(value)
 
     async def asend_later_scheduled(self, delay: float, value: TSource) -> None:
-        async def task() -> None:
+        task: Task[Any] | None = None
+
+        async def worker() -> None:
             await asyncio.sleep(delay)
             await self.asend(value)
+            if task:
+                self._running_tasks.remove(task)
 
-        asyncio.ensure_future(task())
+        task = asyncio.ensure_future(worker())
+        self._running_tasks.add(task)
 
     async def athrow_at(self, when: float, err: Exception) -> None:
-        async def task() -> None:
+        task: Task[Any] | None = None
+
+        async def worker() -> None:
             await self.athrow(err)
+            if task:
+                self._running_tasks.remove(task)
 
         def callback() -> None:
-            asyncio.ensure_future(task())
+            nonlocal task
+            task = asyncio.ensure_future(worker())
+            self._running_tasks.add(task)
 
         self._loop.call_at(when, callback)
 
@@ -51,18 +71,29 @@ class AsyncSubjectBase(AsyncObserver[TSource]):
         await self.athrow(err)
 
     async def athrow_later_scheduled(self, delay: float, err: Exception) -> None:
-        async def task() -> None:
+        task: Task[Any] | None = None
+
+        async def worker() -> None:
+            nonlocal task
             await asyncio.sleep(delay)
             await self.athrow(err)
+            if task:
+                self._running_tasks.remove(task)
 
-        asyncio.ensure_future(task())
+        task = asyncio.ensure_future(worker())
+        self._running_tasks.add(task)
 
     async def aclose_at(self, when: float) -> None:
-        async def task() -> None:
+        task: Task[Any] | None = None
+
+        async def worker() -> None:
             await self.aclose()
+            if task:
+                self._running_tasks.remove(task)
 
         def callback() -> None:
-            asyncio.ensure_future(task())
+            task = asyncio.ensure_future(worker())
+            self._running_tasks.add(task)
 
         self._loop.call_at(when, callback)
 
@@ -71,11 +102,16 @@ class AsyncSubjectBase(AsyncObserver[TSource]):
         await self.aclose()
 
     async def close_later_scheduled(self, delay: float) -> None:
-        async def task() -> None:
+        task: Task[Any] | None = None
+
+        async def worker() -> None:
             await asyncio.sleep(delay)
             await self.aclose()
+            if task:
+                self._running_tasks.remove(task)
 
-        asyncio.ensure_future(task())
+        task = asyncio.ensure_future(worker())
+        self._running_tasks.add(task)
 
 
 class AsyncTestSubject(AsyncSubject[TSource], AsyncSubjectBase[TSource]):

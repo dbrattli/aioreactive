@@ -50,7 +50,7 @@ async def test_scan():
         OnNext(3),
         OnNext(6),
         OnNext(10),
-        OnCompleted,
+        OnCompleted(),
     ]
 
 
@@ -72,5 +72,5 @@ async def test_scan_async():
         OnNext(3),
         OnNext(6),
         OnNext(10),
-        OnCompleted,
+        OnCompleted(),
     ]

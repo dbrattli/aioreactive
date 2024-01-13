@@ -82,7 +82,7 @@ async def test_stream_send_after_close():
         (1, OnNext(10)),
         (2, OnNext(20)),
         (3, OnNext(30)),
-        (5, OnCompleted),
+        (5, OnCompleted()),
     ]
 
 
@@ -222,4 +222,4 @@ async def test_stream_cold_close():
     async with await xs.subscribe_async(sink):
         await xs.asend_later(1, 20)
 
-    assert sink.values == [(10, OnCompleted)]
+    assert sink.values == [(10, OnCompleted())]

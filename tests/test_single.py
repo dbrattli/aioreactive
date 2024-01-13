@@ -27,7 +27,7 @@ async def test_unit_happy():
 
     obv: AsyncTestObserver[int] = AsyncTestObserver()
     await rx.run(xs, obv)
-    assert obv.values == [(0, OnNext(42)), (0, OnCompleted)]
+    assert obv.values == [(0, OnNext(42)), (0, OnCompleted())]
 
 
 @pytest.mark.asyncio
@@ -65,7 +65,7 @@ async def test_unit_close():
 
     assert obv.values == [
         (0, OnNext(42)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -79,7 +79,7 @@ async def test_unit_happy_resolved_future():
     await rx.run(xs, obv)
     assert obv.values == [
         (0, OnNext(42)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -95,7 +95,7 @@ async def test_unit_happy_future_resolve():
 
     assert obv.values == [
         (0, OnNext(42)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -125,4 +125,4 @@ async def test_unit_future_cancel():
         with pytest.raises(asyncio.CancelledError):
             await obv
 
-    assert obv.values == [(approx(1), OnCompleted)]
+    assert obv.values == [(approx(1), OnCompleted())]

@@ -1,8 +1,7 @@
-"""
-Example running an aiohttp server doing search queries against
+"""Example running an aiohttp server doing search queries against
 Wikipedia to populate the autocomplete dropdown in the web UI. Start
 using `python autocomplete.py` and navigate your web browser to
-http://localhost:8080
+http://localhost:8080.
 
 Requirements:
 > pip3 install aiohttp
@@ -12,7 +11,7 @@ import asyncio
 import json
 import os
 from asyncio.events import AbstractEventLoop
-from typing import Any, Callable, Dict
+from typing import Any
 
 import aiohttp
 import aiohttp_jinja2
@@ -25,7 +24,8 @@ from expression.core import pipe
 
 import aioreactive as rx
 
-Msg = Dict[str, str]
+
+Msg = dict[str, str]
 
 
 async def search_wikipedia(term: str) -> rx.AsyncObservable[str]:
@@ -45,7 +45,9 @@ async def websocket_handler(request: Request) -> WebSocketResponse:
 
     stream: rx.AsyncObservable[Msg] = rx.AsyncSubject()
 
-    mapper: Callable[[Msg], str] = lambda x: x["term"]
+    def mapper(x: Msg) -> str:
+        return x["term"]
+
     xs = pipe(
         stream,
         rx.map(mapper),
@@ -81,7 +83,7 @@ async def websocket_handler(request: Request) -> WebSocketResponse:
 
 
 @aiohttp_jinja2.template("index.html")
-async def index(request: Request) -> Dict[str, Any]:
+async def index(request: Request) -> dict[str, Any]:
     return dict()
 
 

@@ -1,4 +1,5 @@
-from typing import Any, Awaitable, Callable, Iterable, List, NoReturn, Optional, TypeVar
+from collections.abc import Awaitable, Callable, Iterable
+from typing import Any, NoReturn, TypeVar
 
 from expression.collections import seq
 from expression.core import (
@@ -8,7 +9,6 @@ from expression.core import (
     TailCallResult,
     aiotools,
     compose,
-    match,
     pipe,
     tailrec_async,
 )
@@ -25,16 +25,15 @@ from .observers import (
 from .transform import map, transform
 from .types import AsyncObservable, AsyncObserver
 
+
 _TSource = TypeVar("_TSource")
 _TResult = TypeVar("_TResult")
 
 
 def choose_async(
-    chooser: Callable[[_TSource], Awaitable[Option[_TResult]]]
+    chooser: Callable[[_TSource], Awaitable[Option[_TResult]]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
-    async def handler(
-        next: Callable[[_TResult], Awaitable[None]], xs: _TSource
-    ) -> None:
+    async def handler(next: Callable[[_TResult], Awaitable[None]], xs: _TSource) -> None:
         result = await chooser(xs)
         for x in result.to_list():
             await next(x)
@@ -43,11 +42,9 @@ def choose_async(
 
 
 def choose(
-    chooser: Callable[[_TSource], Option[_TResult]]
+    chooser: Callable[[_TSource], Option[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
-    def handler(
-        next: Callable[[_TResult], Awaitable[None]], xs: _TSource
-    ) -> Awaitable[None]:
+    def handler(next: Callable[[_TResult], Awaitable[None]], xs: _TSource) -> Awaitable[None]:
         for x in chooser(xs).to_list():
             return next(x)
         return aiotools.empty()
@@ -56,7 +53,7 @@ def choose(
 
 
 def filter_async(
-    predicate: Callable[[_TSource], Awaitable[bool]]
+    predicate: Callable[[_TSource], Awaitable[bool]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     """Filter async.
 
@@ -78,12 +75,8 @@ def filter_async(
     return transform(handler)
 
 
-def filter(
-    predicate: Callable[[_TSource], bool]
-) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
-    def handler(
-        next: Callable[[_TSource], Awaitable[None]], x: _TSource
-    ) -> Awaitable[None]:
+def filter(predicate: Callable[[_TSource], bool]) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
+    def handler(next: Callable[[_TSource], Awaitable[None]], x: _TSource) -> Awaitable[None]:
         if predicate(x):
             return next(x)
         return aiotools.empty()
@@ -91,20 +84,17 @@ def filter(
     return transform(handler)
 
 
-def starfilter(
-    predicate: Callable[..., bool]
-) -> Callable[[AsyncObservable[Any]], AsyncObservable[Any]]:
+def starfilter(predicate: Callable[..., bool]) -> Callable[[AsyncObservable[Any]], AsyncObservable[Any]]:
     """Filter and spread the arguments to the predicate.
 
     Filters the elements of an observable sequence based on a predicate.
+
     Returns:
         An observable sequence that contains elements from the input
         sequence that satisfy the condition.
     """
 
-    def handler(
-        next: Callable[[Iterable[Any]], Awaitable[None]], args: Iterable[Any]
-    ) -> Awaitable[None]:
+    def handler(next: Callable[[Iterable[Any]], Awaitable[None]], args: Iterable[Any]) -> Awaitable[None]:
         if predicate(*args):
             return next(args)
         return aiotools.empty()
@@ -113,7 +103,7 @@ def starfilter(
 
 
 def filteri(
-    predicate: Callable[[_TSource, int], bool]
+    predicate: Callable[[_TSource, int], bool],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     ret = compose(
         zip_seq(seq.infinite),
@@ -145,34 +135,29 @@ def distinct_until_changed(
             @tailrec_async
             async def message_loop(
                 latest: Notification[_TSource],
-            ) -> "TailCallResult[NoReturn, [Notification[_TSource]]]":
+            ) -> TailCallResult[NoReturn, [Notification[_TSource]]]:
                 n = await inbox.receive()
 
                 async def get_latest() -> Notification[_TSource]:
-                    with match(n) as case:
-                        for x in case(OnNext[_TSource]):
-                            if n == latest:
-                                break
-                            try:
-                                await safe_obv.asend(x)
-                            except Exception as ex:
-                                await safe_obv.athrow(ex)
-                            break
-                        for err in case(OnError[_TSource]):
+                    match n:
+                        case OnNext(value=x):
+                            if n != latest:
+                                try:
+                                    await safe_obv.asend(x)
+                                except Exception as ex:
+                                    await safe_obv.athrow(ex)
+                        case OnError(exception=err):
                             await safe_obv.athrow(err)
-                            break
-                        while case(OnCompleted):
+
+                        case _:
                             await safe_obv.aclose()
-                            break
 
                     return n
 
                 latest = await get_latest()
                 return TailCall[Notification[_TSource]](latest)
 
-            await message_loop(
-                OnCompleted
-            )  # Use as sentinel value as it will not match any OnNext value
+            await message_loop(OnCompleted())
 
         agent = MailboxProcessor.start(worker)
 
@@ -188,7 +173,7 @@ def distinct_until_changed(
 def skip(
     count: int,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
-    """[summary]
+    """Skip items from observable sequence.
 
     Bypasses a specified number of elements in an observable sequence
     and then returns the remaining elements.
@@ -228,10 +213,10 @@ def skip_last(
         async def subscribe_async(observer: AsyncObserver[_TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(observer)
 
-            q: List[_TSource] = []
+            q: list[_TSource] = []
 
             async def asend(value: _TSource) -> None:
-                front = None
+                front: _TSource | None = None
                 q.append(value)
                 if len(q) > count:
                     front = q.pop(0)
@@ -294,7 +279,7 @@ def take_last(
     def _take_last(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
         async def subscribe_async(aobv: AsyncObserver[_TSource]) -> AsyncDisposable:
             safe_obv, auto_detach = auto_detach_observer(aobv)
-            queue: List[_TSource] = []
+            queue: list[_TSource] = []
 
             async def asend(value: _TSource) -> None:
                 queue.append(value)
@@ -348,7 +333,7 @@ def take_until(
 
 
 def slice(
-    start: Optional[int] = None, stop: Optional[int] = None, step: int = 1
+    start: int | None = None, stop: int | None = None, step: int = 1
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     """Slices the given source stream.
 
@@ -395,14 +380,16 @@ def slice(
             else:
                 source = pipe(source, skip_last(abs(stop)))
 
-        if step is not None:
-            if step > 1:
-                mapper: Callable[[Any, int], bool] = lambda _, i: i % step == 0
-                xs = pipe(source, filteri(mapper))
-                source = xs
-            elif step < 0:
-                # Reversing streams is not supported
-                raise TypeError("Negative step not supported.")
+        if step > 1:
+
+            def mapper(_: Any, i: int) -> bool:
+                return i % step == 0
+
+            xs = pipe(source, filteri(mapper))
+            source = xs
+        elif step < 0:
+            # Reversing streams is not supported
+            raise TypeError("Negative step not supported.")
 
         return source
 

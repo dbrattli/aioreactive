@@ -6,6 +6,7 @@ import logging
 from asyncio import tasks
 from asyncio.log import logger
 
+
 log = logging.getLogger(__name__)
 
 __all__ = "VirtualTimeEventLoop"
@@ -52,18 +53,18 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
         return self._time
 
     def _run_once(self):
-        """Run one full iteration of the event loop. This calls all
-        currently ready callbacks, polls for I/O, schedules the
-        resulting callbacks, and finally schedules 'call_later'
-        callbacks.
+        """Run one full iteration of the event loop.
+
+        This calls all currently ready callbacks, polls for I/O,
+        schedules the resulting callbacks, and finally schedules
+        'call_later' callbacks.
         """
         # log.debug("run_once()")
 
         sched_count = len(self._scheduled)
         if (
             sched_count > _MIN_SCHEDULED_TIMER_HANDLES
-            and self._timer_cancelled_count / sched_count
-            > _MIN_CANCELLED_TIMER_HANDLES_FRACTION
+            and self._timer_cancelled_count / sched_count > _MIN_CANCELLED_TIMER_HANDLES_FRACTION
         ):
             # Remove delayed calls that were cancelled if their number
             # is too high
@@ -114,9 +115,7 @@ class VirtualTimeEventLoop(asyncio.BaseEventLoop):
                     handle._run()
                     dt = self.time() - t0
                     if dt >= self.slow_callback_duration:
-                        logger.warning(
-                            "Executing %s took %.3f seconds", _format_handle(handle), dt
-                        )
+                        logger.warning("Executing %s took %.3f seconds", _format_handle(handle), dt)
                 finally:
                     self._current_handle = None
             else:

@@ -37,7 +37,7 @@ async def test_pipe_map() -> None:
         (0, OnNext(10)),
         (0, OnNext(20)),
         (0, OnNext(30)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -59,7 +59,7 @@ async def test_pipe_simple_pipe() -> None:
     assert obv.values == [
         (approx(0.2), OnNext(20)),
         (approx(0.3), OnNext(30)),
-        (approx(0.3), OnCompleted),
+        (approx(0.3), OnCompleted()),
     ]
 
 

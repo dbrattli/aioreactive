@@ -1,21 +1,19 @@
 import logging
 from asyncio import Future
-from typing import List, Optional, TypeVar, Union
+from typing import TypeVar
 
 from expression.system import AsyncDisposable, ObjectDisposedException
 
 from .observables import AsyncAnonymousObserver, AsyncObservable
 from .types import AsyncObserver, CloseAsync, SendAsync, ThrowAsync
 
+
 log = logging.getLogger(__name__)
 
 _TSource = TypeVar("_TSource")
 
 
-class AsyncSingleSubject(
-    AsyncObserver[_TSource], AsyncObservable[_TSource], AsyncDisposable
-):
-
+class AsyncSingleSubject(AsyncObserver[_TSource], AsyncObservable[_TSource], AsyncDisposable):
     """An stream with a single sink.
 
     Both an async observable and async observer.
@@ -28,7 +26,7 @@ class AsyncSingleSubject(
         super().__init__()
 
         self._wait: Future[bool] = Future()
-        self._observer: Optional[AsyncObserver[_TSource]] = None
+        self._observer: AsyncObserver[_TSource] | None = None
         self._is_disposed = False
         self._is_stopped = False
 
@@ -82,18 +80,13 @@ class AsyncSingleSubject(
 
     async def subscribe_async(
         self,
-        send: Optional[Union[SendAsync[_TSource], AsyncObserver[_TSource]]] = None,
-        throw: Optional[ThrowAsync] = None,
-        close: Optional[CloseAsync] = None,
+        send: SendAsync[_TSource] | AsyncObserver[_TSource] | None = None,
+        throw: ThrowAsync | None = None,
+        close: CloseAsync | None = None,
     ) -> AsyncDisposable:
         """Start streaming."""
-
         self.check_disposed()
-        self._observer = (
-            send
-            if isinstance(send, AsyncObserver)
-            else AsyncAnonymousObserver(send, throw, close)
-        )
+        self._observer = send if isinstance(send, AsyncObserver) else AsyncAnonymousObserver(send, throw, close)
 
         if not self._wait.done():
             self._wait.set_result(True)
@@ -101,9 +94,7 @@ class AsyncSingleSubject(
         return AsyncDisposable.create(self.dispose_async)
 
 
-class AsyncMultiSubject(
-    AsyncObserver[_TSource], AsyncObservable[_TSource], AsyncDisposable
-):
+class AsyncMultiSubject(AsyncObserver[_TSource], AsyncObservable[_TSource], AsyncDisposable):
     """An stream with a multiple observers.
 
     Both an async observable and async observer.
@@ -114,7 +105,7 @@ class AsyncMultiSubject(
 
     def __init__(self) -> None:
         super().__init__()
-        self._observers: List[AsyncObserver[_TSource]] = []
+        self._observers: list[AsyncObserver[_TSource]] = []
         self._is_disposed = False
         self._is_stopped = False
 
@@ -153,20 +144,15 @@ class AsyncMultiSubject(
 
     async def subscribe_async(
         self,
-        send: Optional[Union[SendAsync[_TSource], AsyncObserver[_TSource]]] = None,
-        throw: Optional[ThrowAsync] = None,
-        close: Optional[CloseAsync] = None,
+        send: SendAsync[_TSource] | AsyncObserver[_TSource] | None = None,
+        throw: ThrowAsync | None = None,
+        close: CloseAsync | None = None,
     ) -> AsyncDisposable:
         """Subscribe."""
-
         log.debug("AsyncMultiStream:subscribe_async()")
         self.check_disposed()
 
-        observer = (
-            send
-            if isinstance(send, AsyncObserver)
-            else AsyncAnonymousObserver(send, throw, close)
-        )
+        observer = send if isinstance(send, AsyncObserver) else AsyncAnonymousObserver(send, throw, close)
         self._observers.append(observer)
 
         async def dispose() -> None:

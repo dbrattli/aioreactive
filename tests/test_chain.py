@@ -34,7 +34,7 @@ async def test_chain_map():
         (0, OnNext(10)),
         (0, OnNext(20)),
         (0, OnNext(30)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -58,7 +58,7 @@ async def test_chain_simple_pipe():
     assert obv.values == [
         (ca(0.2), OnNext(20)),
         (ca(0.3), OnNext(30)),
-        (ca(0.3), OnCompleted),
+        (ca(0.3), OnCompleted()),
     ]
 
 
@@ -84,5 +84,5 @@ async def test_chain_complex_pipe():
     assert obv.values == [
         (ca(0.2), OnNext(20)),
         (ca(0.3), OnNext(30)),
-        (ca(0.3), OnCompleted),
+        (ca(0.3), OnCompleted()),
     ]

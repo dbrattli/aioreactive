@@ -30,7 +30,7 @@ async def test_take_zero() -> None:
     with pytest.raises(CancelledError):
         await rx.run(ys, obv)
 
-    assert obv.values == [(0, OnCompleted)]
+    assert obv.values == [(0, OnCompleted())]
 
 
 @pytest.mark.asyncio
@@ -43,7 +43,7 @@ async def test_take_empty() -> None:
     with pytest.raises(CancelledError):
         await rx.run(ys, obv)
 
-    assert obv.values == [(0, OnCompleted)]
+    assert obv.values == [(0, OnCompleted())]
 
 
 @pytest.mark.asyncio
@@ -64,4 +64,4 @@ async def test_take_normal() -> None:
     result = await rx.run(ys, obv)
 
     assert result == 2
-    assert obv.values == [(0, OnNext(1)), (0, OnNext(2)), (0, OnCompleted)]
+    assert obv.values == [(0, OnNext(1)), (0, OnNext(2)), (0, OnCompleted())]

@@ -1,19 +1,11 @@
 import asyncio
 import logging
-from asyncio import Future
-from typing import (
-    Any,
-    AsyncIterable,
-    Awaitable,
-    Callable,
-    Iterable,
-    Optional,
-    Tuple,
-    TypeVar,
-)
+from asyncio import Task
+from collections.abc import AsyncIterable, Awaitable, Callable, Iterable
+from typing import Any, TypeVar
 
-from expression.core import TailCallResult, aiotools, tailrec_async
-from expression.core.fn import TailCall
+from expression import TailCall, TailCallResult, tailrec_async
+from expression.core import aiotools
 from expression.system import (
     AsyncDisposable,
     CancellationToken,
@@ -24,12 +16,13 @@ from .observables import AsyncAnonymousObservable
 from .observers import AsyncObserver, safe_observer
 from .types import AsyncObservable
 
+
 TSource = TypeVar("TSource")
 
 log = logging.getLogger(__name__)
 
 
-def canceller() -> Tuple[AsyncDisposable, CancellationToken]:
+def canceller() -> tuple[AsyncDisposable, CancellationToken]:
     cts = CancellationTokenSource()
 
     async def cancel() -> None:
@@ -39,9 +32,7 @@ def canceller() -> Tuple[AsyncDisposable, CancellationToken]:
     return AsyncDisposable.create(cancel), cts.token
 
 
-def create(
-    subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]]
-) -> AsyncObservable[TSource]:
+def create(subscribe: Callable[[AsyncObserver[TSource]], Awaitable[AsyncDisposable]]) -> AsyncObservable[TSource]:
     """Create an async observable.
 
     Creates an `AsyncObservable[TSource]` from the given subscribe
@@ -50,11 +41,8 @@ def create(
     return AsyncAnonymousObservable(subscribe)
 
 
-def of_async_worker(
-    worker: Callable[[AsyncObserver[Any], CancellationToken], Awaitable[None]]
-) -> AsyncObservable[Any]:
-    """Create async observable from async worker function"""
-
+def of_async_worker(worker: Callable[[AsyncObserver[Any], CancellationToken], Awaitable[None]]) -> AsyncObservable[Any]:
+    """Create async observable from async worker function."""
     log.debug("of_async_worker()")
 
     async def subscribe_async(aobv: AsyncObserver[Any]) -> AsyncDisposable:
@@ -69,8 +57,11 @@ def of_async_worker(
 
 
 def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
-    """Returns the async observable sequence whose single element is the
-    result of the given async workflow."""
+    """Create from async workflow.
+
+    Returns the async observable sequence whose single element is the
+    result of the given async workflow.
+    """
 
     async def worker(obv: AsyncObserver[TSource], _: CancellationToken) -> None:
         try:
@@ -86,9 +77,9 @@ def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
 
 
 def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
-    async def subscribe_async(observer: AsyncObserver[TSource]) -> AsyncDisposable:
-        task: Optional[Future[None]] = None
+    tasks: set[Task[Any]] = set()
 
+    async def subscribe_async(observer: AsyncObserver[TSource]) -> AsyncDisposable:
         async def cancel() -> None:
             if task:
                 task.cancel()
@@ -104,20 +95,26 @@ def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSour
                     return
 
             await observer.aclose()
+            tasks.remove(task)
 
         try:
             task = asyncio.create_task(worker())
         except Exception as ex:
             log.debug("FromIterable:worker(), Exception: %s" % ex)
             await observer.athrow(ex)
+        else:
+            tasks.add(task)
         return sub
 
     return AsyncAnonymousObservable(subscribe_async)
 
 
 def single(value: TSource) -> AsyncObservable[TSource]:
-    """Returns an observable sequence containing the single specified
-    element."""
+    """Create from a single item.
+
+    Returns an observable sequence containing the single specified
+    element.
+    """
 
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
         safe_obv = safe_observer(aobv, AsyncDisposable.empty())
@@ -149,8 +146,11 @@ def never() -> AsyncObservable[Any]:
 
 
 def fail(error: Exception) -> AsyncObservable[Any]:
-    """Returns the observable sequence that terminates exceptionally
-    with the specified exception."""
+    """Create failing observable.
+
+    Returns the observable sequence that terminates exceptionally
+    with the specified exception.
+    """
 
     async def worker(obv: AsyncObserver[Any], _: CancellationToken) -> None:
         await obv.athrow(error)
@@ -162,7 +162,8 @@ def of_seq(xs: Iterable[TSource]) -> AsyncObservable[TSource]:
     """Create async observable from sequence.
 
     Returns the async observable sequence whose elements are pulled from
-    the given enumerable sequence."""
+    the given enumerable sequence.
+    """
 
     async def worker(obv: AsyncObserver[TSource], token: CancellationToken) -> None:
         log.debug("of_seq:worker()")
@@ -181,8 +182,11 @@ def of_seq(xs: Iterable[TSource]) -> AsyncObservable[TSource]:
 
 
 def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TSource]:
-    """Returns an observable sequence that invokes the specified factory
-    function whenever a new observer subscribes."""
+    """Defer observable.
+
+    Returns an observable sequence that invokes the specified factory
+    function whenever a new observer subscribes.
+    """
 
     async def subscribe_async(aobv: AsyncObserver[TSource]) -> AsyncDisposable:
         try:
@@ -196,17 +200,18 @@ def defer(factory: Callable[[], AsyncObservable[TSource]]) -> AsyncObservable[TS
 
 
 def interval(seconds: float, period: float) -> AsyncObservable[int]:
-    """Returns an observable sequence that triggers the increasing
+    """Create observable interval.
+
+    Returns an observable sequence that triggers the increasing
     sequence starting with 0 after the given msecs, and the after each
-    period."""
+    period.
+    """
 
     async def subscribe_async(aobv: AsyncObserver[int]) -> AsyncDisposable:
         cancel, token = canceller()
 
         @tailrec_async
-        async def handler(
-            seconds: float, next: int
-        ) -> "TailCallResult[None, [float, int]]":
+        async def handler(seconds: float, next: int) -> "TailCallResult[None, [float, int]]":
             await asyncio.sleep(seconds)
             await aobv.asend(next)
 
@@ -223,7 +228,9 @@ def interval(seconds: float, period: float) -> AsyncObservable[int]:
 
 
 def timer(due_time: float) -> AsyncObservable[int]:
-    """Returns an observable sequence that triggers the value 0
-    after the given duetime in milliseconds."""
+    """Create observable timer.
 
+    Returns an observable sequence that triggers the value 0
+    after the given duetime in milliseconds.
+    """
     return interval(due_time, 0)

@@ -3,14 +3,15 @@ import signal
 import sys
 from tkinter import Event, Frame, Label, Misc, Tk
 from types import FrameType
-from typing import Optional, Tuple
+from typing import Any
 
-from expression.core import MailboxProcessor, pipe
+from expression import MailboxProcessor, pipe
 from expression.system import AsyncDisposable
 
 import aioreactive as rx
 from aioreactive import AsyncAnonymousObserver, AsyncSubject
 from aioreactive.types import AsyncObservable
+
 
 # logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
 
@@ -19,7 +20,7 @@ async def main() -> None:
     root = Tk()
     root.title("aioreactive")
 
-    mousemoves: AsyncSubject[Tuple[int, int]] = AsyncSubject()
+    mousemoves: AsyncSubject[tuple[int, int]] = AsyncSubject()
 
     frame = Frame(root, width=800, height=600)  # , bg="white")
 
@@ -34,10 +35,10 @@ async def main() -> None:
     text = "TIME FLIES LIKE AN ARROW"
     labels = [Label(frame, text=c, borderwidth=0, padx=0, pady=0) for c in text]
 
-    def handle_label(label: Label, i: int) -> AsyncObservable[Tuple[Label, int, int]]:
+    def handle_label(label: Label, i: int) -> AsyncObservable[tuple[Label, int, int]]:
         label.config(dict(borderwidth=0, padx=0, pady=0))
 
-        def mapper(x: int, y: int) -> Tuple[Label, int, int]:
+        def mapper(x: int, y: int) -> tuple[Label, int, int]:
             """Map mouse-move pos to label and new pos for label."""
             return label, x + i * 12 + 15, y
 
@@ -55,15 +56,16 @@ async def main() -> None:
 
     subscription: AsyncDisposable
     running = True
+    tasks: list[asyncio.Task[Any]] = []
 
-    async def asend(value: Tuple[Label, int, int]) -> None:
+    async def asend(value: tuple[Label, int, int]) -> None:
         """Perform side effect."""
         label, x, y = value
         label.place(x=x, y=y)
 
     async def athrow(ex: Exception):
-        nonlocal running
-        print("Exception: ", ex)
+        nonlocal running, subscription
+        print("Exception: ", ex)  # noqa
         await subscription.dispose_async()
         running = False
 
@@ -80,17 +82,21 @@ async def main() -> None:
         await subscription.dispose_async()
 
     def handle_focus_in(event: "Event[Misc]"):
-        asyncio.ensure_future(start())
+        task = asyncio.ensure_future(start())
+        tasks.append(task)
+        task.add_done_callback(lambda _: tasks.remove(task))
 
     def handle_focus_out(event: "Event[Misc]"):
-        asyncio.ensure_future(stop())
+        task = asyncio.ensure_future(stop())
+        tasks.append(task)
+        task.add_done_callback(lambda _: tasks.remove(task))
 
     root.bind("<FocusIn>", handle_focus_in)
     root.bind("<FocusOut>", handle_focus_out)
 
     frame.pack()
 
-    def signal_handler(signal: int, frame: Optional[FrameType] = None) -> None:
+    def signal_handler(signal: int, frame: FrameType | None = None) -> None:
         nonlocal running
         running = False
         sys.stderr.write("Exiting...\n")

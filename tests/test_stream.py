@@ -84,7 +84,7 @@ async def test_stream_send_after_close() -> None:
         (1, OnNext(10)),
         (2, OnNext(20)),
         (3, OnNext(30)),
-        (5, OnCompleted),
+        (5, OnCompleted()),
     ]
 
 

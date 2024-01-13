@@ -1,11 +1,13 @@
 import asyncio
 import logging
-from typing import Awaitable, Callable, Optional, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 from expression.system.disposable import AsyncDisposable
 
 from .observers import AsyncAwaitableObserver
 from .types import AsyncObservable, AsyncObserver
+
 
 log = logging.getLogger(__name__)
 
@@ -14,7 +16,7 @@ _TSource = TypeVar("_TSource")
 
 async def run(
     source: AsyncObservable[_TSource],
-    observer: Optional[AsyncAwaitableObserver[_TSource]] = None,
+    observer: AsyncAwaitableObserver[_TSource] | None = None,
     timeout: int = 2,
 ) -> _TSource:
     """Run the source with the given observer.
@@ -23,7 +25,9 @@ async def run(
     closes and returns the final value received.
 
     Args:
-        timeout -- Seconds before timing out in case source never closes.
+        source: The source observable.
+        observer: The observer to subscribe to the source.
+        timeout: Seconds before timing out in case source never closes.
 
     Returns:
         The last event sent through the stream. If any values have been
@@ -32,7 +36,6 @@ async def run(
         `StopAsyncIteration`. For any other errors it will throw the
         exception.
     """
-
     # For run we need a noopobserver if no observer is specified to avoid
     # blocking the last single stream in the chain.
     obv: AsyncAwaitableObserver[_TSource] = observer or AsyncAwaitableObserver()

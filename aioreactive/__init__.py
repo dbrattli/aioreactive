@@ -14,21 +14,12 @@ Example:
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterable,
-    Awaitable,
-    Callable,
-    Iterable,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-    overload,
-)
+from collections.abc import AsyncIterable, Awaitable, Callable, Iterable
+from typing import Any, TypeVar, TypeVarTuple
 
-from expression import Option, curry_flipped, pipe
+from expression import Option, curry_flip, pipe
 from expression.system.disposable import AsyncDisposable
+from typing_extensions import Unpack
 
 from .observables import AsyncAnonymousObservable, AsyncIterableObservable
 from .observers import (
@@ -41,10 +32,12 @@ from .subject import AsyncSingleSubject, AsyncSubject
 from .subscription import run
 from .types import AsyncObservable, AsyncObserver, CloseAsync, SendAsync, ThrowAsync
 
+
 _A = TypeVar("_A")
 _B = TypeVar("_B")
 _C = TypeVar("_C")
 _D = TypeVar("_D")
+_V = TypeVarTuple("_V")
 _TSource = TypeVar("_TSource")
 _TResult = TypeVar("_TResult")
 _TOther = TypeVar("_TOther")
@@ -67,9 +60,9 @@ class AsyncRx(AsyncObservable[_TSource]):
 
     async def subscribe_async(
         self,
-        send: Optional[Union[SendAsync[_TSource], AsyncObserver[_TSource]]] = None,
-        throw: Optional[ThrowAsync] = None,
-        close: Optional[CloseAsync] = None,
+        send: SendAsync[_TSource] | AsyncObserver[_TSource] | None = None,
+        throw: ThrowAsync | None = None,
+        close: CloseAsync | None = None,
     ) -> AsyncDisposable:
         """Subscribe to the async observable.
 
@@ -77,21 +70,21 @@ class AsyncRx(AsyncObservable[_TSource]):
         observable.
 
         Args:
-            observer: The async observer to subscribe.
+            send: The async observer or the send function to subscribe.
+            throw: The throw function to subscribe.
+            close: The close function to subscribe.
 
         Returns:
             An async disposable that can be used to dispose the
             subscription.
         """
-        observer = (
-            send
-            if isinstance(send, AsyncObserver)
-            else AsyncAnonymousObserver(send, throw, close)
-        )
+        observer = send if isinstance(send, AsyncObserver) else AsyncAnonymousObserver(send, throw, close)
         return await self._source.subscribe_async(observer)
 
-    def __getitem__(self, key: Union[slice, int]) -> AsyncRx[_TSource]:
-        """Slices the given source stream using Python slice notation.
+    def __getitem__(self, key: slice | int) -> AsyncRx[_TSource]:
+        """Slice observable.
+
+        Slices the given source stream using Python slice notation.
         The arguments to slice is start, stop and step given within
         brackets [] and separated with the ':' character. It is
         basically a wrapper around the operators skip(), skip_last(),
@@ -118,7 +111,6 @@ class AsyncRx(AsyncObservable[_TSource]):
         Returns:
             The sliced source stream.
         """
-
         from .filtering import slice as _slice
 
         if isinstance(key, slice):
@@ -126,7 +118,7 @@ class AsyncRx(AsyncObservable[_TSource]):
         else:
             start, stop, step = key, key + 1, 1
 
-        return AsyncRx(pipe(self, _slice(start, stop, step)))
+        return AsyncRx(pipe(self, _slice(start, stop, step or 1)))
 
     @classmethod
     def create(cls, source: AsyncObservable[_TSource]) -> AsyncRx[_TSource]:
@@ -145,9 +137,7 @@ class AsyncRx(AsyncObservable[_TSource]):
         return AsyncRx(from_iterable(iter))
 
     @classmethod
-    def from_async_iterable(
-        cls, iter: AsyncIterable[_TSource]
-    ) -> AsyncObservable[_TSource]:
+    def from_async_iterable(cls, iter: AsyncIterable[_TSource]) -> AsyncObservable[_TSource]:
         """Convert an async iterable to an async observable stream.
 
         Example:
@@ -157,7 +147,6 @@ class AsyncRx(AsyncObservable[_TSource]):
             The source stream whose elements are pulled from the given
             (async) iterable sequence.
         """
-
         return AsyncRx(from_async_iterable(iter))
 
     @classmethod
@@ -169,9 +158,7 @@ class AsyncRx(AsyncObservable[_TSource]):
     def as_async_observable(self) -> AsyncObservable[_TSource]:
         return AsyncAnonymousObservable(self.subscribe_async)
 
-    def choose(
-        self, chooser: Callable[[_TSource], Option[_TSource]]
-    ) -> AsyncObservable[_TSource]:
+    def choose(self, chooser: Callable[[_TSource], Option[_TSource]]) -> AsyncObservable[_TSource]:
         """Choose.
 
         Applies the given function to each element of the stream and returns
@@ -187,9 +174,7 @@ class AsyncRx(AsyncObservable[_TSource]):
         """
         return AsyncRx(pipe(self, choose(chooser)))
 
-    def choose_async(
-        self, chooser: Callable[[_TSource], Awaitable[Option[_TSource]]]
-    ) -> AsyncObservable[_TSource]:
+    def choose_async(self, chooser: Callable[[_TSource], Awaitable[Option[_TSource]]]) -> AsyncObservable[_TSource]:
         """Choose async.
 
         Applies the given async function to each element of the stream and
@@ -205,9 +190,7 @@ class AsyncRx(AsyncObservable[_TSource]):
         """
         return AsyncRx(pipe(self, choose_async(chooser)))
 
-    def combine_latest(
-        self, other: AsyncObservable[_TOther]
-    ) -> AsyncRx[Tuple[_TSource, _TOther]]:
+    def combine_latest(self, other: AsyncObservable[_TOther]) -> AsyncRx[tuple[_TSource, _TOther]]:
         from .combine import combine_latest
 
         xs = pipe(
@@ -233,7 +216,6 @@ class AsyncRx(AsyncObservable[_TSource]):
         Returns:
             The debounced stream.
         """
-
         from .timeshift import debounce
 
         return AsyncRx(pipe(self, debounce(seconds)))
@@ -263,14 +245,11 @@ class AsyncRx(AsyncObservable[_TSource]):
         Returns:
             The filtered stream.
         """
-
         from .filtering import filter as _filter
 
         return AsyncRx(pipe(self, _filter(predicate)))
 
-    def filteri(
-        self, predicate: Callable[[_TSource, int], bool]
-    ) -> AsyncObservable[_TSource]:
+    def filteri(self, predicate: Callable[[_TSource, int], bool]) -> AsyncObservable[_TSource]:
         """Filter with index.
 
         Filters the elements of an observable sequence based on a predicate
@@ -285,23 +264,17 @@ class AsyncRx(AsyncObservable[_TSource]):
         """
         return AsyncRx(pipe(self, filteri(predicate)))
 
-    def filter_async(
-        self, predicate: Callable[[_TSource], Awaitable[bool]]
-    ) -> AsyncRx[_TSource]:
+    def filter_async(self, predicate: Callable[[_TSource], Awaitable[bool]]) -> AsyncRx[_TSource]:
         from .filtering import filter_async
 
         return AsyncRx(pipe(self, filter_async(predicate)))
 
-    def flat_map(
-        self, selector: Callable[[_TSource], AsyncObservable[_TResult]]
-    ) -> AsyncRx[_TResult]:
+    def flat_map(self, selector: Callable[[_TSource], AsyncObservable[_TResult]]) -> AsyncRx[_TResult]:
         from .transform import flat_map
 
         return AsyncRx.create(pipe(self, flat_map(selector)))
 
-    def flat_map_async(
-        self, selector: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]]
-    ) -> AsyncRx[_TResult]:
+    def flat_map_async(self, selector: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]]) -> AsyncRx[_TResult]:
         from .transform import flat_map_async
 
         return AsyncRx.create(pipe(self, flat_map_async(selector)))
@@ -361,7 +334,9 @@ class AsyncRx(AsyncObservable[_TSource]):
         )
 
     def skip_last(self, count: int) -> AsyncRx[_TSource]:
-        """Bypasses a specified number of elements at the end of an
+        """Skip the last items of the observable sequencerm .
+
+        Bypasses a specified number of elements at the end of an
         observable sequence.
 
         This operator accumulates a queue with a length enough to store
@@ -380,11 +355,12 @@ class AsyncRx(AsyncObservable[_TSource]):
         return AsyncRx(pipe(self, skip_last(count)))
 
     def starfilter(
-        self: AsyncObservable[Any], predicate: Callable[..., bool]
-    ) -> AsyncRx[Any]:
+        self: AsyncObservable[tuple[Unpack[_V]]], predicate: Callable[[Unpack[_V]], bool]
+    ) -> AsyncRx[_TSource]:
         """Filter and spread the arguments to the predicate.
 
         Filters the elements of an observable sequence based on a predicate.
+
         Returns:
             An observable sequence that contains elements from the input
             sequence that satisfy the condition.
@@ -392,16 +368,13 @@ class AsyncRx(AsyncObservable[_TSource]):
         xs = pipe(self, starfilter(predicate))
         return AsyncRx.create(xs)
 
-    def starmap(
-        self: AsyncRx[Tuple[Any, ...]], mapper: Callable[..., _TResult]
-    ) -> AsyncRx[_TResult]:
+    def starmap(self: AsyncRx[tuple[Unpack[_V]]], mapper: Callable[[Unpack[_V]], _TResult]) -> AsyncRx[_TResult]:
         """Map and spread the arguments to the mapper.
 
         Returns:
             An observable sequence whose elements are the result of
             invoking the mapper function on each element of the source.
         """
-
         return AsyncRx(pipe(self, starmap(mapper)))
 
     def take(self, count: int) -> AsyncObservable[_TSource]:
@@ -411,7 +384,7 @@ class AsyncRx(AsyncObservable[_TSource]):
         an observable sequence.
 
         Args:
-            count Number of elements to take.
+            count: Number of elements to take.
 
         Returns:
             An observable sequence that contains the specified number of
@@ -458,9 +431,7 @@ class AsyncRx(AsyncObservable[_TSource]):
 
         return to_async_iterable(self)
 
-    def with_latest_from(
-        self, other: AsyncObservable[_TOther]
-    ) -> AsyncRx[Tuple[_TSource, _TOther]]:
+    def with_latest_from(self, other: AsyncObservable[_TOther]) -> AsyncRx[tuple[_TSource, _TOther]]:
         from .combine import with_latest_from
 
         return AsyncRx.create(pipe(self, with_latest_from(other)))
@@ -475,7 +446,7 @@ def as_chained(source: AsyncObservable[_TSource]) -> AsyncRx[_TSource]:
 
 
 def choose(
-    chooser: Callable[[_TSource], Option[_TResult]]
+    chooser: Callable[[_TSource], Option[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Choose.
 
@@ -490,14 +461,13 @@ def choose(
     Returns:
         The filtered and/or transformed stream.
     """
-
     from .filtering import choose
 
     return choose(chooser)
 
 
 def choose_async(
-    chooser: Callable[[_TSource], Awaitable[Option[_TResult]]]
+    chooser: Callable[[_TSource], Awaitable[Option[_TResult]]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Choose async.
 
@@ -512,16 +482,15 @@ def choose_async(
     Returns:
         The filtered and/or transformed stream.
     """
-
     from .filtering import choose_async
 
     return choose_async(chooser)
 
 
-@curry_flipped(1)
+@curry_flip(1)
 def combine_latest(
     source: AsyncObservable[_TSource], other: AsyncObservable[_TOther]
-) -> AsyncObservable[Tuple[_TSource, _TOther]]:
+) -> AsyncObservable[tuple[_TSource, _TOther]]:
     from .combine import combine_latest
 
     return pipe(source, combine_latest(other))
@@ -545,14 +514,13 @@ def debounce(
         A partially applied debounce function that takes the source
         observable to debounce.
     """
-
     from .timeshift import debounce
 
     return debounce(seconds)
 
 
 def catch(
-    handler: Callable[[Exception], AsyncObservable[_TSource]]
+    handler: Callable[[Exception], AsyncObservable[_TSource]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     from .transform import catch
 
@@ -562,8 +530,11 @@ def catch(
 def concat(
     other: AsyncObservable[_TSource],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
-    """Concatenates an observable sequence with another observable
-    sequence."""
+    """Concatenate observables.
+
+    Concatenates an observable sequence with another observable
+    sequence.
+    """
 
     def _concat(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
         from .combine import concat_seq
@@ -577,17 +548,17 @@ def concat_seq(
     sources: Iterable[AsyncObservable[_TSource]],
 ) -> AsyncObservable[_TSource]:
     """Concatenates an iterable of observable sequences."""
-
     from .combine import concat_seq
 
     return concat_seq(sources)
 
 
-def defer(
-    factory: Callable[[], AsyncObservable[_TSource]]
-) -> AsyncObservable[_TSource]:
-    """Returns an observable sequence that invokes the specified factory
-    function whenever a new observer subscribes."""
+def defer(factory: Callable[[], AsyncObservable[_TSource]]) -> AsyncObservable[_TSource]:
+    """Defer observable.
+
+    Returns an observable sequence that invokes the specified factory
+    function whenever a new observer subscribes.
+    """
     from .create import defer
 
     return defer(factory)
@@ -609,15 +580,13 @@ def distinct_until_changed(
     return distinct_until_changed(source)
 
 
-def empty() -> "AsyncObservable[Any]":
+def empty() -> AsyncObservable[Any]:
     from .create import empty
 
     return empty()
 
 
-def filter(
-    predicate: Callable[[_TSource], bool]
-) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
+def filter(predicate: Callable[[_TSource], bool]) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     """Filter stream.
 
     Filters the elements of an observable sequence based on a predicate.
@@ -638,7 +607,7 @@ def filter(
 
 
 def filteri(
-    predicate: Callable[[_TSource, int], bool]
+    predicate: Callable[[_TSource, int], bool],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     """Filter with index.
 
@@ -658,7 +627,7 @@ def filteri(
 
 
 def filter_async(
-    predicate: Callable[[_TSource], Awaitable[bool]]
+    predicate: Callable[[_TSource], Awaitable[bool]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     from .filtering import filter_async
 
@@ -687,7 +656,7 @@ def from_iterable(iterable: Iterable[_TSource]) -> AsyncObservable[_TSource]:
 
 
 def flat_map(
-    mapper: Callable[[_TSource], AsyncObservable[_TResult]]
+    mapper: Callable[[_TSource], AsyncObservable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     from .transform import flat_map
 
@@ -695,7 +664,7 @@ def flat_map(
 
 
 def flat_mapi(
-    mapper: Callable[[_TSource, int], AsyncObservable[_TResult]]
+    mapper: Callable[[_TSource, int], AsyncObservable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     from .transform import flat_mapi
 
@@ -703,7 +672,7 @@ def flat_mapi(
 
 
 def flat_map_async(
-    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]]
+    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flap map async.
 
@@ -711,10 +680,8 @@ def flat_map_async(
     an observable sequence and merges the resulting observable sequences
     back into one observable sequence.
 
-
     Args:
-        mapperCallable ([type]): [description]
-        Awaitable ([type]): [description]
+        mapper: A transform function to apply to each element or an
 
     Returns:
         Stream[TSource, TResult]: [description]
@@ -725,7 +692,7 @@ def flat_map_async(
 
 
 def flat_map_latest_async(
-    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]]
+    mapper: Callable[[_TSource], Awaitable[AsyncObservable[_TResult]]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Flat map latest async.
 
@@ -761,52 +728,60 @@ def from_async_iterable(iter: AsyncIterable[_TSource]) -> AsyncObservable[_TSour
 
 
 def interval(seconds: float, period: int) -> AsyncObservable[int]:
-    """Returns an observable sequence that triggers the increasing
+    """Observable interval.
+
+    Returns an observable sequence that triggers the increasing
     sequence starting with 0 after the given msecs, and the after each
-    period."""
+    period.
+    """
     from .create import interval
 
     return interval(seconds, period)
 
 
-def map(
-    fn: Callable[[_TSource], _TResult]
-) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+def map(fn: Callable[[_TSource], _TResult]) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     from .transform import map as _map
 
     return _map(fn)
 
 
 def map_async(
-    mapper: Callable[[_TSource], Awaitable[_TResult]]
+    mapper: Callable[[_TSource], Awaitable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
     """Map asynchrnously.
 
     Returns an observable sequence whose elements are the result of
     invoking the async mapper function on each element of the
-    source."""
+    source.
+    """
     from .transform import map_async as map_async_
 
     return map_async_(mapper)
 
 
 def mapi_async(
-    mapper: Callable[[_TSource, int], Awaitable[_TResult]]
+    mapper: Callable[[_TSource, int], Awaitable[_TResult]],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
-    """Returns an observable sequence whose elements are the result of
+    """Map indexed asynchronously.
+
+    Returns an observable sequence whose elements are the result of
     invoking the async mapper function by incorporating the element's
-    index on each element of the source."""
+    index on each element of the source.
+    """
     from .transform import mapi_async
 
     return mapi_async(mapper)
 
 
 def mapi(
-    mapper: Callable[[_TSource, int], _TResult]
+    mapper: Callable[[_TSource, int], _TResult],
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
-    """Returns an observable sequence whose elements are the result of
+    """Map indexed.
+
+    Returns an observable sequence whose elements are the result of
     invoking the mapper function and incorporating the element's index
-    on each element of the source."""
+    on each element of the source.
+    """
     from .transform import mapi
 
     return mapi(mapper)
@@ -851,7 +826,7 @@ def merge_seq(
     )
 
 
-def never() -> "AsyncObservable[Any]":
+def never() -> AsyncObservable[Any]:
     from .create import never
 
     return never()
@@ -875,7 +850,7 @@ def scan(
     accumulator: Callable[[_TResult, _TSource], _TResult],
     initial: _TResult,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
-    """The scan operator
+    """The scan operator.
 
     This operator runs the accumulator for every value from the source with the current state. After every run, the new
     computed value is returned.
@@ -951,7 +926,9 @@ def skip(
 def skip_last(
     count: int,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
-    """Bypasses a specified number of elements at the end of an
+    """Skip the last items of the observable sequence.
+
+    Bypasses a specified number of elements at the end of an
     observable sequence.
 
     This operator accumulates a queue with a length enough to store
@@ -972,35 +949,13 @@ def skip_last(
     return skip_last(count)
 
 
-@overload
 def starfilter(
-    predicate: Callable[[Tuple[_A, _B]], bool]
-) -> Callable[[AsyncObservable[Tuple[_A, _B]]], AsyncObservable[Tuple[_A, _B]]]:
-    ...
-
-
-@overload
-def starfilter(
-    predicate: Callable[[Tuple[_A, _B, _C]], bool]
-) -> Callable[[AsyncObservable[Tuple[_A, _B, _C]]], AsyncObservable[Tuple[_A, _B, _C]]]:
-    ...
-
-
-@overload
-def starfilter(
-    predicate: Callable[[Tuple[_A, _B, _C, _D]], bool]
-) -> Callable[
-    [AsyncObservable[Tuple[_A, _B, _C, _D]]], AsyncObservable[Tuple[_A, _B, _C, _D]]
-]:
-    ...
-
-
-def starfilter(
-    predicate: Callable[..., bool]
-) -> Callable[[AsyncObservable[Any]], AsyncObservable[Any]]:
+    predicate: Callable[[Unpack[_V]], bool],
+) -> Callable[[AsyncObservable[tuple[Unpack[_V]]]], AsyncObservable[Any]]:
     """Filter and spread the arguments to the predicate.
 
     Filters the elements of an observable sequence based on a predicate.
+
     Returns:
         An observable sequence that contains elements from the input
         sequence that satisfy the condition.
@@ -1010,43 +965,20 @@ def starfilter(
     return starfilter(predicate)
 
 
-@overload
 def starmap(
-    mapper: Callable[[_A, _B], _TResult]
-) -> Callable[[AsyncObservable[Tuple[_A, _B]]], AsyncObservable[_TResult]]:
-    ...
-
-
-@overload
-def starmap(
-    mapper: Callable[[_A, _B, _C], _TResult]
-) -> Callable[[AsyncObservable[Tuple[_A, _B, _C]]], AsyncObservable[_TResult]]:
-    ...
-
-
-@overload
-def starmap(
-    mapper: Callable[[_A, _B, _C, _D], _TResult]
-) -> Callable[[AsyncObservable[Tuple[_A, _B, _C, _D]]], AsyncObservable[_TResult]]:
-    ...
-
-
-def starmap(
-    mapper: Callable[..., _TResult]
-) -> Callable[[AsyncObservable[Any]], AsyncObservable[_TResult]]:
+    mapper: Callable[[Unpack[_V]], _TResult],
+) -> Callable[[AsyncObservable[tuple[Unpack[_V]]]], AsyncObservable[_TResult]]:
     """Map and spread the arguments to the mapper.
 
     Returns an observable sequence whose elements are the result of
-    invoking the mapper function on each element of the source."""
-
+    invoking the mapper function on each element of the source.
+    """
     from .transform import starmap
 
     return starmap(mapper)
 
 
-def switch_latest() -> Callable[
-    [AsyncObservable[AsyncObservable[_TSource]]], AsyncObservable[_TSource]
-]:
+def switch_latest() -> Callable[[AsyncObservable[AsyncObservable[_TSource]]], AsyncObservable[_TSource]]:
     from .transform import switch_latest as switch_latest_
 
     return switch_latest_
@@ -1061,7 +993,7 @@ def take(
     an observable sequence.
 
     Args:
-        count Number of elements to take.
+        count: Number of elements to take.
 
     Returns:
         An observable sequence that contains the specified number of
@@ -1112,7 +1044,9 @@ def take_until(
 
 
 def timer(due_time: float) -> AsyncObservable[int]:
-    """Returns an observable sequence that triggers the value 0
+    """Observable timer.
+
+    Returns an observable sequence that triggers the value 0
     after the given duetime in milliseconds.
     """
     from .create import timer
@@ -1126,11 +1060,11 @@ def to_async_iterable(source: AsyncObservable[_TSource]) -> AsyncIterable[_TSour
     return to_async_iterable(source)
 
 
-@curry_flipped(1)
+@curry_flip(1)
 def with_latest_from(
     source: AsyncObservable[_TSource],
     other: AsyncObservable[_TOther],
-) -> AsyncObservable[Tuple[_TSource, _TOther]]:
+) -> AsyncObservable[tuple[_TSource, _TOther]]:
     from .combine import with_latest_from
 
     return pipe(
