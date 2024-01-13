@@ -264,13 +264,13 @@ packaging = ">=20.9"
 
 [[package]]
 name = "expression"
-version = "5.0.0"
+version = "5.0.1"
 description = "Practical functional programming for Python 3.9+"
 optional = false
 python-versions = ">=3.11,<4"
 files = [
-    {file = "expression-5.0.0-py3-none-any.whl", hash = "sha256:38142d3cd79e3b64f410123a22cb2652c7801c713641111b0d3c54d39b5a809a"},
-    {file = "expression-5.0.0.tar.gz", hash = "sha256:e36e15335e95123cc3cdd1bda49d141a71915f632af296802473b9a5c8cb26b7"},
+    {file = "expression-5.0.1-py3-none-any.whl", hash = "sha256:b5fe712a2e8c7515e4a688cff885f2e24b597f522099b3256e83e1edd6c99965"},
+    {file = "expression-5.0.1.tar.gz", hash = "sha256:3755d9115242d1b6c51f2fc6facc769b9b5ce30077abe861e836639c1e935906"},
 ]
 
 [package.dependencies]
@@ -614,4 +614,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = ">= 3.11, < 4"
-content-hash = "e64fa6f0dda91a582a20b612e1a1c8aaf76302f02a3e2253970127078f042f7d"
+content-hash = "f58815388ad47a96fe03eb2d6a1fc23f057dd008ec0bade544bee51ac50ce224"
