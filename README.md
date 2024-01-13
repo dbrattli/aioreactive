@@ -21,9 +21,7 @@ and, integrates naturally with the Python language.
 
 ## The design goals for aioreactive:
 
-* Python 3.9+ only. We have a hard dependency [PEP
-  585](https://www.python.org/dev/peps/pep-0585/), Type Hinting Generics
-  In Standard Collections, data classes and type variables.
+* Python 3.11+ only. We have a hard dependency [Expression v5]([https://www.python.org/dev/peps/pep-0585/](https://github.com/dbrattli/Expression)).
 * All operators and tools are implemented as plain old functions.
 * Everything is `async`. Sending values is async, subscribing to
   observables is async. Disposing subscriptions is async.
