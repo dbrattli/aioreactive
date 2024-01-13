@@ -9,6 +9,7 @@ from expression.core import pipe
 
 import aioreactive as rx
 
+
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -16,9 +17,9 @@ executor = ThreadPoolExecutor(max_workers=10)
 
 
 def long_running(value: int) -> int:
-    print("Long running ({0}) on thread {1}".format(value, current_thread().name))
+    print(f"Long running ({value}) on thread {current_thread().name}")
     time.sleep(3)
-    print("Long running, done ({0}) on thread {1}".format(value, current_thread().name))
+    print(f"Long running, done ({value}) on thread {current_thread().name}")
     return value
 
 

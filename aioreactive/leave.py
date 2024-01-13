@@ -1,6 +1,6 @@
 import asyncio
-from collections.abc import AsyncIterable, Iterable
-from typing import TypeVar
+from collections.abc import AsyncIterable
+from typing import Any, TypeVar
 
 import reactivex
 from expression.system.disposable import AsyncDisposable
@@ -31,9 +31,10 @@ def to_async_iterable(source: AsyncObservable[_TSource]) -> AsyncIterable[_TSour
 
 def to_observable(source: AsyncObservable[_TSource]) -> Observable[_TSource]:
     """Convert async observable to observable."""
+    tasks: set[asyncio.Task[Any]] = set()
 
-    def subscribe(obv: ObserverBase[_TSource], scheduler: Optional[SchedulerBase] = None) -> DisposableBase:
-        subscription: Optional[AsyncDisposable] = None
+    def subscribe(obv: ObserverBase[_TSource], scheduler: SchedulerBase | None = None) -> DisposableBase:
+        subscription: AsyncDisposable | None = None
 
         async def start() -> None:
             nonlocal subscription
@@ -48,18 +49,22 @@ def to_observable(source: AsyncObservable[_TSource]) -> Observable[_TSource]:
                 obv.on_completed()
 
             subscription = await source.subscribe_async(AsyncAnonymousObserver(asend, athrow, aclose))
+            tasks.remove(task)
 
-        asyncio.create_task(start())
+        task = asyncio.create_task(start())
+        tasks.add(task)
+        task.add_done_callback(lambda _: tasks.remove(task))
 
         def dispose() -> None:
             if subscription:
-                asyncio.create_task(subscription.dispose_async())
+                task = asyncio.create_task(subscription.dispose_async())
+                tasks.add(task)
 
         return Disposable(dispose)
 
     return reactivex.create(subscribe)
 
 
-def to_iterable(source: AsyncObservable[_TSource]) -> Iterable[_TSource]:
-    """Convert async observable to iterable."""
-    return to_observable(source).to_iterable()
+# def to_iterable(source: AsyncObservable[_TSource]) -> Iterable[_TSource]:
+#     """Convert async observable to iterable."""
+#     return to_observable(source).to_iterable()

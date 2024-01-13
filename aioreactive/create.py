@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from asyncio import Future
+from asyncio import Future, Task
 from collections.abc import AsyncIterable, Awaitable, Callable, Iterable
 from typing import Any, TypeVar
 
@@ -77,9 +77,9 @@ def of_async(workflow: Awaitable[TSource]) -> AsyncObservable[TSource]:
 
 
 def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSource]:
-    async def subscribe_async(observer: AsyncObserver[TSource]) -> AsyncDisposable:
-        task: Future[None] | None = None
+    tasks: set[Task[Any]] = set()
 
+    async def subscribe_async(observer: AsyncObserver[TSource]) -> AsyncDisposable:
         async def cancel() -> None:
             if task:
                 task.cancel()
@@ -95,12 +95,15 @@ def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSour
                     return
 
             await observer.aclose()
+            tasks.remove(task)
 
         try:
             task = asyncio.create_task(worker())
         except Exception as ex:
             log.debug("FromIterable:worker(), Exception: %s" % ex)
             await observer.athrow(ex)
+        else:
+            tasks.add(task)
         return sub
 
     return AsyncAnonymousObservable(subscribe_async)

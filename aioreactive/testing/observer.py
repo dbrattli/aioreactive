@@ -64,7 +64,7 @@ class AsyncTestObserver(AsyncAwaitableObserver[TSource]):
         log.debug("AsyncAnonymousObserver:aclose()")
 
         time = self.time()
-        self._values.append((time, OnCompleted))
+        self._values.append((time, OnCompleted()))
 
         await self._close()
         await super().aclose()

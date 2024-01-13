@@ -11,7 +11,7 @@ def to_async_observable(source: AsyncIterable[TSource]) -> AsyncObservable[TSour
     """Convert to async observable.
 
     Keyword Arguments:
-    source -- Async iterable to convert to async observable.
+    source: Async iterable to convert to async observable.
 
     Returns async observable
     """

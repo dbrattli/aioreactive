@@ -331,7 +331,6 @@ def switch_latest(
         _obv = AsyncAnonymousObserver(asend, athrow, aclose)
         dispose = await pipe(
             _obv,
-            AsyncObserver,
             source.subscribe_async,
             auto_detach,
         )

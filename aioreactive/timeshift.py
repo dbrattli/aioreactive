@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable
 from datetime import UTC, datetime, timedelta
 from typing import NoReturn, TypeVar
 
@@ -51,9 +51,9 @@ def delay(
     token = cts.token
 
     async def subscribe_async(aobv: AsyncObserver[_TSource]) -> AsyncDisposable:
-        async def worker(inbox: MailboxProcessor[tuple[Notification[_TSource], datetime]]) -> None:
+        def worker(inbox: MailboxProcessor[tuple[Notification[_TSource], datetime]]) -> Awaitable[None]:
             @tailrec_async
-            async def loop() -> "TailCallResult[None, ...]":
+            async def loop() -> TailCallResult[None, ...]:
                 if token.is_cancellation_requested:
                     return
 
@@ -79,7 +79,7 @@ def delay(
                 await matcher()
                 return TailCall["..."]()
 
-            _tsk = asyncio.ensure_future(loop())
+            return asyncio.ensure_future(loop())
 
         agent = MailboxProcessor.start(worker, token)
 

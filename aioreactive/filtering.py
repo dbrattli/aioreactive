@@ -157,7 +157,7 @@ def distinct_until_changed(
                 latest = await get_latest()
                 return TailCall[Notification[_TSource]](latest)
 
-            await message_loop(OnCompleted)  # Use as sentinel value as it will not match any OnNext value
+            await message_loop(OnCompleted())
 
         agent = MailboxProcessor.start(worker)
 

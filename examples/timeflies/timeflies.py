@@ -3,6 +3,7 @@ import signal
 import sys
 from tkinter import Event, Frame, Label, Misc, Tk
 from types import FrameType
+from typing import Any
 
 from expression import MailboxProcessor, pipe
 from expression.system import AsyncDisposable
@@ -55,6 +56,7 @@ async def main() -> None:
 
     subscription: AsyncDisposable
     running = True
+    tasks: list[asyncio.Task[Any]] = []
 
     async def asend(value: tuple[Label, int, int]) -> None:
         """Perform side effect."""
@@ -63,7 +65,7 @@ async def main() -> None:
 
     async def athrow(ex: Exception):
         nonlocal running, subscription
-        print("Exception: ", ex)
+        print("Exception: ", ex)  # noqa
         await subscription.dispose_async()
         running = False
 
@@ -80,10 +82,14 @@ async def main() -> None:
         await subscription.dispose_async()
 
     def handle_focus_in(event: "Event[Misc]"):
-        asyncio.ensure_future(start())
+        task = asyncio.ensure_future(start())
+        tasks.append(task)
+        task.add_done_callback(lambda _: tasks.remove(task))
 
     def handle_focus_out(event: "Event[Misc]"):
-        asyncio.ensure_future(stop())
+        task = asyncio.ensure_future(stop())
+        tasks.append(task)
+        task.add_done_callback(lambda _: tasks.remove(task))
 
     root.bind("<FocusIn>", handle_focus_in)
     root.bind("<FocusOut>", handle_focus_out)
