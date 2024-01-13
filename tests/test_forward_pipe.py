@@ -34,7 +34,7 @@ async def test_forward_pipe_map() -> None:
         (0, OnNext(10)),
         (0, OnNext(20)),
         (0, OnNext(30)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -57,7 +57,7 @@ async def test_forward_pipe_simple_pipe() -> None:
 
     obv: AsyncTestObserver[int] = AsyncTestObserver()
     await rx.run(ys, obv)
-    assert obv.values == [(0, OnNext(20)), (0, OnNext(30)), (0, OnCompleted)]
+    assert obv.values == [(0, OnNext(20)), (0, OnNext(30)), (0, OnCompleted())]
 
 
 @pytest.mark.asyncio

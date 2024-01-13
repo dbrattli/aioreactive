@@ -35,7 +35,7 @@ async def test_merge_done():
     await xs.aclose()
     await obv
 
-    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted)]
+    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted())]
 
 
 @pytest.mark.asyncio
@@ -71,7 +71,7 @@ async def test_merge_streams():
         (3, OnNext(50)),
         (4, OnNext(30)),
         (5, OnNext(60)),
-        (6, OnCompleted),
+        (6, OnCompleted()),
     ]
 
 
@@ -101,5 +101,5 @@ async def test_merge_streams_concat():
         (6, OnNext(1)),
         (6, OnNext(2)),
         (6, OnNext(3)),
-        (6, OnCompleted),
+        (6, OnCompleted()),
     ]

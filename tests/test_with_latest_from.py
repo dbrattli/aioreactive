@@ -52,7 +52,7 @@ async def test_withlatestfrom_never_never():
 #     with pytest.raises(CancelledError):
 #         await rx.run(zs, obv)
 
-#     assert obv.values == [(0, OnCompleted)]
+#     assert obv.values == [(0, OnCompleted())]
 
 
 # @pytest.mark.asyncio
@@ -70,4 +70,4 @@ async def test_withlatestfrom_never_never():
 #         await xs.aclose()
 #         await obv
 
-#     assert obv.values == [(0, OnNext(5)), (0, OnCompleted)]
+#     assert obv.values == [(0, OnNext(5)), (0, OnCompleted())]

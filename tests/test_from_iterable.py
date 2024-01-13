@@ -22,7 +22,7 @@ async def test_from_iterable_happy():
         (0, OnNext(1)),
         (0, OnNext(2)),
         (0, OnNext(3)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -62,4 +62,4 @@ async def test_from_iterable_observer_throws():
 #     # with pytest.raises(asyncio.CancelledError):
 #     await obv
 
-#     assert obv.values == [(0, OnNext(0)), (0, OnCompleted)]
+#     assert obv.values == [(0, OnNext(0)), (0, OnCompleted())]

@@ -32,7 +32,7 @@ async def test_slice_special():
         (0, OnNext(2)),
         (0, OnNext(3)),
         (0, OnNext(4)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -50,5 +50,5 @@ async def test_slice_step():
         (0, OnNext(1)),
         (0, OnNext(3)),
         (0, OnNext(5)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]

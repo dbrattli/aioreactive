@@ -39,7 +39,7 @@ async def test_delay_done():
     assert obv.values == [
         (ca(1), OnNext(10)),
         (ca(2), OnNext(20)),
-        (ca(3), OnCompleted),
+        (ca(3), OnCompleted()),
     ]
 
 

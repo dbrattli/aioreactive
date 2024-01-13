@@ -31,7 +31,7 @@ async def test_flap_map_done():
     await xs.aclose()
     await obv
 
-    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted)]
+    assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted())]
 
 
 @pytest.mark.asyncio

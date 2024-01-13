@@ -30,7 +30,7 @@ async def test_distinct_until_changed_different():
         (0, OnNext(1)),
         (0, OnNext(2)),
         (0, OnNext(3)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]
 
 
@@ -49,5 +49,5 @@ async def test_distinct_until_changed_changed():
         (0, OnNext(3)),
         (0, OnNext(1)),
         (0, OnNext(2)),
-        (0, OnCompleted),
+        (0, OnCompleted()),
     ]

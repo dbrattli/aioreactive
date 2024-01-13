@@ -44,7 +44,7 @@ async def test_debounce():
     assert obv.values == [
         (ca(0.5), OnNext(1)),
         (ca(1.1), OnNext(2)),
-        (ca(1.2), OnCompleted),
+        (ca(1.2), OnCompleted()),
     ]
 
     await subscription.dispose_async()
@@ -68,7 +68,7 @@ async def test_debounce_filter():
 
     assert obv.values == [
         (ca(0.8), OnNext(2)),
-        (ca(0.9), OnCompleted),
+        (ca(0.9), OnCompleted()),
     ]
 
     await subscription.dispose_async()
