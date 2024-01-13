@@ -4,7 +4,7 @@
 # aioreactive - ReactiveX for asyncio using async and await
 [![PyPI](https://img.shields.io/pypi/v/aioreactive.svg)](https://pypi.python.org/pypi/aioreactive)
 ![Python package](https://github.com/dbrattli/aioreactive/workflows/Python%20package/badge.svg)
-![Publish Package](https://github.com/dbrattli/aioreactive/actions/workflows/python-publish.yml/badge.svg)](https://github.com/dbrattli/aioreactive/actions/workflows/python-publish.yml)
+![Publish Package](https://github.com/dbrattli/aioreactive/actions/workflows/python-publish.yml/badge.svg)
 [![codecov](https://codecov.io/gh/dbrattli/aioreactive/branch/master/graph/badge.svg)](https://codecov.io/gh/dbrattli/aioreactive)
 
 
