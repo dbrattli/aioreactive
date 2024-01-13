@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from asyncio import Future, Task
+from asyncio import Task
 from collections.abc import AsyncIterable, Awaitable, Callable, Iterable
 from typing import Any, TypeVar
 
