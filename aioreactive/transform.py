@@ -510,3 +510,28 @@ def scan_async(
         The scan operator.
     """
     return _scan(accumulator, initial)
+
+
+def reduce(
+    accumulator: Callable[[_TResult, _TSource], _TResult],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    async def _reduce(current: _TResult, value: _TSource) -> _TResult:
+        return accumulator(current, value)
+
+    def _operator(Observable: AsyncObservable[_TSource]) -> AsyncObservable[_TResult]:
+        return pipe(Observable, reduce_async(_reduce, initial))
+
+    return _operator
+
+
+def reduce_async(
+    accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    def _operator(source: AsyncObservable[_TSource]) -> AsyncObservable[_TResult]:
+        from .filtering import take_last
+
+        return pipe(source, scan_async(accumulator, initial), take_last(1))
+
+    return _operator
