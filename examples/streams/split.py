@@ -19,6 +19,9 @@ async def main():
     await odds.subscribe_async(rx.AsyncAnonymousObserver(mysink))
     await evens.subscribe_async(rx.AsyncAnonymousObserver(mysink))
 
+    # Wait to avoid the program exiting before the streams are finished.
+    await asyncio.sleep(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
