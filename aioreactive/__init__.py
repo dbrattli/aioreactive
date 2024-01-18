@@ -314,6 +314,18 @@ class AsyncRx(AsyncObservable[_TSource]):
             AsyncRx.create,
         )
 
+    def reduce(
+        self, accumulator: Callable[[_TResult, _TSource], _TResult], initial: _TResult
+    ) -> "AsyncRx[_TResult]":
+        return pipe(self, reduce(accumulator, initial), AsyncRx[_TResult])
+
+    def reduce_async(
+        self,
+        accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
+        initial: _TResult,
+    ) -> "AsyncRx[_TResult]":
+        return pipe(self, reduce_async(accumulator, initial), AsyncRx[_TResult])
+
     def skip(self, count: int) -> AsyncObservable[_TSource]:
         """Skip items from start of the stream.
 
@@ -836,6 +848,46 @@ def of_async(workflow: Awaitable[_TSource]) -> AsyncObservable[_TSource]:
     from .create import of_async
 
     return of_async(workflow)
+
+
+def reduce(
+    accumulator: Callable[[_TResult, _TSource], _TResult],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    """The reduce operator.
+
+    If an error occurs either in the accumulator or the source the subscription is disposed and the error is thrown.
+
+    Args:
+        accumulator: An accumulator function
+        initial: The initial value
+
+    Returns:
+        The reduce operator function
+    """
+    from .transform import reduce as _reduce
+
+    return _reduce(accumulator, initial)
+
+
+def reduce_async(
+    accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
+    initial: _TResult,
+) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]:
+    """The async reduce operator.
+
+    See the `reduce` operator.
+
+    Args:
+        accumulator (Callable[[_TResult, _TSource], Awaitable[_TResult]]): An async accumulator function
+        initial (_TResult): The initial value
+
+    Returns:
+        Callable[[AsyncObservable[_TSource]], AsyncObservable[_TResult]]: The operator function
+    """
+    from .transform import reduce_async as _reduce
+
+    return _reduce(accumulator, initial)
 
 
 def retry(
