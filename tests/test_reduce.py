@@ -40,7 +40,7 @@ async def test_reduce():
     values = list(map(lambda t: t[1], observer.values))
     assert values == [
         OnNext(10),
-        OnCompleted,
+        OnCompleted(),
     ]
 
 
@@ -55,5 +55,5 @@ async def test_reduce_async():
     values = list(map(lambda t: t[1], observer.values))
     assert values == [
         OnNext(10),
-        OnCompleted,
+        OnCompleted(),
     ]
