@@ -314,16 +314,14 @@ class AsyncRx(AsyncObservable[_TSource]):
             AsyncRx.create,
         )
 
-    def reduce(
-        self, accumulator: Callable[[_TResult, _TSource], _TResult], initial: _TResult
-    ) -> "AsyncRx[_TResult]":
+    def reduce(self, accumulator: Callable[[_TResult, _TSource], _TResult], initial: _TResult) -> AsyncRx[_TResult]:
         return pipe(self, reduce(accumulator, initial), AsyncRx[_TResult])
 
     def reduce_async(
         self,
         accumulator: Callable[[_TResult, _TSource], Awaitable[_TResult]],
         initial: _TResult,
-    ) -> "AsyncRx[_TResult]":
+    ) -> AsyncRx[_TResult]:
         return pipe(self, reduce_async(accumulator, initial), AsyncRx[_TResult])
 
     def skip(self, count: int) -> AsyncObservable[_TSource]:

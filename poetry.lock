@@ -264,13 +264,13 @@ packaging = ">=20.9"
 
 [[package]]
 name = "expression"
-version = "5.0.1"
-description = "Practical functional programming for Python 3.9+"
+version = "5.0.2"
+description = "Practical functional programming for Python 3.11+"
 optional = false
 python-versions = ">=3.11,<4"
 files = [
-    {file = "expression-5.0.1-py3-none-any.whl", hash = "sha256:b5fe712a2e8c7515e4a688cff885f2e24b597f522099b3256e83e1edd6c99965"},
-    {file = "expression-5.0.1.tar.gz", hash = "sha256:3755d9115242d1b6c51f2fc6facc769b9b5ce30077abe861e836639c1e935906"},
+    {file = "expression-5.0.2-py3-none-any.whl", hash = "sha256:2b54eeccb6247d86f598a3ce1a4e1efc56e4c7ca901f622d8203919d4106e147"},
+    {file = "expression-5.0.2.tar.gz", hash = "sha256:37019851b0794820c1167b185d6be4a22111604f3bab221f4136e429e5d9b57f"},
 ]
 
 [package.dependencies]

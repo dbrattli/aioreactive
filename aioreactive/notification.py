@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable, Iterable
+from collections.abc import Awaitable, Callable
 from enum import Enum
-from typing import Any, Generic, TypeVar, get_origin
+from typing import Any, Generic, TypeVar
 
 from .types import AsyncObserver
 
@@ -59,15 +59,6 @@ class OnNext(Notification[_TSource]):
     async def accept_observer(self, obv: AsyncObserver[_TSource]) -> None:
         await obv.asend(self.value)
 
-    def __match__(self, pattern: Any) -> Iterable[_TSource]:
-        origin: Any = get_origin(pattern)
-        try:
-            if isinstance(self, origin or pattern):
-                return [self.value]
-        except TypeError:
-            pass
-        return []
-
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, OnNext):
             return self.value == other.value  # type: ignore
@@ -98,15 +89,6 @@ class OnError(Notification[_TSource]):
     async def accept_observer(self, obv: AsyncObserver[_TSource]) -> None:
         await obv.athrow(self.exception)
 
-    def __match__(self, pattern: Any) -> Iterable[Exception]:
-        origin: Any = get_origin(pattern)
-        try:
-            if isinstance(self, origin or pattern):
-                return [self.exception]
-        except TypeError:
-            pass
-        return []
-
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, OnError):
             return self.exception == other.exception
@@ -136,18 +118,6 @@ class OnCompleted(Notification[_TSource]):
 
     async def accept_observer(self, obv: AsyncObserver[_TSource]) -> None:
         await obv.aclose()
-
-    def __match__(self, pattern: Any) -> Iterable[bool]:
-        if self is pattern:
-            return [True]
-
-        origin: Any = get_origin(pattern)
-        try:
-            if isinstance(self, origin or pattern):
-                return [True]
-        except TypeError:
-            pass
-        return []
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, OnCompleted):
