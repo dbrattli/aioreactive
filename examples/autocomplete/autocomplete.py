@@ -90,7 +90,7 @@ async def index(request: Request) -> dict[str, Any]:
 async def init(loop: AbstractEventLoop):
     port = os.environ.get("PORT", 8080)
     host = "localhost"
-    app = web.Application(loop=loop)
+    app = web.Application()
     print("Starting server at port: %s" % port)
 
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader("."))
@@ -102,7 +102,7 @@ async def init(loop: AbstractEventLoop):
 
 
 def main():
-    loop: AbstractEventLoop = asyncio.get_event_loop()
+    loop = asyncio.get_event_loop()
     app, host, port = loop.run_until_complete(init(loop))
     web.run_app(app, host=host, port=int(port))
 
