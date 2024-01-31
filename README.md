@@ -370,13 +370,12 @@ def event_loop():
     yield loop
     loop.close()
 
-
 @pytest.mark.asyncio
 async def test_delay_done():
-    xs = AsyncTestSubject()
+    xs = AsyncTestSubject()  # Test stream
 
     ys = pipe(xs, rx.delay(1.0))
-    obv = AsyncTestObserver()
+    obv = AsyncTestObserver()  # Test AsyncAnonymousObserver
     async with await ys.subscribe_async(obv):
         await xs.asend_later(0, 10)
         await xs.asend_later(1.0, 20)
