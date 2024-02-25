@@ -372,23 +372,20 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_delay_done():
-    xs = AsyncSubject()  # Test stream
+    xs = AsyncTestSubject()  # Test stream
 
-    async def mapper(value):
-        return value * 10
+    ys = pipe(xs, rx.delay(1.0))
+    obv = AsyncTestObserver()  # Test AsyncAnonymousObserver
+    async with await ys.subscribe_async(obv):
+        await xs.asend_later(0, 10)
+        await xs.asend_later(1.0, 20)
+        await xs.aclose_later(1.0)
+        await obv
 
-    ys = delay(0.5, xs)
-    lis = AsyncTestObserver()  # Test AsyncAnonymousObserver
-    sub = await subscribe_async(ys, lis)
-    await xs.asend_later(0, 10)
-    await xs.asend_later(1, 20)
-    await xs.aclose_later(1)
-    await sub
-
-    assert lis.values == [
-        (0.5, OnNext(10)),
-        (1.5, OnNext(20)),
-        (2.5, OnCompleted)
+    assert obv.values == [
+        (ca(1), OnNext(10)),
+        (ca(2), OnNext(20)),
+        (ca(3), OnCompleted()),
     ]
 ```
 
