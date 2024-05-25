@@ -1,4 +1,5 @@
 """Internal messages used by mailbox processors. Do not import or use."""
+
 from typing import Generic, Literal, NewType, TypeVar
 
 from expression import case, tag, tagged_union

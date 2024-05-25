@@ -12,6 +12,7 @@ Example:
     >>> ...
 
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterable, Awaitable, Callable, Iterable
@@ -120,13 +121,13 @@ class AsyncRx(AsyncObservable[_TSource]):
 
         return AsyncRx(pipe(self, _slice(start, stop, step or 1)))
 
-    @classmethod
-    def create(cls, source: AsyncObservable[_TSource]) -> AsyncRx[_TSource]:
+    @staticmethod
+    def create(source: AsyncObservable[_TResult]) -> AsyncRx[_TResult]:
         """Create `AsyncChainedObservable`.
 
         Helper method for creating an `AsyncChainedObservable`.
         """
-        return cls(source)
+        return AsyncRx(source)
 
     @classmethod
     def empty(cls) -> AsyncRx[_TSource]:
@@ -136,8 +137,8 @@ class AsyncRx(AsyncObservable[_TSource]):
     def from_iterable(cls, iter: Iterable[_TSource]) -> AsyncRx[_TSource]:
         return AsyncRx(from_iterable(iter))
 
-    @classmethod
-    def from_async_iterable(cls, iter: AsyncIterable[_TSource]) -> AsyncObservable[_TSource]:
+    @staticmethod
+    def from_async_iterable(iter: AsyncIterable[_TResult]) -> AsyncObservable[_TResult]:
         """Convert an async iterable to an async observable stream.
 
         Example:

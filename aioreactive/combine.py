@@ -88,7 +88,7 @@ def merge_inner(
                                     subscriptions=model.subscriptions.add(model.key, inner),
                                     key=Key(model.key + 1),
                                 )
-                            lst = Block.singleton(xs)
+                            lst = Block[AsyncObservable[_TSource]].singleton(xs)
                             return model.replace(queue=model.queue.append(lst))
                         case Msg(tag="inner_completed", inner_completed=key):
                             subscriptions = model.subscriptions.remove(key)

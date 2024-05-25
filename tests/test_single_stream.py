@@ -124,7 +124,6 @@ async def test_stream_cancel_asend():
 
     sink = AsyncTestObserver(asend)
     async with await ys.subscribe_async(sink) as sub:
-
         await xs.asend_later(1, 10)
 
         with pytest.raises(ObjectDisposedException):
@@ -149,7 +148,6 @@ async def test_stream_cancel_mapper():
 
     sink: AsyncObserver[int] = AsyncTestObserver()
     async with await ys.subscribe_async(sink) as sub:
-
         await xs.asend_later(1, 10)
         with pytest.raises(ObjectDisposedException):
             await xs.asend_later(1, 20)
