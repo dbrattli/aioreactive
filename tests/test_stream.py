@@ -146,7 +146,6 @@ async def test_stream_cancel_mapper():
 
     obv: AsyncTestObserver[int] = AsyncTestObserver()
     async with await ys.subscribe_async(obv) as subscription:
-
         await xs.asend_later(100, 10)
         await xs.asend_later(100, 20)
         await xs.asend_later(100, 30)

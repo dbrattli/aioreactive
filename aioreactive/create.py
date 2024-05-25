@@ -100,7 +100,7 @@ def of_async_iterable(iterable: AsyncIterable[TSource]) -> AsyncObservable[TSour
         try:
             task = asyncio.create_task(worker())
         except Exception as ex:
-            log.debug("FromIterable:worker(), Exception: %s" % ex)
+            log.debug(f"FromIterable:worker(), Exception: {ex}")
             await observer.athrow(ex)
         else:
             tasks.add(task)

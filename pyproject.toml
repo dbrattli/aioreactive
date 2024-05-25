@@ -40,15 +40,15 @@ line-length = 120
 # D100: Missing docstring in public module
 # D104: Missing docstring in public package
 # D105: Missing docstring in magic method
-ignore = ["D100", "D101", "D102", "D103", "D105", "D107"]
-target-version = "py310"
-select = ["D", "E", "W", "F", "I", "T", "RUF", "TID", "UP"]
+lint.ignore = ["D100", "D101", "D102", "D103", "D105", "D107"]
+lint.select = ["D", "E", "W", "F", "I", "T", "RUF", "TID", "UP"]
 exclude = ["tests", "docs", "examples"]
+target-version = "py310"
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 lines-after-imports = 2
 known-third-party = ["pytest"]
 
