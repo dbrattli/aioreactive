@@ -131,9 +131,10 @@ Even more interesting, with `to_async_iterable` you can flip around from
 the stream of events.
 
 ```python
-obv = AsyncIteratorObserver()
-subscription = subscribe_async(source, obv)
-async for x in obv:
+import aioreactive as rx
+
+xs = rx.from_iterable([1, 2, 3])
+async for x in xs:
     print(x)
 ```
 
@@ -153,7 +154,7 @@ import aioreactive as rx
 xs = rx.from_iterable([1, 2, 3])
 result = []
 
-obv = rx.AsyncIteratorObserver()
+obv = rx.AsyncIteratorObserver(xs)
 async with await xs.subscribe_async(obv) as subscription:
     async for x in obv:
         result.append(x)
