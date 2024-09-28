@@ -1,6 +1,6 @@
 """Aioreactive module.
 
-Contains the AsyncRx chained obserable that allows method chaining of all operators.
+Contains the AsyncRx chained observable that allows method chaining of all operators.
 
 Also contains all operators as plain functions.
 
@@ -16,11 +16,11 @@ Example:
 from __future__ import annotations
 
 from collections.abc import AsyncIterable, Awaitable, Callable, Iterable
-from typing import Any, TypeVar, TypeVarTuple
+from typing import Any, TypeVar
 
 from expression import Option, curry_flip, pipe
 from expression.system.disposable import AsyncDisposable
-from typing_extensions import Unpack
+from typing_extensions import TypeVarTuple, Unpack
 
 from .observables import AsyncAnonymousObservable, AsyncIterableObservable
 from .observers import (

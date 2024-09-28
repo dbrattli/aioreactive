@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import pytest
@@ -11,14 +12,16 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()  # type:ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_slice_special():
     xs = AsyncRx.from_iterable([1, 2, 3, 4, 5])
 
@@ -36,7 +39,7 @@ async def test_slice_special():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_slice_step():
     xs = AsyncRx.from_iterable([1, 2, 3, 4, 5])
 

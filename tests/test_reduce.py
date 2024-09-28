@@ -12,13 +12,13 @@ class MyException(Exception):
     pass
 
 
-@pytest.fixture()
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    try:
-        yield loop
-    finally:
-        loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
 def sync_sum(a: int, b: int) -> int:
@@ -30,7 +30,7 @@ async def async_sum(a: int, b: int) -> int:
     return a + b
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_reduce():
     xs = rx.from_iterable([1, 2, 3, 4])
     observer = AsyncTestObserver()
@@ -44,7 +44,7 @@ async def test_reduce():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_reduce_async():
     xs = rx.from_iterable([1, 2, 3, 4])
     observer = AsyncTestObserver()

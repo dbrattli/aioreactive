@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 from expression.core import pipe
 
@@ -11,14 +12,16 @@ class MyException(Exception):
     pass
 
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_distinct_until_changed_different():
     xs = rx.from_iterable([1, 2, 3])
 
@@ -34,7 +37,7 @@ async def test_distinct_until_changed_different():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_distinct_until_changed_changed():
     xs = AsyncRx.from_iterable([1, 2, 2, 1, 3, 3, 1, 2, 2])
 

@@ -17,14 +17,16 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()  # type:ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_delay_done():
     xs: AsyncTestSubject[int] = AsyncTestSubject()
 
@@ -43,7 +45,7 @@ async def test_delay_done():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_delay_cancel_before_done():
     xs: AsyncTestSubject[int] = AsyncTestSubject()
 
@@ -60,7 +62,7 @@ async def test_delay_cancel_before_done():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_delay_throw():
     error = Exception("ex")
     xs: AsyncTestSubject[int] = AsyncTestSubject()

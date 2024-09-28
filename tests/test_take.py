@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from asyncio import CancelledError
 
@@ -13,14 +14,16 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()  # type:ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_take_zero() -> None:
     xs = rx.from_iterable([1, 2, 3, 4, 5])
 
@@ -33,7 +36,7 @@ async def test_take_zero() -> None:
     assert obv.values == [(0, OnCompleted())]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_take_empty() -> None:
     xs: AsyncObservable[int] = rx.empty()
 
@@ -46,7 +49,7 @@ async def test_take_empty() -> None:
     assert obv.values == [(0, OnCompleted())]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_take_negative() -> None:
     xs = rx.from_iterable([1, 2, 3, 4, 5])
 
@@ -54,7 +57,7 @@ async def test_take_negative() -> None:
         pipe(xs, rx.take(-1))
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_take_normal() -> None:
     xs = rx.from_iterable([1, 2, 3, 4, 5])
 

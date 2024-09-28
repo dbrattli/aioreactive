@@ -2,11 +2,11 @@
 <img src="logo/logo.jpg" alt="drawing" width="200"/>
 
 # aioreactive - ReactiveX for asyncio using async and await
+
 [![PyPI](https://img.shields.io/pypi/v/aioreactive.svg)](https://pypi.python.org/pypi/aioreactive)
 ![Python package](https://github.com/dbrattli/aioreactive/workflows/Python%20package/badge.svg)
 ![Publish Package](https://github.com/dbrattli/aioreactive/actions/workflows/python-publish.yml/badge.svg)
 [![codecov](https://codecov.io/gh/dbrattli/aioreactive/branch/master/graph/badge.svg)](https://codecov.io/gh/dbrattli/aioreactive)
-
 
 > *NEWS: Project rebooted Nov. 2020. Rebuilt using [Expression](https://github.com/dbrattli/Expression).*
 
@@ -19,9 +19,9 @@ and, integrates naturally with the Python language.
 > aioreactive is the unification of RxPY and reactive programming with
 > asyncio using async and await.
 
-## The design goals for aioreactive:
+## The design goals for aioreactive
 
-* Python 3.11+ only. We have a hard dependency [Expression v5]([https://www.python.org/dev/peps/pep-0585/](https://github.com/dbrattli/Expression)).
+* Python 3.10+ only. We have a hard dependency [Expression v5]([https://www.python.org/dev/peps/pep-0585/](https://github.com/dbrattli/Expression)).
 * All operators and tools are implemented as plain old functions.
 * Everything is `async`. Sending values is async, subscribing to
   observables is async. Disposing subscriptions is async.

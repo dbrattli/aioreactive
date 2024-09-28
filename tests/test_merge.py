@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import pytest
@@ -15,14 +16,16 @@ from aioreactive.types import AsyncObservable
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_merge_done():
     xs: AsyncTestSubject[AsyncObservable[int]] = AsyncTestSubject()
 
@@ -38,7 +41,7 @@ async def test_merge_done():
     assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted())]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_merge_streams():
     xs: AsyncTestSubject[AsyncObservable[int]] = AsyncTestSubject()
     s1: AsyncTestSubject[int] = AsyncTestSubject()
@@ -75,7 +78,7 @@ async def test_merge_streams():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_merge_streams_concat():
     s1: AsyncTestSubject[int] = AsyncTestSubject()
     s2 = rx.from_iterable([1, 2, 3])

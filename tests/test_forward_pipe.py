@@ -12,14 +12,16 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_forward_pipe_map() -> None:
     xs = rx.from_iterable([1, 2, 3])
 
@@ -38,7 +40,7 @@ async def test_forward_pipe_map() -> None:
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_forward_pipe_simple_pipe() -> None:
     xs = rx.from_iterable([1, 2, 3])
 
@@ -60,7 +62,7 @@ async def test_forward_pipe_simple_pipe() -> None:
     assert obv.values == [(0, OnNext(20)), (0, OnNext(30)), (0, OnCompleted())]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_forward_pipe_complex_pipe() -> None:
     xs = rx.from_iterable([1, 2, 3])
     result = []

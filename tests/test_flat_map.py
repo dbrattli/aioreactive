@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 from expression.core import pipe
 
@@ -7,14 +8,16 @@ from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 from aioreactive.types import AsyncObservable
 
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_flap_map_done():
     xs: rx.AsyncSubject[int] = rx.AsyncSubject()
 
@@ -34,7 +37,7 @@ async def test_flap_map_done():
     assert obv.values == [(0, OnNext(10)), (0, OnNext(20)), (0, OnCompleted())]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_flat_map_monad():
     m = rx.single(42)
 
@@ -47,7 +50,7 @@ async def test_flat_map_monad():
     assert a == b
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_flat_map_monad_law_left_identity():
     # return x >>= f is the same thing as f x
 
@@ -62,7 +65,7 @@ async def test_flat_map_monad_law_left_identity():
     assert a == b
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_flat_map_monad_law_right_identity():
     # m >>= return is no different than just m.
 
@@ -77,7 +80,7 @@ async def test_flat_map_monad_law_right_identity():
     assert a == b
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_flat_map_monad_law_associativity():
     # (m >>= f) >>= g is just like doing m >>= (\x -> f x >>= g)
 

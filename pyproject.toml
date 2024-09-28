@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "aioreactive"
 version = "0.0.0" # NOTE: will be updated by publish script
-description = "sync/await Reactive Tools for Python 3.11+"
+description = "sync/await Reactive Tools for Python 3.10+"
 readme = "README.md"
 authors = ["Dag Brattli <dag@brattli.net>", "Børge Lanes"]
 license = "MIT License"
@@ -20,18 +20,17 @@ classifiers = [
 packages = [{ include = "aioreactive" }, { include = "aioreactive/py.typed" }]
 
 [tool.poetry.dependencies]
-python = ">= 3.11, < 4"
+python = ">= 3.10, < 4"
 typing-extensions = "^4.1.1"
-Expression = "^5.0.1"
+Expression = "^5.3.0"
 reactivex = "^4.0.0"
 
 [tool.poetry.dev-dependencies]
-pytest-asyncio = "^0.18.1"
-pytest = "^7.4.4"
+pytest-asyncio = "^0.24.0"
+pytest = "^8.3.3"
 coverage = "^6.3.2"
 coveralls = "^3.3.1"
-pre-commit = "^2.17.0"
-autoflake = "^1.4"
+pre-commit = "^3.8.0"
 dunamai = "^1.9.0"
 
 [tool.ruff]

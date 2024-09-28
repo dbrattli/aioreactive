@@ -6,14 +6,16 @@ import pytest
 from aioreactive.testing import VirtualTimeEventLoop
 
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_sleep():
     loop = asyncio.get_event_loop()
     await asyncio.sleep(100)
@@ -22,7 +24,7 @@ async def test_sleep():
     assert loop.time() == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_call_soon():
     result = []
 
@@ -37,7 +39,7 @@ async def test_call_soon():
     assert result == [1, 2, 3]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_call_later():
     result = []
 
@@ -52,7 +54,7 @@ async def test_call_later():
     assert result == [2, 3, 1]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_call_at():
     result = []
 
@@ -67,7 +69,7 @@ async def test_call_at():
     assert result == [2, 3, 1]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_cancel():
     result = []
 

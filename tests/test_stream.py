@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 
 import pytest
-from expression.core import pipe
+from expression import pipe
 from expression.system.disposable import AsyncDisposable
 
 import aioreactive as rx
@@ -22,14 +22,16 @@ class MyException(Exception):
     pass
 
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_happy() -> None:
     xs: AsyncTestSubject[int] = AsyncTestSubject()
 
@@ -42,7 +44,7 @@ async def test_stream_happy() -> None:
     assert obv.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_throws() -> None:
     ex = MyException("ex")
     xs: AsyncTestSubject[int] = AsyncTestSubject()
@@ -67,7 +69,7 @@ async def test_stream_throws() -> None:
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_send_after_close() -> None:
     xs: AsyncTestSubject[int] = AsyncTestSubject()
 
@@ -88,7 +90,7 @@ async def test_stream_send_after_close() -> None:
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module") # type: ignore
 async def test_stream_cancel() -> None:
     xs: AsyncTestSubject[int] = AsyncTestSubject()
     subscription: Optional[AsyncDisposable] = None
@@ -107,7 +109,7 @@ async def test_stream_cancel() -> None:
     assert obv.values == [(1, OnNext(100))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module") # type: ignore
 async def test_stream_cancel_asend() -> None:
     xs: AsyncTestSubject[int] = AsyncTestSubject()
     subscription: Optional[AsyncDisposable] = None
@@ -132,7 +134,7 @@ async def test_stream_cancel_asend() -> None:
     assert obv.values == [(1, OnNext(100))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module") # type: ignore
 async def test_stream_cancel_mapper():
     xs: AsyncTestSubject[int] = AsyncTestSubject()
     subscription: Optional[AsyncDisposable] = None
@@ -156,7 +158,7 @@ async def test_stream_cancel_mapper():
     assert obv.values == [(100, OnNext(100))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_cancel_context():
     xs: AsyncTestSubject[int] = AsyncTestSubject()
 

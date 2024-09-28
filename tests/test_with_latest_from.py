@@ -8,7 +8,6 @@ from expression.core import pipe
 import aioreactive as rx
 from aioreactive.testing import (
     AsyncTestObserver,
-    AsyncTestSubject,
     VirtualTimeEventLoop,
 )
 from aioreactive.types import AsyncObservable, AsyncObserver
@@ -16,15 +15,16 @@ from aioreactive.types import AsyncObservable, AsyncObserver
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_withlatestfrom_never_never():
     xs: AsyncObservable[int] = rx.never()
     ys: AsyncObservable[int] = rx.never()

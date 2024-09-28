@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 
 import aioreactive as rx
@@ -5,14 +6,16 @@ from aioreactive.notification import OnCompleted, OnError, OnNext
 from aioreactive.testing import AsyncTestObserver, VirtualTimeEventLoop
 
 
-@pytest.fixture()  # type:ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_from_iterable_happy():
     xs = rx.from_iterable([1, 2, 3])
 
@@ -26,7 +29,7 @@ async def test_from_iterable_happy():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_from_iterable_observer_throws():
     xs = rx.from_iterable([1, 2, 3])
     error = Exception("error")
