@@ -26,7 +26,7 @@ async def test_sleep():
 
 @pytest.mark.asyncio(loop_scope="module")
 async def test_call_soon():
-    result = []
+    result: list[int] = []
 
     def action(value: int) -> None:
         result.append(value)
@@ -41,7 +41,7 @@ async def test_call_soon():
 
 @pytest.mark.asyncio(loop_scope="module")
 async def test_call_later():
-    result = []
+    result: list[int] = []
 
     def action(value: int) -> None:
         result.append(value)
@@ -56,7 +56,7 @@ async def test_call_later():
 
 @pytest.mark.asyncio(loop_scope="module")
 async def test_call_at():
-    result = []
+    result: list[int] = []
 
     def action(value: int) -> None:
         result.append(value)
@@ -71,7 +71,7 @@ async def test_call_at():
 
 @pytest.mark.asyncio(loop_scope="module")
 async def test_cancel():
-    result = []
+    result: list[int] = []
 
     def action(value: int) -> None:
         result.append(value)

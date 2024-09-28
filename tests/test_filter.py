@@ -1,5 +1,4 @@
 import asyncio
-from typing import Any, Generator
 
 import pytest
 from expression.core import pipe
@@ -24,7 +23,7 @@ def event_loop_policy():
 @pytest.mark.asyncio(loop_scope="module")
 async def test_filter_happy() -> None:
     xs = rx.from_iterable([1, 2, 3])
-    result = []
+    result: list[int] = []
 
     async def asend(value: int) -> None:
         result.append(value)
@@ -43,7 +42,7 @@ async def test_filter_happy() -> None:
 async def test_filter_predicate_throws() -> None:
     xs = rx.from_iterable([1, 2, 3])
     err = MyException("err")
-    result = []
+    result: list[int] = []
 
     async def asend(value: int) -> None:
         result.append(value)
