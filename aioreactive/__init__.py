@@ -134,7 +134,7 @@ class AsyncRx(AsyncObservable[_TSource]):
         return AsyncRx(empty())
 
     @classmethod
-    def from_iterable(cls, iter: Iterable[_TSource]) -> AsyncRx[_TSource]:
+    def from_iterable(cls, iter: Iterable[_TOther]) -> AsyncRx[_TOther]:
         return AsyncRx(from_iterable(iter))
 
     @staticmethod
