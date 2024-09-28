@@ -11,14 +11,17 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+
+@pytest.mark.asyncio(loop_scope="module")
 async def test_chain_map():
     xs = AsyncRx.from_iterable([1, 2, 3])
 
@@ -38,7 +41,7 @@ async def test_chain_map():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_chain_simple_pipe():
     xs = AsyncRx.from_iterable([1, 2, 3])
 
@@ -62,7 +65,7 @@ async def test_chain_simple_pipe():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_chain_complex_pipe():
     xs = AsyncRx.from_iterable([1, 2, 3])
 

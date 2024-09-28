@@ -23,14 +23,16 @@ class MyException(Exception):
     pass
 
 
-@pytest.fixture()  # type: ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_happy():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
@@ -43,7 +45,7 @@ async def test_stream_happy():
     assert sink.values == [(1, OnNext(10)), (2, OnNext(20)), (3, OnNext(30))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_throws():
     ex = MyException("ex")
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
@@ -66,7 +68,7 @@ async def test_stream_throws():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_send_after_close():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
@@ -86,7 +88,7 @@ async def test_stream_send_after_close():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_cancel():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
     sub = None
@@ -107,7 +109,7 @@ async def test_stream_cancel():
     assert sink.values == [(1, OnNext(100))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_cancel_asend():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
     sub: Optional[AsyncDisposable] = None
@@ -132,7 +134,7 @@ async def test_stream_cancel_asend():
     assert sink.values == [(1, OnNext(100))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_cancel_mapper():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
     sub: Optional[AsyncDisposable] = None
@@ -155,7 +157,7 @@ async def test_stream_cancel_mapper():
     assert sink.values == [(1, OnNext(100))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_cancel_context():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
@@ -170,7 +172,7 @@ async def test_stream_cancel_context():
     assert sink.values == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_cold_send():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 
@@ -188,7 +190,7 @@ async def test_stream_cold_send():
     assert sink.values == [(10, OnNext(42)), (11, OnNext(20))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_cold_throw():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
     error = MyException()
@@ -206,7 +208,7 @@ async def test_stream_cold_throw():
     assert sink.values == [(10, OnError(error))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_stream_cold_close():
     xs: AsyncTestSingleSubject[int] = AsyncTestSingleSubject()
 

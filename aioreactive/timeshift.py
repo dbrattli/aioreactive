@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Iterable
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import NoReturn, TypeVar
 
 from expression import curry_flipped
@@ -59,7 +59,7 @@ def delay(
 
                 ns, due_time = await inbox.receive()
 
-                diff = due_time - datetime.now(UTC)
+                diff = due_time - datetime.now(timezone.utc)
                 seconds = diff.total_seconds()
                 if seconds > 0:
                     await asyncio.sleep(seconds)
@@ -84,7 +84,7 @@ def delay(
         agent = MailboxProcessor.start(worker, token)
 
         async def fn(ns: Notification[_TSource]) -> None:
-            due_time = datetime.now(UTC) + timedelta(seconds=seconds)
+            due_time = datetime.now(timezone.utc) + timedelta(seconds=seconds)
             agent.post((ns, due_time))
 
         obv: AsyncNotificationObserver[_TSource] = AsyncNotificationObserver(fn)

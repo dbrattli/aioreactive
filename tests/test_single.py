@@ -14,14 +14,16 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()  # type:ignore
-def event_loop():
-    loop = VirtualTimeEventLoop()
-    yield loop
-    loop.close()
+class EventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    def get_event_loop(self) -> asyncio.AbstractEventLoop:
+       return VirtualTimeEventLoop()
+
+@pytest.fixture(scope="module")  # type: ignore
+def event_loop_policy():
+    return EventLoopPolicy()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_unit_happy():
     xs = rx.single(42)
 
@@ -30,7 +32,7 @@ async def test_unit_happy():
     assert obv.values == [(0, OnNext(42)), (0, OnCompleted())]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_unit_observer_throws():
     error = Exception("error")
     xs = rx.single(42)
@@ -48,7 +50,7 @@ async def test_unit_observer_throws():
     assert obv.values == [(0, OnNext(42)), (0, OnError(error))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_unit_close():
     xs = rx.single(42)
     sub: Optional[AsyncDisposable] = None
@@ -69,7 +71,7 @@ async def test_unit_close():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_unit_happy_resolved_future():
     fut: Awaitable[int] = asyncio.Future()
     xs = rx.from_async(fut)
@@ -83,7 +85,7 @@ async def test_unit_happy_resolved_future():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_unit_happy_future_resolve():
     fut: Awaitable[int] = asyncio.Future()
     xs = rx.from_async(fut)
@@ -99,7 +101,7 @@ async def test_unit_happy_future_resolve():
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_unit_future_exception():
     fut: Awaitable[int] = asyncio.Future()
     ex = Exception("ex")
@@ -113,7 +115,7 @@ async def test_unit_future_exception():
     assert obv.values == [(0, OnError(ex))]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_unit_future_cancel():
     fut: Awaitable[int] = asyncio.Future()
     xs = rx.from_async(fut)

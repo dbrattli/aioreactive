@@ -9,14 +9,14 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()  # type: ignore
+@pytest.fixture(scope="function")  # type: ignore
 def event_loop():
     loop = VirtualTimeEventLoop()
     yield loop
     loop.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_async_iteration() -> None:
     xs = rx.from_iterable([1, 2, 3])
     result: list[int] = []
@@ -27,7 +27,7 @@ async def test_async_iteration() -> None:
     assert result == [1, 2, 3]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_async_comprehension() -> None:
     xs = rx.from_iterable([1, 2, 3])
 
@@ -36,7 +36,7 @@ async def test_async_comprehension() -> None:
     assert result == [1, 2, 3]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_async_iteration_aync_with() -> None:
     xs = rx.from_iterable([1, 2, 3])
     result: list[int] = []
@@ -48,7 +48,7 @@ async def test_async_iteration_aync_with() -> None:
     assert result == [1, 2, 3]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_async_iteration_inception() -> None:
     # iterable to async source to async iterator to async source
     xs = rx.from_iterable([1, 2, 3])
