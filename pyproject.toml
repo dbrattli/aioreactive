@@ -25,7 +25,7 @@ typing-extensions = "^4.1.1"
 Expression = "^5.3.0"
 reactivex = "^4.0.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.test.dependencies]
 pytest-asyncio = "^0.24.0"
 pytest = "^8.3.3"
 coverage = "^6.3.2"
