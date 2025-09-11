@@ -434,7 +434,7 @@ def retry(
     def _retry(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
         async def subscribe_async(observer: AsyncObserver[_TSource]) -> AsyncDisposable:
             # Each subscription gets its own retry count
-            async def action(remaining: int, src: AsyncObservable[_TSource]) -> None:
+            async def action(remaining: int, src: AsyncObservable[_TSource]) -> AsyncDisposable:
                 async def asend(value: _TSource) -> None:
                     await observer.asend(value)
 
