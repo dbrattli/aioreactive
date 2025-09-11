@@ -18,7 +18,6 @@ from expression.core import (
 from expression.system import AsyncDisposable
 
 from .combine import merge_inner, zip_seq
-from .create import fail
 from .msg import (
     Key,
     Msg,
@@ -433,18 +432,29 @@ def retry(
     retry_count: int,
 ) -> Callable[[AsyncObservable[_TSource]], AsyncObservable[_TSource]]:
     def _retry(source: AsyncObservable[_TSource]) -> AsyncObservable[_TSource]:
-        count = retry_count
+        async def subscribe_async(observer: AsyncObserver[_TSource]) -> AsyncDisposable:
+            # Each subscription gets its own retry count
+            async def action(remaining: int, src: AsyncObservable[_TSource]) -> None:
+                async def asend(value: _TSource) -> None:
+                    await observer.asend(value)
 
-        def factory(exn: Exception) -> AsyncObservable[_TSource]:
-            nonlocal count
+                async def athrow(error: Exception) -> None:
+                    if not remaining:
+                        await observer.athrow(error)
+                    else:
+                        # Retry with one less attempt
+                        await action(remaining - 1, source)
 
-            if not count:
-                return fail(exn)
-            else:
-                count -= count
-                return source
+                async def aclose() -> None:
+                    await observer.aclose()
 
-        return pipe(source, catch(factory))
+                _obv = AsyncAnonymousObserver(asend, athrow, aclose)
+                return await src.subscribe_async(_obv)
+
+            disposable = await action(retry_count, source)
+            return AsyncDisposable.create(disposable.dispose_async)
+
+        return AsyncAnonymousObservable(subscribe_async)
 
     return _retry
 
